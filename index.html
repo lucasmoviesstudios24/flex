@@ -1,0 +1,837 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flex — Shop & Flex Game (Inventory at Bottom)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee:wght@400&family=Russo+One&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ui-blue:#59a7ff;
+  --ui-blue-dark:#2973e3;
+  --ink:#0a0f1a;
+  --panel:#3a3a42;
+  --panel-2:#2b2b31;
+  --slot:#9aa0a6;
+  --success:#2ecc71;
+  --danger:#e74c3c;
+  --gold:#ffb200;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --radius:28px;
+  --c-common:#6dff79;
+  --c-rare:#4cc4ff;
+  --c-epic:#b66bff;
+  --c-legendary:#ffd84a;
+  --c-legacy:#ffffff;
+  --c-mythic:#ffd700;
+}
+
+/* page / backdrop */
+html,body{ height:100%; margin:0; background: linear-gradient(to bottom, #89CFF0 0%, #90EE90 100%); overscroll-behavior:none; color:#fff; font-family:"Rajdhani", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; user-select:none; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image: linear-gradient(0deg, rgba(0,0,0,.06), rgba(255,255,255,.06)), repeating-linear-gradient(45deg, #1aa69e 0 12px, #1ca3d8 12px 24px, #1f7fb8 24px 36px), repeating-linear-gradient(-45deg, #1dc79d 0 12px, #1ea9d0 12px 24px, #2b6ab8 24px 36px);
+  filter:contrast(115%) saturate(120%);
+  image-rendering:pixelated;
+  background-size: 100% 100%, 24px 24px, 24px 24px;
+  mix-blend-mode: normal;
+  z-index:-2;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background:linear-gradient(90deg, rgba(255,255,255,.05), rgba(0,0,0,.05));
+  image-rendering: pixelated;
+  background-size: 8px 8px;
+  opacity:.45;
+}
+
+/* game container */
+.game{
+  position:relative;
+  min-height:100%;
+  padding:20px;
+  /* make space at bottom so fixed inventory doesn't overlap other content */
+  padding-bottom:220px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:24px;
+}
+
+/* topbar */
+.cash{
+  font-family:"Bungee", sans-serif;
+  font-size: clamp(28px, 5vw, 54px);
+  background: var(--ui-blue);
+  color:#000;
+  border:6px solid #0e2a4c;
+  border-radius: 28px;
+  padding: 6px 28px 8px;
+  box-shadow: var(--shadow);
+  letter-spacing:2px;
+  text-shadow: 0 2px 0 rgba(255,255,255,.35);
+}
+.topbar{ display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; }
+.eps{ padding:6px 12px; border-radius:12px; background:rgba(0,0,0,.35); font-weight:800; }
+
+/* left rail */
+.left-rail{
+  position:fixed;
+  left:16px;
+  top:120px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  z-index:7;
+}
+.icon-btn{
+  width:96px;
+  height:96px;
+  border-radius:20px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  box-shadow:var(--shadow);
+  border:4px solid rgba(0,0,0,.4);
+}
+.icon-shop{ background:#57d85a; }
+.icon-tools{ background:#8c8f95; }
+.icon-music{ background: linear-gradient(45deg,#ffd86a,#ff7ac7); }
+.icon-btn svg{ width:64%; height:64%; }
+
+/* stands / pedestals area (keeps visually centered above inventory) */
+.stands{
+  margin-top:24px;
+  margin-bottom:12px; /* small gap before the visual area above the inventory */
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:40px;
+  width:min(100%,1000px);
+  z-index:3;
+}
+.stand{
+  position:relative;
+  /* taller so pedestals sit well above the bottom inventory bar */
+  height:160px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+.pedestal{
+  width: 200px;
+  height: 48px;
+  background: linear-gradient(#ffda66, #f0a800);
+  border-radius: 12px;
+  box-shadow: inset 0 6px 0 rgba(255,255,255,.35), 0 10px 0 #bb7a00, 0 14px 18px rgba(0,0,0,.4);
+}
+.placed{
+  position:absolute;
+  /* position above pedestal; increased so it reads nicely above the bottom inventory */
+  bottom:110px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:160px;
+  height:80px;
+  border-radius:16px;
+  background:rgba(0,0,0,.18);
+  backdrop-filter: blur(1px);
+  outline:4px solid rgba(0,0,0,.35);
+  transition:transform .15s ease, box-shadow .2s;
+  z-index:4;
+}
+.placed:hover{ transform:translateY(-3px) scale(1.02); }
+.placed.glow{ box-shadow:0 8px 30px rgba(255,220,120,.9); transform:translateY(-6px) scale(1.06); }
+
+/* === INVENTORY FIXED TO BOTTOM (MAIN CHANGES) === */
+.inventory-wrap{
+  /* make the inventory a fixed bottom bar centered horizontally */
+  position:fixed;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:18px;
+  width: min(1100px, 96%);
+  z-index:8;
+  display:flex;
+  justify-content:center;
+  pointer-events:auto;
+}
+
+/* inventory container styled to match the concept art: big rounded rectangle with thick outline */
+.inventory{
+  display:flex;
+  gap:16px;
+  overflow-x:auto;
+  padding:20px;
+  background: linear-gradient(180deg, #d0d2d6, #a9adaf); /* subtle metallic grey like the concept */
+  border-radius:28px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.6), var(--shadow);
+  border:8px solid #111; /* thick dark outline similar to concept */
+  align-items:center;
+  /* ensure the inventory bar doesn't shrink too small on tiny screens */
+  min-width: 320px;
+}
+
+/* larger slot sizes to match concept visuals */
+.slot{
+  min-width:140px;
+  height:112px;
+  background: #b4b8bd;
+  border-radius:20px;
+  display:grid;
+  place-items:center;
+  color:#111;
+  font-weight:700;
+  border:6px solid #262a2f;
+  position:relative;
+  cursor:pointer;
+  flex: 0 0 auto;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35) inset;
+}
+.slot.selected{ outline:6px solid var(--ui-blue);}
+.slot .rar{
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  font-size:12px;
+  padding:3px 8px;
+  border-radius:12px;
+  background:rgba(0,0,0,.4);
+  color:#fff;
+}
+.slot img{ width:72px; height:72px; border-radius:10px; }
+
+/* shop overlay and other UI left mostly unchanged */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10;
+}
+.overlay.show{ display:flex; }
+.shop{
+  width:min(1000px, 92%);
+  background:#4a4a52;
+  border-radius:30px;
+  border:6px solid #212127;
+  box-shadow:var(--shadow);
+  padding:24px;
+  position:relative;
+  color:#e8e8ee;
+}
+.shop h2{ text-align:center; margin:0 0 18px 0; font-family:"Russo One"; font-size:42px; letter-spacing:1px; color:#8aff8f; text-shadow:0 2px 0 #0f0f0f; }
+.refresh-note{ text-align:center; font-weight:700; opacity:.85; margin-top:10px; }
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.card{ background:#33333b; border-radius:22px; border:4px solid #1a1a1f; padding:18px; display:flex; flex-direction:column; gap:8px; justify-content:space-between; min-height:160px; }
+.card h3{ margin:0; font-size:30px; font-family:"Russo One"; letter-spacing:1px; color:#d7d9dd; }
+.tag{ font-size:26px; font-family:"Bungee"; letter-spacing:1px; -webkit-text-stroke:2px #000; color:transparent; filter:drop-shadow(0 2px 0 rgba(0,0,0,.5)); }
+.t-common{ color:var(--c-common); }
+.t-rare{ color:var(--c-rare); }
+.t-epic{ color:var(--c-epic); }
+.t-legendary{ color:var(--c-legendary); }
+.t-legacy{
+  background: linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbowShift 4s linear infinite;
+}
+.t-mythic{
+  background: linear-gradient(90deg, #ffd700, #fff8b0, #ffcc00);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: goldShimmer 2.5s linear infinite;
+  font-weight:900;
+}
+@keyframes rainbowShift{ 0%{ background-position: 0% 50%; } 100%{ background-position: 100% 50%; } }
+@keyframes goldShimmer{ 0%{ background-position: 0% 50%; } 100%{ background-position: 200% 50%; } }
+
+.price{ font-weight:900; font-size:22px; }
+.buy{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer; background:linear-gradient(var(--ui-blue), var(--ui-blue-dark)); color:#fff; box-shadow:var(--shadow); }
+.buy:disabled{ filter:grayscale(1) brightness(.7); cursor:not-allowed; }
+.closeX{ position:absolute; right:12px; top:8px; font-size:28px; background:#222; color:#fff; border:none; border-radius:14px; width:44px; height:44px; cursor:pointer; }
+
+/* forge button */
+#forgeBtn{
+  margin-top:6px;
+  padding:10px 18px;
+  border-radius:14px;
+  background: linear-gradient(45deg, #ffd86a, #ffb200);
+  border:4px solid rgba(0,0,0,.35);
+  color:#000;
+  font-weight:900;
+  box-shadow: 0 8px 30px rgba(255,200,60,0.18);
+  cursor:pointer;
+  display:none;
+}
+
+/* responsive tweaks */
+@media (max-width:800px){
+  .stands{ gap:22px; }
+  .pedestal{ width:150px;}
+  .placed{ width:130px; bottom:90px; }
+  .icon-btn{ width:76px; height:76px; }
+  .slot{ min-width:100px; height:88px; }
+  .inventory{ padding:12px; gap:8px; border-radius:18px; }
+  .inventory-wrap{ bottom:12px; width: calc(100% - 30px); }
+}
+</style>
+</head>
+<body>
+<div class="game">
+  <div class="topbar">
+    <div class="cash" id="cash">$1,000,000</div>
+    <div class="eps" id="eps">+ $0 / sec</div>
+  </div>
+
+  <div class="left-rail">
+    <button class="icon-btn icon-shop" id="openShop" aria-label="Open shop" title="Shop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#e40000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1.8"></circle>
+        <circle cx="20" cy="21" r="1.8"></circle>
+        <path d="M1 2h3l3.6 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L23 6H6"></path>
+      </svg>
+    </button>
+    <button class="icon-btn icon-tools" id="toolsBtn" aria-label="Tools" title="Tools (toggle fast refresh)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22.7 19.3L13 9.6M16 3a5 5 0 0 0-6.2 6.2l-7.7 7.7a2.5 2.5 0 1 0 3.5 3.5l7.7-7.7A5 5 0 0 0 21 8"></path>
+      </svg>
+    </button>
+    <button class="icon-btn icon-music" id="musicBtn" aria-label="Toggle music" title="Toggle music">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></svg>
+    </button>
+  </div>
+
+  <div class="stands" id="stands"></div>
+
+  <!-- Forge button -->
+  <button id="forgeBtn" title="Forge 4 Legendaries into 1 Mythic">FORGE</button>
+
+  <!-- inventory is now fixed to bottom via CSS -->
+  <div class="inventory-wrap">
+    <div class="inventory" id="inventory"></div>
+  </div>
+</div>
+
+<div class="overlay" id="shopOverlay" aria-hidden="true">
+  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+    <button class="closeX" id="closeShop" aria-label="Close">✕</button>
+    <h2 id="shopTitle">Shop</h2>
+    <div class="grid" id="shopGrid"></div>
+    <div class="refresh-note" id="refreshNote">Shop refreshes every 1:30</div>
+  </div>
+</div>
+
+<!--
+  NOTE:
+  The JavaScript from your original file is compatible with these layout changes.
+  I intentionally left the script logic intact (no changes) — only the styles and layout were updated so the
+  inventory bar sits fixed at the bottom like your concept art, pedestals/placed items are raised above it,
+  and slots have larger sizes and a thick outlined container matching the visual.
+-->
+<script>
+/* ---------------------------
+   Paste your entire original JavaScript here (unchanged).
+   For brevity in this example I am keeping the JS unchanged from your provided code.
+   Make sure to copy the whole <script> contents from your original file into this spot.
+   --------------------------- */
+
+  /*****************
+   * GAME CONSTANTS
+   * (full JS from original file goes here)
+   *****************/
+
+  const MONEY_START = 1_000_000;
+  const STAND_COUNT = 4;
+  const SHOP_SLOTS = 4;
+
+  const RARITY = {
+    common: { label:'COMMON', color:'var(--c-common)', income: 50, price:[8_000, 40_000], prob: 0.60 },
+    rare: { label:'RARE', color:'var(--c-rare)', income: 200, price:[40_000, 150_000], prob: 0.25 },
+    epic: { label:'EPIC', color:'var(--c-epic)', income: 800, price:[150_000, 420_000], prob: 0.12 },
+    legendary:{ label:'LEGENDARY', color:'var(--c-legendary)', income: 3000, price:[420_000, 920_000], prob: 0.03 },
+    legacy:{ label:'LEGACY', color:'var(--c-legacy)', income: 8000, price:[900_000, 2_500_000], prob: 0.005 },
+    mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 }
+  };
+
+  const ITEM_NAMES = [
+    '24 King Crown','Donut','3D Printer','Space Nathan','Candy Blossom',
+    'Frog Sneakers','Snake','Harry Potter\'s Wand','Retro Gameboy','Crystal Cube',
+    'Swat Night','Flashforge','Blue Walls','Golden Spatula','Rainbow Headphones',
+    'Red Government','Vecna','Aqua Drone','Burning Bud','Espresso',
+    'Pixel Panda','Sabrina','Nether Portal','Alt','Natan',
+    'Apple Watch','Chicken Jockey','67','Nathan\'s Playstation','Stale Goldfish Bag',
+    'Duolingo','Dillon\'s PC','Apple','Icon of the Seas','North America',
+    'Sheldon','Old Fan','$$$','McFlex','Junior Lifeguards',
+    'Carl','Supreme','Nike Guy','Puma Socks','Blue',
+    'Barbie','','Golden Jacket','Lucas Movies','Movie Clip Reel','Leo\'s Ethernet','Ryan\'s Hat','Lebron','Pigs\'s Blanket','Lamborghini','Dean\'s PC','USA','China','Iron Man\'s Helmet','Hanging Tree'
+  ];
+  while (ITEM_NAMES.length < 50) ITEM_NAMES.push('Item #' + (ITEM_NAMES.length+1));
+
+  const ICON_PATHS = {
+    "24 King Crown": `<path d="M18 62h60v10H18z M20 62l10-22 18 20 18-20 10 22" fill="none" stroke-width="6" stroke-linejoin="round"/>`,
+    "Donut": `<circle cx="48" cy="48" r="26" fill="none" stroke-width="6"/><circle cx="48" cy="48" r="10" fill="none" stroke-width="6"/>`,
+    "3D Printer": `<rect x="18" y="18" width="60" height="48" rx="6" fill="none" stroke-width="6"/><path d="M26 26h44v16H26zM48 42v20" fill="none" stroke-width="6"/>`,
+    "Space Nathan": `<circle cx="48" cy="38" r="14" fill="none" stroke-width="6"/><rect x="34" y="52" width="28" height="22" rx="6" fill="none" stroke-width="6"/>`,
+    "Candy Blossom": `<path d="M48 20v24M48 44c-14 0-14 18 0 18s14-18 0-18z" fill="none" stroke-width="6"/><circle cx="48" cy="20" r="6" fill="none" stroke-width="6"/>`,
+    "Frog Sneakers": `<rect x="20" y="54" width="56" height="16" rx="8" fill="none" stroke-width="6"/><path d="M24 54c6-12 24-12 30 0" fill="none" stroke-width="6"/>`,
+    "Snake": `<path d="M20 58c10-18 26-18 36-8s20 10 20 2-8-12-16-12" fill="none" stroke-width="6" stroke-linecap="round"/>`,
+    "Harry Potter's Wand": `<path d="M20 74L76 18" fill="none" stroke-width="6"/><circle cx="76" cy="18" r="4" />`,
+    "Retro Gameboy": `<rect x="28" y="16" width="40" height="64" rx="8" fill="none" stroke-width="6"/><rect x="34" y="22" width="28" height="24" rx="4" fill="none" stroke-width="6"/><circle cx="46" cy="56" r="4"/><circle cx="54" cy="60" r="4"/>`,
+    "Crystal Cube": `<rect x="28" y="28" width="40" height="40" rx="6" fill="none" stroke-width="6"/><path d="M28 48h40M48 28v40" fill="none" stroke-width="6"/>`,
+    "Swat Night": `<path d="M22 60h52l8-20H30z" fill="none" stroke-width="6"/><circle cx="34" cy="64" r="4"/><circle cx="62" cy="64" r="4"/>`,
+    "Flashforge": `<path d="M24 48l24-24 24 24-24 24z" fill="none" stroke-width="6"/>`,
+    "Blue Walls": `<rect x="20" y="24" width="56" height="44" rx="4" fill="none" stroke-width="6"/><path d="M20 46h56" fill="none" stroke-width="6"/>`,
+    "Golden Spatula": `<path d="M48 22v44" fill="none" stroke-width="6"/><rect x="36" y="22" width="24" height="12" rx="2" fill="none" stroke-width="6"/>`,
+    "Rainbow Headphones": `<path d="M26 48a22 22 0 0 1 44 0" fill="none" stroke-width="6"/><rect x="18" y="44" width="14" height="24" rx="6" fill="none" stroke-width="6"/><rect x="64" y="44" width="14" height="24" rx="6" fill="none" stroke-width="6"/>`,
+    "Red Government": `<rect x="24" y="40" width="48" height="28" rx="4" fill="none" stroke-width="6"/><path d="M24 40l24-16 24 16" fill="none" stroke-width="6"/>`,
+    "Vecna": `<path d="M48 20c-10 8-10 16 0 24 10-8 10-16 0-24z" fill="none" stroke-width="6"/><circle cx="48" cy="58" r="10" fill="none" stroke-width="6"/>`,
+    "Aqua Drone": `<circle cx="48" cy="48" r="12" fill="none" stroke-width="6"/><path d="M20 48h16M60 48h16M48 20v16M48 60v16" fill="none" stroke-width="6"/>`,
+    "Burning Bud": `<path d="M48 24c-18 12-18 28 0 40 18-12 18-28 0-40z" fill="none" stroke-width="6"/><path d="M36 66h24" fill="none" stroke-width="6"/>`,
+    "Espresso": `<rect x="28" y="38" width="40" height="24" rx="4" fill="none" stroke-width="6"/><path d="M68 40h10v10a6 6 0 0 1-10 0z" fill="none" stroke-width="6"/>`,
+    "Pixel Panda": `<rect x="28" y="28" width="40" height="40" fill="none" stroke-width="6"/><rect x="36" y="36" width="8" height="8"/><rect x="52" y="36" width="8" height="8"/>`,
+    "Sabrina": `<circle cx="48" cy="38" r="12" fill="none" stroke-width="6"/><path d="M34 54h28l6 18H28z" fill="none" stroke-width="6"/>`,
+    "Nether Portal": `<rect x="28" y="18" width="40" height="60" rx="6" fill="none" stroke-width="6"/><rect x="36" y="26" width="24" height="44" rx="3" fill="none" stroke-width="6" />`,
+    "Alt": `<path d="M24 60l24-36 24 36" fill="none" stroke-width="6"/>`,
+    "Natan": `<path d="M24 64l24-24 24 24" fill="none" stroke-width="6"/><circle cx="48" cy="34" r="6" fill="none" stroke-width="6"/>`,
+    "Apple Watch": `<rect x="28" y="28" width="40" height="40" rx="10" fill="none" stroke-width="6"/><rect x="36" y="36" width="24" height="24" rx="6" fill="none" stroke-width="6"/>`,
+    "Chicken Jockey": `<circle cx="36" cy="44" r="10" fill="none" stroke-width="6"/><rect x="42" y="48" width="26" height="18" rx="6" fill="none" stroke-width="6"/>`,
+    "67": `<path d="M30 36h36M30 36v36M66 36v36M30 54h24" fill="none" stroke-width="6"/>`,
+    "Nathan's Playstation": `<rect x="24" y="56" width="48" height="10" rx="4" fill="none" stroke-width="6"/><path d="M28 56h40l-6-16H34z" fill="none" stroke-width="6"/>`,
+    "Stale Goldfish Bag": `<rect x="30" y="24" width="36" height="48" rx="6" fill="none" stroke-width="6"/><path d="M30 32h36" fill="none" stroke-width="6"/>`,
+    "Duolingo": `<path d="M30 44l18-12 18 12-18 12z" fill="none" stroke-width="6"/><circle cx="40" cy="44" r="3"/><circle cx="56" cy="44" r="3"/>`,
+    "Dillon's PC": `<rect x="24" y="28" width="48" height="30" rx="6" fill="none" stroke-width="6"/><rect x="34" y="60" width="28" height="6" rx="3" fill="none" stroke-width="6"/>`,
+    "Apple": `<circle cx="48" cy="44" r="16" fill="none" stroke-width="6"/><path d="M48 26c4 0 6 2 8 4" fill="none" stroke-width="6"/>`,
+    "Icon of the Seas": `<path d="M24 58h48l8-10H32z" fill="none" stroke-width="6"/><rect x="36" y="42" width="24" height="8" rx="2" fill="none" stroke-width="6"/>`,
+    "North America": `<path d="M28 40l10-8 12 6 10-8 8 10-8 10-12 4-10-6z" fill="none" stroke-width="6"/>`,
+    "Sheldon": `<circle cx="48" cy="36" r="10" fill="none" stroke-width="6"/><rect x="36" y="48" width="24" height="20" rx="8" fill="none" stroke-width="6"/>`,
+    "Old Fan": `<circle cx="48" cy="48" r="18" fill="none" stroke-width="6"/><path d="M48 30v36M30 48h36" fill="none" stroke-width="6"/>`,
+    "$$$": `<path d="M48 24v48M34 38c0-8 28-8 28 0s-28 8-28 16 28 8 28 0" fill="none" stroke-width="6"/>`,
+    "McFlex": `<rect x="24" y="40" width="48" height="24" rx="6" fill="none" stroke-width="6"/><path d="M28 40c8-12 32-12 40 0" fill="none" stroke-width="6"/>`,
+    "Junior Lifeguards": `<circle cx="48" cy="48" r="18" fill="none" stroke-width="6"/><path d="M48 30v36M30 48h36" fill="none" stroke-width="6"/>`,
+    "Carl": `<path d="M36 32h24v12H36zM34 50h28v14H34z" fill="none" stroke-width="6"/>`,
+    "Supreme": `<rect x="22" y="42" width="52" height="14" rx="7" fill="none" stroke-width="6"/>`,
+    "Nike Guy": `<path d="M24 62c24-4 40-14 48-24-6 14-22 24-48 24z" fill="none" stroke-width="6" stroke-linecap="round"/>`,
+    "Puma Socks": `<rect x="28" y="46" width="18" height="20" rx="4" fill="none" stroke-width="6"/><path d="M46 64h22v-14" fill="none" stroke-width="6"/>`,
+    "Blue": `<circle cx="48" cy="48" r="20" fill="none" stroke-width="6"/>`,
+    "Barbie": `<path d="M30 62c6-12 24-12 36 0" fill="none" stroke-width="6"/><circle cx="48" cy="40" r="10" fill="none" stroke-width="6"/>`,
+    "": `<path d="M48 26l18 36H30z" fill="none" stroke-width="6"/>`,
+    "Golden Jacket": `<rect x="26" y="28" width="44" height="36" rx="8" fill="none" stroke-width="6"/><path d="M26 44h44" fill="none" stroke-width="6"/>`,
+    "Lucas Movies": `<rect x="26" y="34" width="44" height="28" rx="4" fill="none" stroke-width="6"/><rect x="24" y="38" width="8" height="20"/><rect x="64" y="38" width="8" height="20"/>`,
+    "Movie Clip Reel": `<circle cx="36" cy="48" r="12" fill="none" stroke-width="6"/><circle cx="60" cy="48" r="12" fill="none" stroke-width="6"/><path d="M24 48h12M60 48h12" fill="none" stroke-width="6"/>`,
+    "Leo's Ethernet": `<rect x="24" y="52" width="48" height="10" rx="3" fill="none" stroke-width="6"/><path d="M30 52V42h36v10" fill="none" stroke-width="6"/>`,
+    "Ryan's Hat": `<path d="M24 54c8-18 40-18 48 0" fill="none" stroke-width="6"/><rect x="24" y="54" width="48" height="10" rx="5" fill="none" stroke-width="6"/>`,
+    "Lebron": `<circle cx="48" cy="40" r="10" fill="none" stroke-width="6"/><rect x="34" y="52" width="28" height="20" rx="6" fill="none" stroke-width="6"/>`,
+    "Pigs's Blanket": `<rect x="26" y="40" width="44" height="22" rx="6" fill="none" stroke-width="6"/><circle cx="34" cy="52" r="4"/>`,
+    "Lamborghini": `<path d="M22 56h52l8-12H30z" fill="none" stroke-width="6"/><circle cx="34" cy="62" r="4"/><circle cx="62" cy="62" r="4"/>`,
+    "Dean's PC": `<rect x="24" y="28" width="48" height="30" rx="6" fill="none" stroke-width="6"/><rect x="34" y="60" width="28" height="6" rx="3" fill="none" stroke-width="6"/>`,
+    "USA": `<path d="M26 42h44M26 50h44M26 58h44" fill="none" stroke-width="6"/><rect x="26" y="34" width="16" height="16" fill="none" stroke-width="6"/>`,
+    "China": `<rect x="28" y="34" width="40" height="28" fill="none" stroke-width="6"/><path d="M32 40l4-2 2 4" fill="none" stroke-width="6"/>`,
+    "Iron Man's Helmet": `<path d="M32 24h32l8 16v20l-8 12H32L24 60V40z" fill="none" stroke-width="6"/>`,
+    "Hanging Tree": `<path d="M30 66V26M30 32h28M58 32v22" fill="none" stroke-width="6"/><path d="M30 26c8-4 16-4 24 0" fill="none" stroke-width="6"/>`
+  };
+
+  function getItemSvg(name, idx, rarity){
+    const size = 96;
+    const accentByRarity = { common:'#8ee78e', rare:'#6ec8ff', epic:'#c28bff', legendary:'#ffd86a', legacy:'#ffffff', mythic:'#ffd86a' };
+    const accent = accentByRarity[rarity] || '#cfd3d7';
+    const hue = (idx*53 + (rarity==='legendary'?40:rarity==='epic'?20:0)) % 360;
+    const bg = `hsl(${hue} 65% 24%)`;
+    const body = ICON_PATHS.hasOwnProperty(name) ? ICON_PATHS[name] : `<circle cx="48" cy="48" r="20" fill="none" stroke-width="6"/>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 96 96">
+      <defs>
+        <filter id="d${idx}" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
+        </filter>
+      </defs>
+      <rect x="4" y="4" width="88" height="88" rx="14" fill="${bg}" />
+      <g transform="translate(0,0)" filter="url(#d${idx})" stroke="${accent}">
+        ${body}
+      </g>
+    </svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  function escapeXml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function displayName(n){ return (n && n.trim()) ? n : 'Mystery'; }
+
+  const LS_KEY = 'flex-save-v1';
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+  const state = {
+    money: MONEY_START,
+    eps: 0,
+    inventory: [],
+    stands: [null,null,null,null],
+    placed: {},
+    selectedItemUid: null,
+    fastMode: false,
+    shop: { items:[], nextRefreshAt:0 }
+  };
+
+  function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+  function save() {
+    const payload = {
+      money: state.money,
+      eps: state.eps,
+      inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx})),
+      stands: state.stands,
+      shop: state.shop,
+      fastMode: state.fastMode,
+      placed: {}
+    };
+    for(const k in state.placed){
+      const it = state.placed[k];
+      if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx };
+    }
+    const json = JSON.stringify(payload);
+    localStorage.setItem("flexSave", json);
+  }
+  function load() {
+    const json = localStorage.getItem("flexSave");
+    if (!json) return;
+    try{
+      const dat = JSON.parse(json);
+      state.money = dat.money ?? state.money;
+      state.eps = dat.eps ?? state.eps;
+      state.inventory = (dat.inventory||[]).map(it=>({
+        ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0
+      }));
+      state.stands = dat.stands ?? state.stands;
+      state.shop = dat.shop ?? state.shop;
+      state.fastMode = dat.fastMode ?? state.fastMode;
+      state.placed = {};
+      if(dat.placed){
+        for(const k in dat.placed){
+          const it = dat.placed[k];
+          state.placed[k] = { ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0 };
+        }
+      }
+    }catch(e){
+      console.warn("load failed", e);
+    }
+  }
+
+  function fmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
+  function updateTop(){ $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money))); $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec'; }
+  function recalcEPS(){
+    let total = 0;
+    state.stands.forEach(uid => {
+      if(!uid) return;
+      const it = state.placed[uid] || state.inventory.find(x=>x.uid===uid);
+      if(!it) return;
+      total += RARITY[it.rarity].income;
+    });
+    state.eps = total;
+    updateTop();
+    save();
+  }
+  let lastTick = performance.now();
+  function tick(now){
+    const dt = (now - lastTick)/1000;
+    lastTick = now;
+    if(state.eps>0){
+      state.money += state.eps * dt;
+      updateTop();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function rarityBadge(r){ return `<span class="rar t-${r}">${RARITY[r].label}</span>`; }
+  function renderInventory(){
+    const wrap = $('#inventory');
+    wrap.innerHTML='';
+    state.inventory.forEach(it=>{
+      const el = document.createElement('div');
+      el.className = 'slot' + (state.selectedItemUid===it.uid?' selected':'');
+      el.innerHTML = `<img src='${it.svg}' alt='${escapeXml(displayName(it.name))}'/><div style="position:absolute;top:6px;left:8px;font-size:12px;color:#fff;font-weight:700;text-shadow:0 1px 0 #000">${escapeXml(displayName(it.name))}</div>${rarityBadge(it.rarity)}`;
+      el.style.setProperty('--rcolor', RARITY[it.rarity].color);
+      const badge = el.querySelector('.rar');
+      badge.style.border = '2px solid rgba(255,255,255,.25)';
+      badge.style.color = '#111';
+      if(it.rarity === 'legacy'){
+        badge.style.color = 'transparent';
+        badge.style.background = 'linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c)';
+        badge.style.backgroundSize = '400% 100%';
+        badge.style.webkitBackgroundClip = 'text';
+        badge.style.backgroundClip = 'text';
+        badge.style.animation = 'rainbowShift 4s linear infinite';
+      }
+      if(it.rarity === 'mythic'){
+        badge.classList.add('t-mythic');
+      }
+      el.addEventListener('click',()=>{
+        state.selectedItemUid = (state.selectedItemUid===it.uid?null:it.uid);
+        renderInventory();
+      });
+      wrap.appendChild(el);
+    });
+  }
+
+  function renderStands(){
+    const area = $('#stands');
+    area.innerHTML='';
+    for(let i=0;i<STAND_COUNT;i++){
+      const box = document.createElement('div');
+      box.className='stand';
+      const placedUid = state.stands[i];
+      const ped = document.createElement('div');
+      ped.className='pedestal';
+      box.appendChild(ped);
+
+      if(placedUid){
+        const it = state.placed[placedUid] || state.inventory.find(x=>x.uid===placedUid);
+        if(it){
+          const p = document.createElement('div');
+          p.className='placed';
+          p.innerHTML = `<img src='${it.svg}' style='width:64px;height:64px;border-radius:8px;margin-right:8px;' alt='${escapeXml(displayName(it.name))}'/><div style="text-align:left"><strong>${escapeXml(displayName(it.name))}</strong><br><small>${RARITY[it.rarity].label} • +$${fmt(RARITY[it.rarity].income)}/s</small></div>`;
+          p.style.border = '4px solid rgba(0,0,0,.45)';
+          p.style.color = '#fff';
+          if(it.rarity === 'mythic'){
+            p.classList.add('glow');
+          }
+          box.appendChild(p);
+        }
+      }
+
+      box.addEventListener('click',()=>{
+        if(!state.selectedItemUid){
+          if(state.stands[i]){
+            const oldUid = state.stands[i];
+            const oldItem = state.placed[oldUid] || null;
+            if(oldItem){
+              state.inventory.push(oldItem);
+              delete state.placed[oldUid];
+            }
+            state.stands[i] = null;
+            recalcEPS();
+            renderInventory();
+            renderStands();
+            save();
+          }
+          return;
+        }
+
+        if(state.stands[i]){
+          const oldUid = state.stands[i];
+          const oldItem = state.placed[oldUid] || null;
+          if(oldItem){
+            state.inventory.push(oldItem);
+            delete state.placed[oldUid];
+          }
+          state.stands[i] = null;
+        }
+
+        const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
+        if(!newItem) return;
+
+        state.placed[newItem.uid] = newItem;
+        state.stands[i] = newItem.uid;
+
+        state.inventory = state.inventory.filter(it => it.uid !== newItem.uid);
+        state.selectedItemUid = null;
+
+        recalcEPS();
+        renderInventory();
+        renderStands();
+
+        const placed = box.querySelector('.placed');
+        if(placed){
+          placed.classList.add('glow');
+          setTimeout(()=>placed.classList.remove('glow'),700);
+        }
+        save();
+      });
+
+      area.appendChild(box);
+    }
+    checkForge();
+  }
+
+  function weightedPick(){
+  const r = Math.random();
+  if(r < 0.005) return 'legacy';            // 0.5% chance (new)
+  if(r < 0.005 + 0.01) return 'legendary';  // 1% chance
+  if(r < 0.005 + 0.01 + 0.08) return 'epic';     // 8% chance
+  if(r < 0.005 + 0.01 + 0.08 + 0.10) return 'rare'; // 10% chance
+  return 'common';                           // remaining 80.5%
+}
+  function priceFor(rarity){ const [a,b] = RARITY[rarity].price; return Math.floor(a + Math.random()*(b-a)); }
+  function makeShopItems(){
+    const items = [];
+    const pool = [...ITEM_NAMES];
+    for(let i=0;i<SHOP_SLOTS;i++){
+      const idx = Math.floor(Math.random()*pool.length);
+      const name = pool.splice(idx,1)[0];
+      const rarity = weightedPick();
+      const baseIdx = idx;
+      items.push({ uid: uid(), name, rarity, price: priceFor(rarity), svg: getItemSvg(name, baseIdx, rarity), baseIdx, purchased:false });
+    }
+    return items;
+  }
+  function ensureShop() {
+  const now = Date.now();
+  const REFRESH_INTERVAL = 90_000; // 1:30
+
+  // Fix old saves or weird drift
+  if (!state.shop.nextRefreshAt || state.shop.nextRefreshAt - now > REFRESH_INTERVAL) {
+    state.shop.nextRefreshAt = now + REFRESH_INTERVAL;
+  }
+
+  // Refresh if needed
+  if (now >= state.shop.nextRefreshAt || !state.shop.items?.length) {
+    state.shop.items = makeShopItems();
+    state.shop.nextRefreshAt = now + REFRESH_INTERVAL;
+    save();
+  }
+
+  renderShop();
+}
+  function msToClock(ms){ ms = Math.max(0, ms); const s = Math.floor(ms/1000); const m = Math.floor(s/60); const sec = s%60; return `${m}:${String(sec).padStart(2,'0')}`; }
+  let refreshTimer;
+  function renderShop(){
+    const grid = $('#shopGrid');
+    grid.innerHTML='';
+    state.shop.items.forEach((it, i)=>{
+      const card = document.createElement('div');
+      card.className='card';
+      card.innerHTML = `<div style='display:flex;gap:12px;align-items:center'>
+        <img src='${it.svg}' style='width:72px;height:72px;border-radius:10px;flex:0 0 72px' alt='${escapeXml(displayName(it.name))}' />
+        <div>
+          <h3>${escapeXml(displayName(it.name))}</h3>
+          <div class="tag t-${it.rarity}">${RARITY[it.rarity].label}</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div class="price">$${fmt(it.price)}</div>
+        <button class="buy">${it.purchased ? "Purchased!" : "Purchase"}</button>
+      </div>`;
+      const btn = card.querySelector('.buy');
+
+      function setBtn(){
+        if(it.purchased){
+          btn.disabled = true;
+          btn.textContent = 'Purchased!';
+          btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+        } else {
+          btn.disabled = state.money < it.price;
+          btn.textContent = 'Purchase';
+          btn.style.background = '';
+        }
+      }
+      setBtn();
+
+      btn.addEventListener('click',()=>{
+        if(it.purchased) return;
+        if(state.money < it.price) return;
+        state.money -= it.price;
+        const inv = { uid: uid(), name: it.name, rarity: it.rarity, price: it.price, svg: it.svg, baseIdx: it.baseIdx };
+        state.inventory.push(inv);
+        it.purchased = true;
+        updateTop();
+        renderInventory();
+        save();
+        setBtn();
+      });
+      grid.appendChild(card);
+    });
+    if(refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(()=>{
+      const left = state.shop.nextRefreshAt - Date.now();
+      $('#refreshNote').textContent = `Shop refreshes every ${msToClock(left)}`;
+      if(left<=0){
+        ensureShop();
+      }
+    }, 200);
+  }
+
+  let audioCtx, masterGain, musicOn=false;
+  function initMusic(){ if(audioCtx) return; audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = audioCtx.createGain(); masterGain.gain.value = 0.16; masterGain.connect(audioCtx.destination); const tempo = 90; const beat = 60/tempo; const pattern = [0,3,7,10,7,3]; const baseFreq = 220; function scheduleLoop(startTime){ for(let i=0;i<pattern.length;i++){ const t = startTime + i*beat*0.5; const freq = baseFreq * Math.pow(2, pattern[i]/12); const osc = audioCtx.createOscillator(); const g = audioCtx.createGain(); osc.type = 'square'; osc.frequency.value = freq; g.gain.value = 0; osc.connect(g); g.connect(masterGain); osc.start(t); g.gain.setValueAtTime(0.0, t); g.gain.linearRampToValueAtTime(0.08, t + 0.02); g.gain.linearRampToValueAtTime(0.0, t + beat*0.45); osc.stop(t + beat*0.5); } const pad = audioCtx.createOscillator(); const pg = audioCtx.createGain(); pad.type='sine'; pad.frequency.value = baseFreq*0.5; pg.gain.value=0.0; pad.connect(pg); pg.connect(masterGain); pad.start(startTime); pad.stop(startTime + pattern.length*beat*0.5); pg.gain.setValueAtTime(0.0, startTime); pg.gain.linearRampToValueAtTime(0.05, startTime + 0.1); pg.gain.linearRampToValueAtTime(0.0, startTime + pattern.length*beat*0.5); } function loop(){ const now = audioCtx.currentTime + 0.05; scheduleLoop(now); setTimeout(loop, (pattern.length*beat*0.5)*1000 - 40); } loop(); }
+  function toggleMusic(){ if(!audioCtx){ initMusic(); } if(audioCtx.state === 'suspended') audioCtx.resume(); musicOn = !musicOn; masterGain.gain.value = musicOn ? 0.16 : 0.0; $('#musicBtn').style.filter = musicOn ? 'saturate(1.2)' : 'grayscale(1)'; }
+  $('#musicBtn').addEventListener('click', ()=>{ toggleMusic(); });
+
+  function checkForge(){
+    const allLegendary = state.stands.every(uid=>{
+      if(!uid) return false;
+      const it = state.placed[uid] || state.inventory.find(x=>x.uid===uid);
+      return it && it.rarity === 'legendary';
+    });
+    const btn = $('#forgeBtn');
+    if(!btn) return;
+    btn.style.display = allLegendary ? 'inline-block' : 'none';
+  }
+  function createMythicItem(){
+    const idx = Math.floor(Math.random()*ITEM_NAMES.length);
+    const name = ITEM_NAMES[idx] || ('Mythic Item');
+    const baseIdx = idx;
+    return { uid: uid(), name, rarity: 'mythic', price: 0, svg: getItemSvg(name, baseIdx, 'mythic'), baseIdx };
+  }
+  $('#forgeBtn').addEventListener('click', ()=>{
+    if(!state.stands.every(uid => uid && (state.placed[uid]||state.inventory.find(x=>x.uid===uid)) && ((state.placed[uid]||state.inventory.find(x=>x.uid===uid)).rarity === 'legendary'))){
+      return;
+    }
+    state.stands.forEach(uid => {
+      if(uid && state.placed[uid]) delete state.placed[uid];
+    });
+    state.stands = Array(STAND_COUNT).fill(null);
+    const mythic = createMythicItem();
+    state.placed[mythic.uid] = mythic;
+    state.stands[0] = mythic.uid;
+    recalcEPS();
+    renderInventory();
+    renderStands();
+    save();
+  });
+
+  $('#openShop').addEventListener('click',()=>{
+    $('#shopOverlay').classList.add('show');
+    ensureShop();
+    $('#shopOverlay').setAttribute('aria-hidden','false');
+  });
+  $('#closeShop').addEventListener('click',()=>{
+    $('#shopOverlay').classList.remove('show');
+    $('#shopOverlay').setAttribute('aria-hidden','true');
+  });
+  $('#toolsBtn').addEventListener('click',()=>{
+    state.fastMode = !state.fastMode;
+    ensureShop();
+    const msg = state.fastMode? 'Fast refresh: 15s' : 'Normal refresh: 5 min';
+    $('#toolsBtn').title = 'Tools ('+msg+')';
+    save();
+  });
+
+
+  function boot(){
+    load();
+    if(!state.money) state.money = MONEY_START;
+    if(!state.stands || state.stands.length!==STAND_COUNT){
+      state.stands = Array(STAND_COUNT).fill(null);
+    }
+    if(!state.placed) state.placed = {};
+    updateTop();
+    renderInventory();
+    renderStands();
+    recalcEPS();
+    ensureShop();
+    requestAnimationFrame(tick);
+  }
+  boot();
+  window.addEventListener("beforeunload", save);
+</script>
+</body>
+</html>
