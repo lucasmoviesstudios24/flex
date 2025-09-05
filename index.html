@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -343,7 +344,16 @@ body::after{
   inventory bar sits fixed at the bottom like your concept art, pedestals/placed items are raised above it,
   and slots have larger sizes and a thick outlined container matching the visual.
 -->
+<button id="resetGame" style="margin-left:20px;background:#e74c3c;color:#fff;padding:8px 16px;border-radius:12px;border:none;font-weight:bold;cursor:pointer;">Reset Game</button>
 <script>
+document.getElementById("resetGame").addEventListener("click", function() {
+  if (confirm("Are you sure you want to reset your game? This cannot be undone.")) {
+    localStorage.removeItem("flexSave");
+    // Set a flag so boot knows NOT to load from localStorage
+    sessionStorage.setItem("doGameReset", "1");
+    location.reload();
+  }
+});
 /* ---------------------------
    Paste your entire original JavaScript here (unchanged).
    For brevity in this example I am keeping the JS unchanged from your provided code.
@@ -485,48 +495,66 @@ body::after{
   };
 
   function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
-  function save() {
-    const payload = {
-      money: state.money,
-      eps: state.eps,
-      inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx})),
-      stands: state.stands,
-      shop: state.shop,
-      fastMode: state.fastMode,
-      placed: {}
-    };
-    for(const k in state.placed){
-      const it = state.placed[k];
-      if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx };
-    }
-    const json = JSON.stringify(payload);
-    localStorage.setItem("flexSave", json);
-  }
-  function load() {
-    const json = localStorage.getItem("flexSave");
-    if (!json) return;
-    try{
-      const dat = JSON.parse(json);
-      state.money = dat.money ?? state.money;
-      state.eps = dat.eps ?? state.eps;
-      state.inventory = (dat.inventory||[]).map(it=>({
-        ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0
-      }));
-      state.stands = dat.stands ?? state.stands;
-      state.shop = dat.shop ?? state.shop;
-      state.fastMode = dat.fastMode ?? state.fastMode;
-      state.placed = {};
-      if(dat.placed){
-        for(const k in dat.placed){
-          const it = dat.placed[k];
-          state.placed[k] = { ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0 };
-        }
-      }
-    }catch(e){
-      console.warn("load failed", e);
-    }
-  }
+ const SERVER_BASE = 'https://flextesting3.onrender.com/api/game'; // use your actual Render.com URL
 
+// Identify user (for demo, use a prompt and store in localStorage)
+let USER_ID = localStorage.getItem('flex-userid');
+if (!USER_ID) {
+  USER_ID = prompt('Enter your username (or type "guest"):');
+  localStorage.setItem('flex-userid', USER_ID);
+}
+
+async function save() {
+  const payload = {
+    money: state.money,
+    eps: state.eps,
+    inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx})),
+    stands: state.stands,
+    shop: state.shop,
+    fastMode: state.fastMode,
+    placed: {}
+  };
+  for(const k in state.placed){
+    const it = state.placed[k];
+    if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx };
+  }
+  try {
+    await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent(USER_ID)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    console.error('Failed to save game:', e);
+  }
+}
+
+async function load() {
+  try {
+    const res = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent(USER_ID)}`);
+    if (!res.ok) return;
+    const dat = await res.json();
+    if (!dat) return;
+
+    state.money = dat.money ?? state.money;
+    state.eps = dat.eps ?? state.eps;
+    state.inventory = (dat.inventory||[]).map(it=>({
+      ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0
+    }));
+    state.stands = dat.stands ?? state.stands;
+    state.shop = dat.shop ?? state.shop;
+    state.fastMode = dat.fastMode ?? state.fastMode;
+    state.placed = {};
+    if(dat.placed){
+      for(const k in dat.placed){
+        const it = dat.placed[k];
+        state.placed[k] = { ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0 };
+      }
+    }
+  } catch (e) {
+    console.warn("load failed", e);
+  }
+}
   function fmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
   function updateTop(){ $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money))); $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec'; }
   function recalcEPS(){
@@ -815,22 +843,22 @@ body::after{
     save();
   });
 
-
-  function boot(){
-    load();
-    if(!state.money) state.money = MONEY_START;
-    if(!state.stands || state.stands.length!==STAND_COUNT){
-      state.stands = Array(STAND_COUNT).fill(null);
-    }
-    if(!state.placed) state.placed = {};
-    updateTop();
-    renderInventory();
-    renderStands();
-    recalcEPS();
-    ensureShop();
-    requestAnimationFrame(tick);
+async function boot(){
+  await load();
+  if(!state.money) state.money = MONEY_START;
+  if(!state.stands || state.stands.length!==STAND_COUNT){
+    state.stands = Array(STAND_COUNT).fill(null);
   }
-  boot();
+  if(!state.placed) state.placed = {};
+  updateTop();
+  renderInventory();
+  renderStands();
+  recalcEPS();
+  ensureShop();
+  requestAnimationFrame(tick);
+}
+boot();
+window.addEventListener("beforeunload", save);
   window.addEventListener("beforeunload", save);
 </script>
 </body>
