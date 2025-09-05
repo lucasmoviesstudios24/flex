@@ -1,5 +1,5 @@
 {
-  "name": "flextesting2-server",
+  "name": "flex-server",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
