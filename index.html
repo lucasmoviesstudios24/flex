@@ -51,6 +51,24 @@ body::after{
   background-size: 8px 8px;
   opacity:.45;
 }
+/* 🔴🔵 Red/Blue override */
+body.redblue::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(to bottom, #ff4b5c 0%, #4b6aff 100%) !important;
+}
+
+body.redblue::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: none !important;
+}
+
+
 
 /* game container */
 .game{
@@ -290,6 +308,27 @@ body::after{
   .inventory{ padding:12px; gap:8px; border-radius:18px; }
   .inventory-wrap{ bottom:12px; width: calc(100% - 30px); }
 }
+
+/* 🔴🔵 Force red/blue gradient when enabled */
+body.redblue::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(to bottom, #ff4b5c 0%, #4b6aff 100%) !important;
+  background-image: linear-gradient(to bottom, #ff4b5c 0%, #4b6aff 100%) !important;
+}
+
+body.redblue::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: none !important;
+}
+
+
+
 </style>
 </head>
 <body>
@@ -336,6 +375,42 @@ body::after{
     <div class="refresh-note" id="refreshNote">Shop refreshes every 1:30</div>
   </div>
 </div>
+
+
+<!-- Gear Overlay -->
+<div class="overlay" id="gearOverlay" aria-hidden="true">
+  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="gearTitle">
+    <button class="closeX" id="closeGear" aria-label="Close">✕</button>
+    <h2 id="gearTitle" style="color:#ff5050;text-align:center;">Gear</h2>
+    <div class="grid">
+
+      <!-- Multiplier Tool -->
+      <div class="card" id="multiplierCard">
+        <h3>Multiplier x2</h3>
+        <div style="font-size:18px; opacity:0.85;">Doubles EPS for 20 minutes.<br>Max 4x.<br>Cooldown: 30 min.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="price">$3,000,000</div>
+          <button class="buy" id="buyMultiplier">Purchase</button>
+        </div>
+        <div id="multiplierStatus" style="margin-top:6px;font-weight:700;color:#6dff79;"></div>
+      </div>
+
+      <!-- Background Tool -->
+      <div class="card" id="backgroundCard">
+        <h3>Background Red/Blue</h3>
+        <div style="font-size:18px; opacity:0.85;">Switch gradient to red/blue.<br>One-time purchase.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="price">$4,000,000</div>
+          <button class="buy" id="buyBackground">Purchase</button>
+        </div>
+        <button id="toggleBackground" class="buy" style="display:none;background:linear-gradient(#ff7a7a,#6aaaff);">Disable</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
 <!--
   NOTE:
@@ -512,6 +587,12 @@ async function save() {
     stands: state.stands,
     shop: state.shop,
     fastMode: state.fastMode,
+    multiplierLevel,
+    multiplierActiveUntil,
+    multiplierCooldownUntil,
+    backgroundPurchased,
+    backgroundEnabled,
+
     placed: {}
   };
   for(const k in state.placed){
@@ -545,6 +626,21 @@ async function load() {
     state.shop = dat.shop ?? state.shop;
     state.fastMode = dat.fastMode ?? state.fastMode;
     state.placed = {};
+    // NEW Gear persistence
+    multiplierLevel = dat.multiplierLevel ?? 1;
+    multiplierActiveUntil = dat.multiplierActiveUntil ?? 0;
+    multiplierCooldownUntil = dat.multiplierCooldownUntil ?? 0;
+    backgroundPurchased = dat.backgroundPurchased ?? false;
+    backgroundEnabled = dat.backgroundEnabled ?? false;
+
+    if (backgroundPurchased) {
+       document.getElementById("buyBackground").style.display = "none";
+      document.getElementById("toggleBackground").style.display = "inline-block";
+    }
+    if (backgroundEnabled) {
+      document.body.classList.add("redblue");
+    }
+
     if(dat.placed){
       for(const k in dat.placed){
         const it = dat.placed[k];
@@ -843,6 +939,169 @@ async function load() {
     save();
   });
 
+/* -------------------
+   GEAR FEATURES
+------------------- */
+const MULTIPLIER_COST = 3_000_000;
+const MULTIPLIER_DURATION = 20 * 60 * 1000; // 20 minutes
+const MULTIPLIER_COOLDOWN = 30 * 60 * 1000; // 30 minutes
+const BACKGROUND_COST = 4_000_000;
+
+let multiplierActiveUntil = 0;
+let multiplierCooldownUntil = 0;
+let multiplierLevel = 1; // 1x, 2x, 4x max
+
+function applyMultiplier(eps) {
+  return eps * multiplierLevel;
+}
+
+let multiplierTimer;
+
+function updateMultiplierStatus() {
+  const status = document.getElementById("multiplierStatus");
+  const btn = document.getElementById("buyMultiplier");
+  if (!status || !btn) return;
+
+  const now = Date.now();
+  if (multiplierTimer) clearInterval(multiplierTimer);
+
+  function refresh() {
+    const now = Date.now();
+
+    // Case: Active
+    if (multiplierLevel > 1 && now < multiplierActiveUntil) {
+      const left = Math.ceil((multiplierActiveUntil - now) / 1000);
+      const min = Math.floor(left / 60);
+      const sec = left % 60;
+      status.textContent = `Active: ${multiplierLevel}x (${min}:${String(sec).padStart(2,"0")} left)`;
+
+      btn.disabled = true;
+      btn.textContent = "Active";
+      btn.style.background = "linear-gradient(#2ecc71,#1da85b)";
+
+    // Case: Cooldown
+    } else if (now < multiplierCooldownUntil) {
+      const left = Math.ceil((multiplierCooldownUntil - now) / 1000);
+      const min = Math.floor(left / 60);
+      const sec = left % 60;
+      status.textContent = `Cooldown: ${min}:${String(sec).padStart(2,"0")}`;
+
+      btn.disabled = true;
+      btn.textContent = "Cooldown";
+      btn.style.background = "";
+
+    // Case: Maxed
+    } else if (multiplierLevel >= 4) {
+      status.textContent = "Multiplier Maxed (4x)";
+      btn.disabled = true;
+      btn.textContent = "Maxed";
+      btn.style.background = "";
+
+    // Case: Available
+    } else {
+      status.textContent = "";
+      btn.disabled = state.money < MULTIPLIER_COST;
+      btn.textContent = "Purchase";
+      btn.style.background = "";
+    }
+  }
+
+  refresh();
+  multiplierTimer = setInterval(refresh, 1000);
+}
+
+
+
+function buyMultiplier() {
+  const now = Date.now();
+  if (state.money < MULTIPLIER_COST) return;
+  if (now < multiplierCooldownUntil) return;
+  if (multiplierLevel >= 4) return;
+
+  state.money -= MULTIPLIER_COST;
+  multiplierLevel = multiplierLevel === 1 ? 2 : 4;
+  multiplierActiveUntil = now + MULTIPLIER_DURATION;
+  multiplierCooldownUntil = now + MULTIPLIER_COOLDOWN;
+
+  updateTop();
+  updateMultiplierStatus();
+  save();
+}
+
+// Background feature
+let backgroundPurchased = false;
+let backgroundEnabled = false;
+
+function buyBackground() {
+  if (backgroundPurchased) return;
+  if (state.money < BACKGROUND_COST) return;
+  state.money -= BACKGROUND_COST;
+  backgroundPurchased = true;
+  backgroundEnabled = true;
+  document.body.classList.add("redblue");
+  updateTop();
+  document.getElementById("buyBackground").style.display = "none";
+  document.getElementById("toggleBackground").style.display = "inline-block";
+  save();
+}
+
+function toggleBackground() {
+  if (!backgroundPurchased) return;
+  backgroundEnabled = !backgroundEnabled;
+
+  if (backgroundEnabled) {
+    document.body.classList.add("redblue");
+    document.getElementById("toggleBackground").textContent = "Disable";
+  } else {
+    document.body.classList.remove("redblue");
+    document.getElementById("toggleBackground").textContent = "Enable";
+  }
+
+  save();
+}
+
+
+// Open/close Gear overlay
+document.getElementById("toolsBtn").addEventListener("click", () => {
+  document.getElementById("gearOverlay").classList.add("show");
+  document.getElementById("gearOverlay").setAttribute("aria-hidden", "false");
+  updateMultiplierStatus();
+});
+document.getElementById("closeGear").addEventListener("click", () => {
+  document.getElementById("gearOverlay").classList.remove("show");
+  document.getElementById("gearOverlay").setAttribute("aria-hidden", "true");
+});
+
+// Gear button actions
+document.getElementById("buyMultiplier").addEventListener("click", buyMultiplier);
+document.getElementById("buyBackground").addEventListener("click", buyBackground);
+document.getElementById("toggleBackground").addEventListener("click", toggleBackground);
+
+// Hook multiplier into EPS calculation
+// --- Multiplier-aware EPS calculation ---
+let baseEPS = 0;
+
+const _recalcEPS = recalcEPS;
+recalcEPS = function() {
+  // Recalculate base EPS without multiplier
+  let total = 0;
+  state.stands.forEach(uid => {
+    if (!uid) return;
+    const it = state.placed[uid] || state.inventory.find(x => x.uid === uid);
+    if (!it) return;
+    total += RARITY[it.rarity].income;
+  });
+  baseEPS = total;
+
+  // Apply multiplier (2x or 4x)
+  state.eps = applyMultiplier(baseEPS);
+
+  updateTop();
+  save();
+};
+
+
+
 async function boot(){
   await load();
   if(!state.money) state.money = MONEY_START;
@@ -855,6 +1114,8 @@ async function boot(){
   renderStands();
   recalcEPS();
   ensureShop();
+  updateMultiplierStatus();
+
   requestAnimationFrame(tick);
 }
 boot();
