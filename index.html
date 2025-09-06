@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,6 +24,7 @@
   --c-legendary:#ffd84a;
   --c-legacy:#ffffff;
   --c-mythic:#ffd700;
+  --c-birthday:#ff66c4; 
 }
 
 /* page / backdrop */
@@ -258,6 +257,23 @@ body::after{
   animation: goldShimmer 2.5s linear infinite;
   font-weight:900;
 }
+.t-birthday {
+  background: linear-gradient(90deg, #ff66c4, #ffe066, #66ff99, #66a3ff, #c866ff);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: birthdayParty 3s ease-in-out infinite;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(255, 255, 255, .8), 0 0 20px rgba(255, 102, 196, .8);
+}
+
+@keyframes birthdayParty {
+  0% { background-position: 0% 50%; transform: scale(1);}
+  50% { background-position: 100% 50%; transform: scale(1.08);}
+  100% { background-position: 0% 50%; transform: scale(1);}
+}
+
 @keyframes rainbowShift{ 0%{ background-position: 0% 50%; } 100%{ background-position: 100% 50%; } }
 @keyframes goldShimmer{ 0%{ background-position: 0% 50%; } 100%{ background-position: 200% 50%; } }
 
@@ -370,13 +386,22 @@ document.getElementById("resetGame").addEventListener("click", function() {
   const SHOP_SLOTS = 4;
 
   const RARITY = {
-    common: { label:'COMMON', color:'var(--c-common)', income: 50, price:[8_000, 40_000], prob: 0.60 },
-    rare: { label:'RARE', color:'var(--c-rare)', income: 200, price:[40_000, 150_000], prob: 0.25 },
-    epic: { label:'EPIC', color:'var(--c-epic)', income: 800, price:[150_000, 420_000], prob: 0.12 },
-    legendary:{ label:'LEGENDARY', color:'var(--c-legendary)', income: 3000, price:[420_000, 920_000], prob: 0.03 },
-    legacy:{ label:'LEGACY', color:'var(--c-legacy)', income: 8000, price:[900_000, 2_500_000], prob: 0.005 },
-    mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 }
-  };
+  common: { label:'COMMON', color:'var(--c-common)', income: 100, price:[1000, 10000], prob: 0.7 },
+  rare: { label:'RARE', color:'var(--c-rare)', income: 1000, price:[10000, 100000], prob: 0.2 },
+  epic: { label:'EPIC', color:'var(--c-epic)', income: 5000, price:[100000, 1000000], prob: 0.08 },
+  legendary: { label:'LEGENDARY', color:'var(--c-legendary)', income: 20000, price:[1000000, 5000000], prob: 0.02 },
+  legacy: { label:'LEGACY', color:'var(--c-legacy)', income: 50000, price:[5000000, 20000000], prob: 0.005 },
+  mythic: { label:'MYTHIC', color:'var(--c-mythic)', income: 100000, price:[20000000, 100000000], prob: 0.001 },
+
+  // 👇 just add this without touching the others
+  birthday: { 
+    label:'BIRTHDAY', 
+    color:'var(--c-birthday)', 
+    income: 15000, 
+    price:[0, 0], 
+    prob: 0 
+  }
+};
 
   const ITEM_NAMES = [
     '24 King Crown','Donut','3D Printer','Space Nathan','Candy Blossom',
