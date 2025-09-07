@@ -144,14 +144,6 @@ body.redblue::after {
   align-items:flex-end;
   justify-content:center;
 }
-
-.stands.second-row {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  margin-top: 12px;
-}
-  
 .pedestal{
   width: 200px;
   height: 48px;
@@ -431,20 +423,6 @@ body.redblue::after {
         </div>
       </div>
 
-      <!-- Stand Upgrade Tool -->
-      <div class="card" id="standUpgradeCard">
-        <h3>Stand Upgrade</h3>
-        <div style="font-size:18px; opacity:0.85;">
-          Upgrade your stands to unlock new looks!<br>
-          Level 10 unlocks two extra stands (2nd row).
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price" id="standUpgradePrice"></div>
-          <button class="buy" id="buyStandUpgrade">Upgrade</button>
-        </div>
-        <div id="standUpgradeStatus" style="margin-top:6px;font-weight:700;color:#6dff79;"></div>
-      </div>
-
     </div>
   </div>
 </div>
@@ -472,33 +450,6 @@ document.getElementById("resetGame").addEventListener("click", function() {
    For brevity in this example I am keeping the JS unchanged from your provided code.
    Make sure to copy the whole <script> contents from your original file into this spot.
    --------------------------- */
-  const STAND_UPGRADE_COSTS = [
-  50_000,        // level 1
-  500_000,       // level 2
-  5_000_000,     // level 3
-  10_000_000,    // level 4
-  25_000_000,    // level 5
-  50_000_000,    // level 6
-  75_000_000,    // level 7
-  100_000_000,   // level 8
-  250_000_000,   // level 9
-  1_000_000_000  // level 10
-  ];
-
-// You can define stand styles (colors, borders, etc) for each level as desired:
-const STAND_STYLES = [
-  {}, // default
-  { background: '#f7e476' }, // level 1
-  { background: '#e6c200' }, // level 2
-  { background: '#c4a000' }, // level 3
-  { background: '#bcae4c' }, // level 4
-  { background: '#ffe500' }, // level 5
-  { background: '#ffd700' }, // level 6
-  { background: '#ff9c00' }, // level 7
-  { background: '#ff6000' }, // level 8
-  { background: '#b000ff' }, // level 9
-  { background: 'linear-gradient(90deg, #ffd700, #ff62d5)' } // level 10
-  ];
 
   /*****************
    * GAME CONSTANTS
@@ -662,7 +613,6 @@ async function save() {
     multiplierCooldownUntil,
     backgroundPurchased,
     backgroundEnabled,
-    standUpgradeLevel,
 
     placed: {}
   };
@@ -703,8 +653,6 @@ async function load() {
     multiplierCooldownUntil = dat.multiplierCooldownUntil ?? 0;
     backgroundPurchased = dat.backgroundPurchased ?? false;
     backgroundEnabled = dat.backgroundEnabled ?? false;
-    standUpgradeLevel = dat.standUpgradeLevel ?? 0;
-
 
     if (backgroundPurchased) {
        document.getElementById("buyBackground").style.display = "none";
@@ -789,10 +737,6 @@ async function load() {
   for (let i = 0; i < STAND_COUNT; i++) {
     const box = document.createElement('div');
     box.className = 'stand';
-
-    // Style based on upgrade level
-    const style = STAND_STYLES[standUpgradeLevel] || {};
-    Object.assign(box.style, style);
 
     // The UID of the item placed on this stand (or null)
     const placed = state.stands[i];
@@ -905,64 +849,9 @@ async function load() {
 
     area.appendChild(box);
   }
-
-  // If level 10, add 2 more stands in a second row below middle two
-  if (standUpgradeLevel >= 10) {
-    const secondRow = document.createElement('div');
-    secondRow.className = 'stands second-row';
-    // Place these below the 2 middle first row stands
-    for (let i = 0; i < 2; i++) {
-      const box = document.createElement('div');
-      box.className = 'stand';
-      const style = STAND_STYLES[standUpgradeLevel] || {};
-      Object.assign(box.style, style);
-
-      // Use state.stands[4] and state.stands[5] for these
-      const placed = state.stands[4 + i];
-      // ... render pedestal and placed item as normal ...
-
-      secondRow.appendChild(box);
-    }
-    // Insert after first row
-    area.appendChild(secondRow);
-  }
   checkForge();
 }
-  function updateStandUpgradeStatus() {
-  const status = document.getElementById("standUpgradeStatus");
-  const btn = document.getElementById("buyStandUpgrade");
-  const priceEl = document.getElementById("standUpgradePrice");
 
-  if (!status || !btn || !priceEl) return;
-
-  if (standUpgradeLevel >= 10) {
-    status.textContent = "Max Level (2 extra stands unlocked!)";
-    btn.disabled = true;
-    btn.textContent = "Maxed";
-    priceEl.textContent = "";
-  } else {
-    const price = STAND_UPGRADE_COSTS[standUpgradeLevel];
-    status.textContent = `Level ${standUpgradeLevel} / 10`;
-    priceEl.textContent = `$${fmt(price)}`;
-    btn.disabled = state.money < price;
-    btn.textContent = "Upgrade";
-  }
-}
-
-document.getElementById("buyStandUpgrade").addEventListener("click", function() {
-  if (standUpgradeLevel >= 10) return;
-  const price = STAND_UPGRADE_COSTS[standUpgradeLevel];
-  if (state.money < price) return;
-  state.money -= price;
-  standUpgradeLevel++;
-  updateTop();
-  updateStandUpgradeStatus();
-  renderStands();
-  save();
-});
-
-
-  
   function weightedPick(){
   const r = Math.random();
   if(r < 0.005) return 'legacy';            // 0.5% chance (new)
@@ -1126,7 +1015,6 @@ const BACKGROUND_COST = 4_000_000;
 let multiplierActiveUntil = 0;
 let multiplierCooldownUntil = 0;
 let multiplierLevel = 1; // 1x, 2x, 4x max
-let standUpgradeLevel = 0; // 0–10; start at 0
 
 function applyMultiplier(eps) {
   return eps * multiplierLevel;
