@@ -48,6 +48,29 @@ app.get('/api/game/rawsave', (req, res) => {
 });
 
 
+
+import fs from "fs";
+import path from "path";
+
+// Assuming all player saves are stored as files in a directory
+const SAVE_DIR = path.join(process.cwd(), "saves");
+
+app.get("/api/game/list", (req, res) => {
+  fs.readdir(SAVE_DIR, (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to read save directory" });
+    }
+
+    // Strip `.json` extensions so we just return usernames
+    const users = files
+      .filter(f => f.endsWith(".json"))
+      .map(f => path.basename(f, ".json"));
+
+    res.json(users);
+  });
+});
+
+
 app.put('/api/game/rawsave', (req, res) => {
   const user = req.query.user;
   if (!user) return res.status(400).json({ error: 'Missing user' });
