@@ -728,89 +728,126 @@ async function load() {
     });
   }
 
-  function renderStands(){
-    const area = $('#stands');
-    area.innerHTML='';
-    for(let i=0;i<STAND_COUNT;i++){
-      const box = document.createElement('div');
-      box.className='stand';
-      const placedUid = state.stands[i];
-      const ped = document.createElement('div');
-      ped.className='pedestal';
-      box.appendChild(ped);
+  function renderStands() {
+  const area = document.getElementById('stands');
+  area.innerHTML = '';
+  for (let i = 0; i < STAND_COUNT; i++) {
+    const box = document.createElement('div');
+    box.className = 'stand';
 
-      if(placedUid){
-        const it = state.placed[placedUid] || state.inventory.find(x=>x.uid===placedUid);
-        if(it){
-          const p = document.createElement('div');
-          p.className='placed';
-          p.innerHTML = `<img src='${it.svg}' style='width:64px;height:64px;border-radius:8px;margin-right:8px;' alt='${escapeXml(displayName(it.name))}'/><div style="text-align:left"><strong>${escapeXml(displayName(it.name))}</strong><br><small>${RARITY[it.rarity].label} • +$${fmt(RARITY[it.rarity].income)}/s</small></div>`;
-          p.style.border = '4px solid rgba(0,0,0,.45)';
-          p.style.color = '#fff';
-          const badge = p.querySelector('.rar');
-          if (it.rarity === 'birthday') {
-            badge.classList.add('t-birthday');
-          }
-          if(it.rarity === 'mythic'){
-            p.classList.add('glow');
-          }
-          box.appendChild(p);
+    // The UID of the item placed on this stand (or null)
+    const placed = state.stands[i];
+
+    // Create the pedestal (always present)
+    const ped = document.createElement('div');
+    ped.className = 'pedestal';
+    box.appendChild(ped);
+
+    // If there is an item placed on this stand...
+    if (placed) {
+      // Find the item object (from placed or inventory)
+      const it = state.placed[placed] || state.inventory.find(x => x.uid === placed);
+      if (it) {
+        // Create the div for the placed item
+        const p = document.createElement('div');
+        p.className = 'placed';
+        p.innerHTML =
+          `<img src='${it.svg}' style='width:64px;height:64px;border-radius:8px;margin-right:8px;' alt='${escapeXml(displayName(it.name))}'/>
+           <div style="text-align:left">
+             <strong>${escapeXml(displayName(it.name))}</strong><br>
+             <span class="rar t-${it.rarity}">${RARITY[it.rarity].label}</span>
+           </div>`;
+
+        p.style.border = '4px solid rgba(0,0,0,.45)';
+        p.style.color = '#fff';
+
+        // --- BADGE ANIMATION LOGIC ---
+        // Select the badge element (the rarity label)
+        const badge = p.querySelector('.rar');
+
+        // Add birthday animation if it's a birthday rarity
+        if (it.rarity === 'birthday') {
+          badge.classList.add('t-birthday');
         }
+
+        // Add legacy animation if it's legacy
+        if (it.rarity === 'legacy') {
+          badge.style.color = 'transparent';
+          badge.style.background = 'linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c)';
+          badge.style.backgroundSize = '400% 100%';
+          badge.style.webkitBackgroundClip = 'text';
+          badge.style.backgroundClip = 'text';
+          badge.style.animation = 'rainbowShift 4s linear infinite';
+        }
+
+        // Add mythic animation if it's mythic
+        if (it.rarity === 'mythic') {
+          badge.classList.add('t-mythic');
+          p.classList.add('glow');
+        }
+
+        box.appendChild(p);
       }
+    }
 
-      box.addEventListener('click',()=>{
-        if(!state.selectedItemUid){
-          if(state.stands[i]){
-            const oldUid = state.stands[i];
-            const oldItem = state.placed[oldUid] || null;
-            if(oldItem){
-              state.inventory.push(oldItem);
-              delete state.placed[oldUid];
-            }
-            state.stands[i] = null;
-            recalcEPS();
-            renderInventory();
-            renderStands();
-            save();
-          }
-          return;
-        }
-
-        if(state.stands[i]){
+    // Add click listener for placing/removing items
+    box.addEventListener('click', () => {
+      // If no item selected, remove placed item (if any)
+      if (!state.selectedItemUid) {
+        if (state.stands[i]) {
           const oldUid = state.stands[i];
           const oldItem = state.placed[oldUid] || null;
-          if(oldItem){
+          if (oldItem) {
             state.inventory.push(oldItem);
             delete state.placed[oldUid];
           }
           state.stands[i] = null;
+          recalcEPS();
+          renderInventory();
+          renderStands();
+          save();
         }
+        return;
+      }
 
-        const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
-        if(!newItem) return;
-
-        state.placed[newItem.uid] = newItem;
-        state.stands[i] = newItem.uid;
-
-        state.inventory = state.inventory.filter(it => it.uid !== newItem.uid);
-        state.selectedItemUid = null;
-
-        recalcEPS();
-        renderInventory();
-        renderStands();
-
-        const placed = box.querySelector('.placed');
-        if(placed){
-          placed.classList.add('glow');
-          setTimeout(()=>placed.classList.remove('glow'),700);
+      // Remove old placed item if there is one
+      if (state.stands[i]) {
+        const oldUid = state.stands[i];
+        const oldItem = state.placed[oldUid] || null;
+        if (oldItem) {
+          state.inventory.push(oldItem);
+          delete state.placed[oldUid];
         }
-        save();
-      });
+        state.stands[i] = null;
+      }
 
-      area.appendChild(box);
-    }
-    checkForge();
+      // Place new item
+      const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
+      if (!newItem) return;
+
+      state.placed[newItem.uid] = newItem;
+      state.stands[i] = newItem.uid;
+
+      state.inventory = state.inventory.filter(it => it.uid !== newItem.uid);
+      state.selectedItemUid = null;
+
+      recalcEPS();
+      renderInventory();
+      renderStands();
+
+      // Glow animation for mythic
+      const placedDiv = box.querySelector('.placed');
+      if (placedDiv) {
+        placedDiv.classList.add('glow');
+        setTimeout(() => placedDiv.classList.remove('glow'), 700);
+      }
+      save();
+    });
+
+    area.appendChild(box);
   }
+  checkForge();
+}
 
   function weightedPick(){
   const r = Math.random();
