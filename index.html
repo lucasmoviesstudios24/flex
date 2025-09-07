@@ -391,20 +391,6 @@ body.redblue::after {
     <button class="closeX" id="closeGear" aria-label="Close">✕</button>
     <h2 id="gearTitle" style="color:#ff5050;text-align:center;">Gear</h2>
     <div class="grid">
-      <!-- Stand Upgrade Tool -->
-      <div class="card" id="standUpgradeCard">
-        <h3>Stand Upgrade</h3>
-        <div style="font-size:18px; opacity:0.85;">
-          Upgrade your stands (10 levels).<br>
-          Level 10 adds 2 more stands!
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price" id="standUpgradePrice">$50,000</div>
-          <button class="buy" id="buyStandUpgrade">Purchase</button>
-        </div>
-        <div id="standUpgradeStatus" style="margin-top:6px;font-weight:700;color:#ffd700;"></div>
-      </div>
-
 
       <!-- Multiplier Tool -->
       <div class="card" id="multiplierCard">
@@ -595,7 +581,6 @@ document.getElementById("resetGame").addEventListener("click", function() {
     inventory: [],
     stands: [null,null,null,null],
     placed: {},
-  standUpgradeLevel,
     selectedItemUid: null,
     fastMode: false,
     shop: { items:[], nextRefreshAt:0 }
@@ -629,8 +614,7 @@ async function save() {
     backgroundPurchased,
     backgroundEnabled,
 
-    placed: {},
-  standUpgradeLevel
+    placed: {}
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -663,9 +647,6 @@ async function load() {
     state.shop = dat.shop ?? state.shop;
     state.fastMode = dat.fastMode ?? state.fastMode;
     state.placed = {};
-  standUpgradeLevel = dat.standUpgradeLevel ?? 0;
-  updateStandUpgradeUI();
-  if (standUpgradeLevel >= 10) unlockExtraStands();
     // NEW Gear persistence
     multiplierLevel = dat.multiplierLevel ?? 1;
     multiplierActiveUntil = dat.multiplierActiveUntil ?? 0;
@@ -1186,92 +1167,6 @@ recalcEPS = function() {
 
 
 
-
-/* -------------------
-   STAND UPGRADE FEATURE
-------------------- */
-const STAND_UPGRADE_COSTS = [
-  50_000, 500_000, 5_000_000, 10_000_000,
-  25_000_000, 50_000_000, 75_000_000,
-  100_000_000, 250_000_000, 1_000_000_000
-];
-let standUpgradeLevel = 0;
-
-function buyStandUpgrade() {
-  if (standUpgradeLevel >= 10) return;
-  const cost = STAND_UPGRADE_COSTS[standUpgradeLevel];
-  if (state.money < cost) return;
-
-  state.money -= cost;
-  standUpgradeLevel++;
-
-  updateStandAppearance();
-
-  if (standUpgradeLevel === 10) {
-    unlockExtraStands();
-  }
-
-  updateStandUpgradeUI();
-  updateTop();
-  save();
-}
-
-function updateStandUpgradeUI() {
-  const priceElem = document.getElementById("standUpgradePrice");
-  const statusElem = document.getElementById("standUpgradeStatus");
-  const btn = document.getElementById("buyStandUpgrade");
-
-  if (!priceElem || !statusElem || !btn) return;
-
-  if (standUpgradeLevel >= 10) {
-    priceElem.textContent = "Maxed";
-    btn.disabled = true;
-    statusElem.textContent = "All 10 upgrades unlocked!";
-  } else {
-    const nextCost = STAND_UPGRADE_COSTS[standUpgradeLevel];
-    priceElem.textContent = "$" + nextCost.toLocaleString();
-    statusElem.textContent = "Level " + standUpgradeLevel;
-    btn.disabled = state.money < nextCost;
-  }
-}
-
-function updateStandAppearance() {
-  // Add CSS classes for styling per level if desired
-  document.querySelectorAll(".stand").forEach((el) => {
-    el.classList.forEach((cls) => {
-      if (cls.startsWith("upgrade-")) el.classList.remove(cls);
-    });
-    if (standUpgradeLevel > 0 && standUpgradeLevel < 10) {
-      el.classList.add("upgrade-" + standUpgradeLevel);
-    }
-  });
-}
-
-function unlockExtraStands() {
-  const standArea = document.getElementById("standArea");
-  if (!standArea) return;
-
-  const row = document.createElement("div");
-  row.className = "stand-row";
-
-  const newStand1 = document.createElement("div");
-  newStand1.className = "stand";
-  const newStand2 = document.createElement("div");
-  newStand2.className = "stand";
-
-  row.appendChild(newStand1);
-  row.appendChild(newStand2);
-
-  standArea.appendChild(row);
-
-  // Extend game state with 2 more stand slots
-  state.stands.push(null);
-  state.stands.push(null);
-}
-
-// Attach button
-document.getElementById("buyStandUpgrade")?.addEventListener("click", buyStandUpgrade);
-
 async function boot(){
   await load();
   if(!state.money) state.money = MONEY_START;
@@ -1279,9 +1174,6 @@ async function boot(){
     state.stands = Array(STAND_COUNT).fill(null);
   }
   if(!state.placed) state.placed = {};
-  standUpgradeLevel = dat.standUpgradeLevel ?? 0;
-  updateStandUpgradeUI();
-  if (standUpgradeLevel >= 10) unlockExtraStands();
   updateTop();
   renderInventory();
   renderStands();
