@@ -598,6 +598,9 @@ if (!USER_ID) {
 document.getElementById("userDisplay").textContent = USER_ID ? `User: ${USER_ID}` : "No user";
 
 async function save() {
+  setInterval(() => {
+  save();
+  }, 5000); // Save every 5 seconds
   const payload = {
     money: state.money,
     eps: state.eps,
