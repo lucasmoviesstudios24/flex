@@ -309,24 +309,15 @@ body.redblue::after {
   .inventory-wrap{ bottom:12px; width: calc(100% - 30px); }
 }
 
-/* 🔴🔵 Force red/blue gradient when enabled */
-body.redblue::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
+/* 🔴🔵 Full background override for red/blue mode */
+body.redblue {
   background: linear-gradient(to bottom, #ff4b5c 0%, #4b6aff 100%) !important;
-  background-image: linear-gradient(to bottom, #ff4b5c 0%, #4b6aff 100%) !important;
 }
 
+body.redblue::before,
 body.redblue::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: none !important;
+  display: none !important; /* turn off the original pseudo-element layers */
 }
-
 
 
 </style>
@@ -440,7 +431,7 @@ document.getElementById("resetGame").addEventListener("click", function() {
    * (full JS from original file goes here)
    *****************/
 
-  const MONEY_START = 1_000_000;
+  const MONEY_START = 6_000_000;
   const STAND_COUNT = 4;
   const SHOP_SLOTS = 4;
 
