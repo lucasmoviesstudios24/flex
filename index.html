@@ -1080,35 +1080,32 @@ function updateMultiplierStatus() {
 function buyMultiplier() {
   const now = Date.now();
   if (state.money < MULTIPLIER_COST) return;
-  if (now < multiplierCooldownUntil) return;
-  if (multiplierLevel >= 4) return;
+  if (multiplierLevel >= 4) return; // maxed
+
+  // Block purchase only if cooldown is active AND we are still at base (1x)
+  if (multiplierLevel === 1 && now < multiplierCooldownUntil) return;
 
   state.money -= MULTIPLIER_COST;
-  multiplierLevel = multiplierLevel === 1 ? 2 : 4;
-  multiplierActiveUntil = now + MULTIPLIER_DURATION;
-  multiplierCooldownUntil = now + MULTIPLIER_COOLDOWN;
+
+  if (multiplierLevel === 1) {
+    // First purchase → 2x
+    multiplierLevel = 2;
+    multiplierActiveUntil = now + MULTIPLIER_DURATION;
+    // Start cooldown immediately
+    multiplierCooldownUntil = now + MULTIPLIER_COOLDOWN;
+  } else if (multiplierLevel === 2) {
+    // Second purchase → 4x
+    multiplierLevel = 4;
+    // Reset active duration (20 min fresh)
+    multiplierActiveUntil = now + MULTIPLIER_DURATION;
+    // Do NOT reset cooldown (it continues from original)
+  }
 
   updateTop();
   updateMultiplierStatus();
   save();
 }
 
-// Background feature
-let backgroundPurchased = false;
-let backgroundEnabled = false;
-
-function buyBackground() {
-  if (backgroundPurchased) return;
-  if (state.money < BACKGROUND_COST) return;
-  state.money -= BACKGROUND_COST;
-  backgroundPurchased = true;
-  backgroundEnabled = true;
-  document.body.classList.add("redblue");
-  updateTop();
-  document.getElementById("buyBackground").style.display = "none";
-  document.getElementById("toggleBackground").style.display = "inline-block";
-  save();
-}
 
 function toggleBackground() {
   if (!backgroundPurchased) return;
