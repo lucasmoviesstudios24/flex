@@ -330,6 +330,9 @@ body.redblue::after {
   </div>
 
   <div class="left-rail">
+  <div id="userDisplay" style="margin-bottom:16px;text-align:center;font-weight:bold;font-size:1.2em;color:#222;background:#fff7e0;padding:8px 0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.10);">
+  <!-- Username will appear here -->
+  </div>
     <button class="icon-btn icon-shop" id="openShop" aria-label="Open shop" title="Shop">
       <svg viewBox="0 0 24 24" fill="none" stroke="#e40000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="9" cy="21" r="1.8"></circle>
@@ -577,6 +580,7 @@ if (!USER_ID) {
   USER_ID = prompt('Enter your username (or type "guest"):');
   localStorage.setItem('flex-userid', USER_ID);
 }
+document.getElementById("userDisplay").textContent = USER_ID ? `User: ${USER_ID}` : "No user";
 
 async function save() {
   const payload = {
