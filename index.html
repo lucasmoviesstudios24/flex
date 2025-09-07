@@ -259,6 +259,20 @@ body.redblue::after {
 .t-rare{ color:var(--c-rare); }
 .t-epic{ color:var(--c-epic); }
 .t-legendary{ color:var(--c-legendary); }
+.t-birthday {
+  background: linear-gradient(90deg, #ff62d5, #ffd700, #ff62d5);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: birthdayAnim 1.2s linear infinite;
+  font-weight:900;
+}
+@keyframes birthdayAnim {
+  0% { background-position: 0% 50%; letter-spacing: 2px; }
+  50% { background-position: 100% 50%; letter-spacing: 6px; }
+  100% { background-position: 0% 50%; letter-spacing: 2px; }
+}
 .t-legacy{
   background: linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c);
   background-size: 400% 100%;
@@ -452,6 +466,7 @@ document.getElementById("resetGame").addEventListener("click", function() {
     epic: { label:'EPIC', color:'var(--c-epic)', income: 800, price:[150_000, 420_000], prob: 0.12 },
     legendary:{ label:'LEGENDARY', color:'var(--c-legendary)', income: 3000, price:[420_000, 920_000], prob: 0.03 },
     legacy:{ label:'LEGACY', color:'var(--c-legacy)', income: 8000, price:[900_000, 2_500_000], prob: 0.005 },
+    birthday: { label:'BIRTHDAY', color:'#ff62d5', income: 15000, price:[0,0], prob: 0 },
     mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 }
   };
 
@@ -702,6 +717,9 @@ async function load() {
       if(it.rarity === 'mythic'){
         badge.classList.add('t-mythic');
       }
+      if(it.rarity === 'birthday'){
+        badge.classList.add('t-birthday');
+      }
       el.addEventListener('click',()=>{
         state.selectedItemUid = (state.selectedItemUid===it.uid?null:it.uid);
         renderInventory();
@@ -729,6 +747,10 @@ async function load() {
           p.innerHTML = `<img src='${it.svg}' style='width:64px;height:64px;border-radius:8px;margin-right:8px;' alt='${escapeXml(displayName(it.name))}'/><div style="text-align:left"><strong>${escapeXml(displayName(it.name))}</strong><br><small>${RARITY[it.rarity].label} • +$${fmt(RARITY[it.rarity].income)}/s</small></div>`;
           p.style.border = '4px solid rgba(0,0,0,.45)';
           p.style.color = '#fff';
+          const badge = p.querySelector('.rar');
+          if (it.rarity === 'birthday') {
+            badge.classList.add('t-birthday');
+          }
           if(it.rarity === 'mythic'){
             p.classList.add('glow');
           }
