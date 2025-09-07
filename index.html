@@ -1049,11 +1049,20 @@ function updateMultiplierStatus() {
       const left = Math.ceil((multiplierCooldownUntil - now) / 1000);
       const min = Math.floor(left / 60);
       const sec = left % 60;
+
       status.textContent = `Cooldown: ${min}:${String(sec).padStart(2,"0")}`;
 
-      btn.disabled = true;
-      btn.textContent = "Cooldown";
-      btn.style.background = "";
+      if (multiplierLevel === 2) {
+        // Still allow upgrade to 4x
+        btn.disabled = state.money < MULTIPLIER_COST;
+        btn.textContent = "Upgrade to 4x";
+      } else {
+        // Normal cooldown lock
+        btn.disabled = true;
+        btn.textContent = "Cooldown";
+      }
+    }
+
 
     // Case: Maxed
     } else if (multiplierLevel >= 4) {
