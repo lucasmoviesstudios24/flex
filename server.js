@@ -92,11 +92,6 @@ import path from "path";
 // point to your saves directory (adjust path if needed)
 const SAVE_DIR = path.join(process.cwd(), "saves");
 
-app.get("/api/ping", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-
 app.get("/api/game/list", (req, res) => {
   fs.readdir(SAVE_DIR, (err, files) => {
     if (err) {
@@ -109,6 +104,12 @@ app.get("/api/game/list", (req, res) => {
 
     res.json(users);
   });
+
+app.get("/api/ping", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+
 });
 
 
