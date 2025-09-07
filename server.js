@@ -41,14 +41,11 @@ app.get('/api/game/load', (req, res) => {
 app.get('/api/game/rawsave', (req, res) => {
   const user = req.query.user;
   if (!user) return res.status(400).json({ error: 'Missing user' });
-  const filePath = path.join(__dirname, 'saves', `${user}.json`);
+  const filePath = getUserFile(user);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Save not found' });
   const data = fs.readFileSync(filePath, 'utf-8');
   res.type('application/json').send(data);
 });
-
-
-
 
 app.put('/api/game/rawsave', (req, res) => {
   const user = req.query.user;
@@ -56,10 +53,7 @@ app.put('/api/game/rawsave', (req, res) => {
   const newData = req.body;
   if (!newData || typeof newData !== 'object') return res.status(400).json({ error: 'Missing or invalid data' });
 
-  const saveDir = path.join(__dirname, 'saves');
-  if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir);
-
-  const filePath = path.join(saveDir, `${user}.json`);
+  const filePath = getUserFile(user);
   try {
     fs.writeFileSync(filePath, JSON.stringify(newData, null, 2), 'utf-8');
     res.json({ ok: true, message: 'Save file updated.' });
@@ -72,7 +66,7 @@ app.delete('/api/game/rawsave', (req, res) => {
   const user = req.query.user;
   if (!user) return res.status(400).json({ error: 'Missing user' });
 
-  const filePath = path.join(__dirname, 'saves', `${user}.json`);
+  const filePath = getUserFile(user);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Save file not found' });
   }
@@ -85,33 +79,22 @@ app.delete('/api/game/rawsave', (req, res) => {
   }
 });
 
-
-import fs from "fs";
-import path from "path";
-
-// point to your saves directory (adjust path if needed)
-const SAVE_DIR = path.join(process.cwd(), "saves");
-
-app.get("/api/game/list", (req, res) => {
+// List all users (player saves)
+app.get('/api/game/list', (req, res) => {
   fs.readdir(SAVE_DIR, (err, files) => {
     if (err) {
-      return res.status(500).json({ error: "Failed to read save directory" });
+      return res.status(500).json({ error: 'Failed to read save directory' });
     }
-
     const users = files
-      .filter(f => f.endsWith(".json"))
-      .map(f => path.basename(f, ".json"));
-
+      .filter(f => f.endsWith('.json'))
+      .map(f => path.basename(f, '.json'));
     res.json(users);
   });
-
-app.get("/api/ping", (req, res) => {
-  res.json({ status: "ok" });
 });
 
-
+// Ping endpoint (for health checks)
+app.get('/api/ping', (req, res) => {
+  res.json({ status: 'ok' });
 });
-
-
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
