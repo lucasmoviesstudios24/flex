@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,6 +122,7 @@ body.redblue::after {
 .icon-shop{ background:#57d85a; }
 .icon-tools{ background:#8c8f95; }
 .icon-music{ background: linear-gradient(45deg,#ffd86a,#ff7ac7); }
+.icon-pets{ background: #ffb6e6; } /* paw button style */
 .icon-btn svg{ width:64%; height:64%; }
 
 /* stands / pedestals area (keeps visually centered above inventory) */
@@ -169,6 +168,57 @@ body.redblue::after {
 }
 .placed:hover{ transform:translateY(-3px) scale(1.02); }
 .placed.glow{ box-shadow:0 8px 30px rgba(255,220,120,.9); transform:translateY(-6px) scale(1.06); }
+
+/* PET ROW */
+.pet-row{
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:40px;
+  width:min(100%,1000px);
+  z-index:3;
+}
+.pet-stand{
+  position:relative;
+  height:120px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+.pet-pedestal{
+  width: 140px;
+  height: 40px;
+  background: linear-gradient(#c3c3c3, #8e8e8e);
+  border-radius: 10px;
+  box-shadow: inset 0 4px 0 rgba(255,255,255,.35), 0 6px 0 rgba(0,0,0,.25);
+}
+.pet-placed{
+  position:absolute;
+  bottom:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:120px;
+  height:64px;
+  border-radius:12px;
+  background:rgba(0,0,0,.14);
+  outline:3px solid rgba(0,0,0,.35);
+  z-index:4;
+}
+.pet-placed img{ width:56px; height:56px; border-radius:8px; margin-right:6px; }
+
+/* timer badge on pet placed */
+.pet-timer{
+  position:absolute;
+  bottom:58px;
+  left:6px;
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:10px;
+  background:rgba(0,0,0,.6);
+  color:#fff;
+  z-index:6;
+}
 
 /* === INVENTORY FIXED TO BOTTOM (MAIN CHANGES) === */
 .inventory-wrap{
@@ -290,6 +340,62 @@ body.redblue::after {
   animation: goldShimmer 2.5s linear infinite;
   font-weight:900;
 }
+
+.t-unique {
+  color: navy;
+  text-shadow: 0 0 6px rgba(0,0,128,.6);
+  animation: uniqueSparkle 2s linear infinite;
+}
+@keyframes uniqueSparkle {
+  0%,100% { text-shadow: 0 0 6px rgba(255,255,255,.2); }
+  50%     { text-shadow: 0 0 10px rgba(255,255,255,.7); }
+}
+
+.t-exotic {
+  color: cyan;
+  text-shadow: 0 0 8px rgba(0,255,255,.7);
+  animation: exoticPulse 2.5s ease-in-out infinite;
+}
+@keyframes exoticPulse {
+  0%,100% { text-shadow: 0 0 8px rgba(0,255,255,.3); }
+  50%     { text-shadow: 0 0 16px rgba(0,255,255,1); }
+}
+
+/* apply on the <p> wrapper holding the item image */
+.glow-exotic {
+  filter: drop-shadow(0 0 8px rgba(0,255,255,.8))
+          drop-shadow(0 0 16px rgba(0,255,255,.5));
+}
+
+
+.t-unique {
+  color: navy;
+  position: relative;
+  text-shadow: 0 0 3px rgba(255,255,255,0.3);
+}
+
+/* Sparkle effect overlay */
+.t-unique::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: uniqueSparkle 2.5s linear infinite;
+  mix-blend-mode: screen;
+  border-radius: 4px;
+}
+
+@keyframes uniqueSparkle {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+
 @keyframes rainbowShift{ 0%{ background-position: 0% 50%; } 100%{ background-position: 100% 50%; } }
 @keyframes goldShimmer{ 0%{ background-position: 0% 50%; } 100%{ background-position: 200% 50%; } }
 
@@ -359,12 +465,26 @@ body.redblue::after {
         <path d="M22.7 19.3L13 9.6M16 3a5 5 0 0 0-6.2 6.2l-7.7 7.7a2.5 2.5 0 1 0 3.5 3.5l7.7-7.7A5 5 0 0 0 21 8"></path>
       </svg>
     </button>
+
+    <!-- NEW: Pet Shop button (paw) -->
+    <button class="icon-btn icon-pets" id="openPetShop" aria-label="Pet Shop" title="Pet Shop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 21s-4-2.5-6.5-5.5C2.5 12 5 8 7.5 8c1.5 0 2.5 1 3.5 1s2-1 3.5-1C17 8 19.5 12 18.5 15.5 16 18.5 12 21 12 21z" fill="none"/>
+        <circle cx="7" cy="7" r="2" fill="none"/>
+        <circle cx="17" cy="7" r="2" fill="none"/>
+        <circle cx="6" cy="12" r="1.5" fill="none"/>
+        <circle cx="18" cy="12" r="1.5" fill="none"/>
+      </svg>
+    </button>
+
     <button class="icon-btn icon-music" id="musicBtn" aria-label="Toggle music" title="Toggle music">
       <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></svg>
     </button>
   </div>
 
   <div class="stands" id="stands"></div>
+
+  <!-- Pet row will be rendered directly under stands inside renderStands -->
 
   <!-- Forge button -->
   <button id="forgeBtn" title="Forge 4 Legendaries into 1 Mythic">FORGE</button>
@@ -381,6 +501,54 @@ body.redblue::after {
     <h2 id="shopTitle">Shop</h2>
     <div class="grid" id="shopGrid"></div>
     <div class="refresh-note" id="refreshNote">Shop refreshes every 1:30</div>
+  </div>
+</div>
+
+<!-- Pet Shop Overlay -->
+<div class="overlay" id="petOverlay" aria-hidden="true">
+  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="petTitle">
+    <button class="closeX" id="closePetShop" aria-label="Close">✕</button>
+    <h2 id="petTitle">Pet Shop</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Pet Pedestal</h3>
+        <div style="font-size:18px; opacity:0.9;">Adds a pet pedestal below the pedestals. Max 2. Place eggs here to incubate.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="price">$15,000,000</div>
+          <button class="buy" id="buyPetPedestal">Purchase</button>
+        </div>
+        <div id="petPedestalStatus" style="margin-top:6px;font-weight:700;color:#6dff79;"></div>
+      </div>
+
+      <div class="card">
+        <h3>Legendary Egg</h3>
+        <div style="font-size:18px; opacity:0.9;">Hatch into Dog / Cat / Gold Dog.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="price">$10,000,000</div>
+          <button class="buy" id="buyLegendEgg">Purchase</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Mythical Egg</h3>
+        <div style="font-size:18px; opacity:0.9;">Hatch into Lion / Bear / Dino.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="price">$15,000,000</div>
+          <button class="buy" id="buyMythEgg">Purchase</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Enchanted Egg</h3>
+        <div style="font-size:18px; opacity:0.9;">Hatch into Owl / Rainbow Panda / Flex T-Rex.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="price">$25,000,000</div>
+          <button class="buy" id="buyEnchantedEgg">Purchase</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="refresh-note" id="petNote">Pets hatch in 10 minutes</div>
   </div>
 </div>
 
@@ -414,14 +582,26 @@ body.redblue::after {
         <button id="toggleBackground" class="buy" style="display:none;background:linear-gradient(#ff7a7a,#6aaaff);">Disable</button>
       </div>
 
-      <!-- Reset Username Tool -->
-      <div class="card" id="resetUserCard">
-        <h3>Reset Username</h3>
-        <div style="font-size:18px; opacity:0.85;">Removes your username and save.<br>On reload, you’ll enter a new name.</div>
-        <div style="display:flex;justify-content:flex-end;align-items:center;">
-          <button class="buy" id="resetUserBtn" style="background:#e74c3c;">Reset Username</button>
-        </div>
-      </div>
+
+
+  <div id="settingsOverlay" class="overlay hidden">
+    <h2>Settings</h2>
+
+    <div>
+      <button onclick="toggleBackground()">Toggle Background</button>
+    </div>
+
+    <div style="margin-top: 10px;">
+      <button onclick="downloadSave()">Download Save</button>
+    </div>
+
+    <div style="margin-top: 10px;">
+      <input type="file" id="uploadSaveInput" accept=".json" style="display:none"
+             onchange="handleSaveUpload(event)">
+      <button onclick="document.getElementById('uploadSaveInput').click()">Upload Save</button>
+    </div>
+  </div>
+
 
     </div>
   </div>
@@ -435,16 +615,9 @@ body.redblue::after {
   inventory bar sits fixed at the bottom like your concept art, pedestals/placed items are raised above it,
   and slots have larger sizes and a thick outlined container matching the visual.
 -->
-<button id="resetGame" style="margin-left:20px;background:#e74c3c;color:#fff;padding:8px 16px;border-radius:12px;border:none;font-weight:bold;cursor:pointer;">Reset Game</button>
+
 <script>
-document.getElementById("resetGame").addEventListener("click", function() {
-  if (confirm("Are you sure you want to reset your game? This cannot be undone.")) {
-    localStorage.removeItem("flexSave");
-    // Set a flag so boot knows NOT to load from localStorage
-    sessionStorage.setItem("doGameReset", "1");
-    location.reload();
-  }
-});
+
 /* ---------------------------
    Paste your entire original JavaScript here (unchanged).
    For brevity in this example I am keeping the JS unchanged from your provided code.
@@ -467,7 +640,9 @@ document.getElementById("resetGame").addEventListener("click", function() {
     legendary:{ label:'LEGENDARY', color:'var(--c-legendary)', income: 3000, price:[420_000, 920_000], prob: 0.03 },
     legacy:{ label:'LEGACY', color:'var(--c-legacy)', income: 8000, price:[900_000, 2_500_000], prob: 0.005 },
     birthday: { label:'BIRTHDAY', color:'#ff62d5', income: 15000, price:[0,0], prob: 0 },
-    mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 }
+    mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 },
+    unique:  { label:'UNIQUE', color:'navy', income: 10000, price:[0,0], prob: 0.003 },
+    exotic:  { label:'EXOTIC', color:'cyan', income: 15000, price:[0,0], prob: 0 }
   };
 
   const ITEM_NAMES = [
@@ -549,7 +724,16 @@ document.getElementById("resetGame").addEventListener("click", function() {
 
   function getItemSvg(name, idx, rarity){
     const size = 96;
-    const accentByRarity = { common:'#8ee78e', rare:'#6ec8ff', epic:'#c28bff', legendary:'#ffd86a', legacy:'#ffffff', mythic:'#ffd86a' };
+    const accentByRarity = {
+        common:'#8ee78e',
+        rare:'#6ec8ff',
+        epic:'#c28bff',
+        legendary:'#ffd86a',
+        legacy:'#ffffff',
+        mythic:'#ffd86a',
+        unique:'navy',
+        exotic:'cyan'
+    };
     const accent = accentByRarity[rarity] || '#cfd3d7';
     const hue = (idx*53 + (rarity==='legendary'?40:rarity==='epic'?20:0)) % 360;
     const bg = `hsl(${hue} 65% 24%)`;
@@ -564,6 +748,37 @@ document.getElementById("resetGame").addEventListener("click", function() {
       <g transform="translate(0,0)" filter="url(#d${idx})" stroke="${accent}">
         ${body}
       </g>
+    </svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  /* Simple egg SVG generator */
+  function getEggSvg(eggType, seed){
+    const size=96;
+    const colorMap = { legendary: '#ffd86a', mythical:'#ff9900', enchanted:'#33cc33' };
+    const accent = colorMap[eggType] || '#ddd';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 96 96">
+      <defs>
+        <filter id="eg${seed}" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/></filter>
+      </defs>
+      <rect x="4" y="4" width="88" height="88" rx="14" fill="#333" />
+      <g filter="url(#eg${seed})">
+        <ellipse cx="48" cy="52" rx="22" ry="28" fill="${accent}" />
+        <ellipse cx="40" cy="40" rx="6" ry="4" fill="#fff" opacity="0.65"/>
+      </g>
+    </svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  function getPetSvg(petName, seed){
+    // simple stylized pet icon — reuse getItemSvg style logic but simpler fill
+    const size=96;
+    const hue = (seed * 97) % 360;
+    const bg = `hsl(${hue} 60% 35%)`;
+    const body = `<text x="48" y="58" font-size="14" font-weight="700" text-anchor="middle" fill="#fff">${escapeXml(petName.slice(0,6))}</text>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 96 96">
+      <rect x="4" y="4" width="88" height="88" rx="14" fill="${bg}" />
+      ${body}
     </svg>`;
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
@@ -583,7 +798,13 @@ document.getElementById("resetGame").addEventListener("click", function() {
     placed: {},
     selectedItemUid: null,
     fastMode: false,
-    shop: { items:[], nextRefreshAt:0 }
+    shop: { items:[], nextRefreshAt:0 },
+
+    // new pet-related state:
+    petPedestalsPurchased: 0,           // 0..2
+    petStands: [null,null],             // each entry: null or { uid,name,isEgg,eggType,petType,petEps,svg,baseIdx }
+    petTimers: {},                      // map index -> timestamp (ms) when hatch will happen
+    permanentPetMultiplier: 1           // becomes 5 if Flex T-Rex hatched
   };
 
   function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
@@ -598,13 +819,10 @@ if (!USER_ID) {
 document.getElementById("userDisplay").textContent = USER_ID ? `User: ${USER_ID}` : "No user";
 
 async function save() {
- // setInterval(() => {
-  //save();
-  //}, 5000); // Save every 5 seconds
   const payload = {
     money: state.money,
     eps: state.eps,
-    inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx})),
+    inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx,isEgg:it.isEgg,eggType:it.eggType,petType:it.petType,petEps:it.petEps,svg:it.svg})),
     stands: state.stands,
     shop: state.shop,
     fastMode: state.fastMode,
@@ -614,12 +832,21 @@ async function save() {
     backgroundPurchased,
     backgroundEnabled,
 
-    placed: {}
+    placed: {},
+    petPedestalsPurchased: state.petPedestalsPurchased,
+    petStands: {}, // serialized by index
+    petTimers: state.petTimers,
+    permanentPetMultiplier: state.permanentPetMultiplier
   };
   for(const k in state.placed){
     const it = state.placed[k];
     if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx };
   }
+  // serialize pet stands
+  state.petStands.forEach((ps, idx) => {
+    if(ps) payload.petStands[idx] = { uid:ps.uid, name:ps.name, isEgg:!!ps.isEgg, eggType:ps.eggType||null, petType:ps.petType||null, petEps:ps.petEps||0, svg:ps.svg, baseIdx: ps.baseIdx||0 };
+  });
+
   try {
     await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent(USER_ID)}`, {
       method: 'POST',
@@ -641,7 +868,7 @@ async function load() {
     state.money = dat.money ?? state.money;
     state.eps = dat.eps ?? state.eps;
     state.inventory = (dat.inventory||[]).map(it=>({
-      ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0
+      ...it, uid:it.uid, svg: it.svg || (it.isEgg ? getEggSvg(it.eggType || 'legendary', Math.floor(Math.random()*9999)) : getItemSvg(it.name, it.baseIdx||0, it.rarity)), baseIdx: it.baseIdx||0
     }));
     state.stands = dat.stands ?? state.stands;
     state.shop = dat.shop ?? state.shop;
@@ -668,60 +895,155 @@ async function load() {
         state.placed[k] = { ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0 };
       }
     }
+
+    // load pet stuff
+    state.petPedestalsPurchased = dat.petPedestalsPurchased ?? state.petPedestalsPurchased;
+    if(dat.petStands){
+      for(const k in dat.petStands){
+        const p = dat.petStands[k];
+        state.petStands[Number(k)] = {
+          uid: p.uid,
+          name: p.name,
+          isEgg: !!p.isEgg,
+          eggType: p.eggType || null,
+          petType: p.petType || null,
+          petEps: p.petEps || 0,
+          svg: p.svg || (p.isEgg ? getEggSvg(p.eggType||'legendary', Number(k)+Math.floor(Math.random()*9999)) : getPetSvg(p.petType||p.name, Number(k)+Math.floor(Math.random()*9999))),
+          baseIdx: p.baseIdx||0
+        };
+      }
+    }
+    state.petTimers = dat.petTimers ?? state.petTimers;
+    state.permanentPetMultiplier = dat.permanentPetMultiplier ?? state.permanentPetMultiplier;
   } catch (e) {
     console.warn("load failed", e);
   }
 }
   function fmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
   function updateTop(){ $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money))); $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec'; }
-  function recalcEPS(){
-    let total = 0;
-    state.stands.forEach(uid => {
-      if(!uid) return;
-      const it = state.placed[uid] || state.inventory.find(x=>x.uid===uid);
-      if(!it) return;
-      total += RARITY[it.rarity].income;
-    });
-    state.eps = total;
-    updateTop();
-    save();
-  }
+function recalcEPS(){
+  // Recalculate base EPS without multiplier; tolerant to uppercase/missing rarities
+  let baseTotal = 0;
+
+  state.stands.forEach(uid => {
+    if(!uid) return;
+    const it = state.placed[uid] || state.inventory.find(x => x.uid === uid);
+    if(!it) return;
+    
+    console.log('EPS item check:', it.name, it.rarity);  // <--- ADD THIS
+    
+    const key = String(it.rarity || 'common').toLowerCase();
+    const incomeVal = (RARITY[key] && Number(RARITY[key].income)) ? Number(RARITY[key].income) : 0;
+    if(!RARITY[key]) console.warn('recalcEPS: unknown rarity for item', it.name, 'rarity:', it.rarity);
+    baseTotal += incomeVal;
+  });
+
+  // Sum pet EPS (unchanged but coerced to number)
+  let petTotal = 0;
+  state.petStands.forEach(ps => {
+    if(!ps) return;
+    if(ps.petEps) petTotal += Number(ps.petEps) || 0;
+  });
+
+  // Combine and apply multipliers safely
+  let combined = (Number(baseTotal) || 0) + (Number(petTotal) || 0);
+  combined = combined * (Number(multiplierLevel) || 1) * (Number(state.permanentPetMultiplier) || 1);
+
+  baseEPS = baseTotal; // keep base for reference
+  state.eps = Math.floor(combined) || 0;
+  updateTop();
+  save();
+}
   let lastTick = performance.now();
-  function tick(now){
-    const dt = (now - lastTick)/1000;
-    lastTick = now;
-    if(state.eps>0){
-      state.money += state.eps * dt;
-      updateTop();
-    }
-    requestAnimationFrame(tick);
+function tick(now) {
+  const dt = (now - lastTick)/1000;
+  lastTick = now;
+
+  // 💰 Earnings
+  if (state.eps>0){
+    state.money += state.eps * dt;
+    updateTop();
   }
 
-  function rarityBadge(r){ return `<span class="rar t-${r}">${RARITY[r].label}</span>`; }
+  // 🐣 Pets
+  checkPetHatches();
+
+  // ⏲️ NEW: turn off multiplier after active time ends
+  if (multiplierLevel > 1 && Date.now() > multiplierActiveUntil) {
+    multiplierLevel = 1;
+    recalcEPS(); // recalc without the boost
+    updateMultiplierStatus();
+  }
+
+  requestAnimationFrame(tick);
+}
+
+function downloadSave() {
+  try {
+    const blob = new Blob([JSON.stringify(state)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "my-save.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Error saving file: " + err.message);
+  }
+}
+
+function handleSaveUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      state = data; // overwrite game state
+
+      // re-render everything
+      renderStands();
+      renderInventory();
+      recalcEPS();
+      save();
+
+      alert("Save file loaded successfully!");
+    } catch (err) {
+      alert("Invalid save file.");
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+
+
+function rarityBadge(r){
+  // normalize to lowercase key used in RARITY object
+  const key = String(r || 'common').toLowerCase();
+  const label = (RARITY[key] && RARITY[key].label) ? RARITY[key].label : String(r || 'COMMON');
+  return `<span class="rar t-${key}">${label}</span>`;
+}
+  
   function renderInventory(){
     const wrap = $('#inventory');
     wrap.innerHTML='';
     state.inventory.forEach(it=>{
       const el = document.createElement('div');
       el.className = 'slot' + (state.selectedItemUid===it.uid?' selected':'');
-      el.innerHTML = `<img src='${it.svg}' alt='${escapeXml(displayName(it.name))}'/><div style="position:absolute;top:6px;left:8px;font-size:12px;color:#fff;font-weight:700;text-shadow:0 1px 0 #000">${escapeXml(displayName(it.name))}</div>${rarityBadge(it.rarity)}`;
-      el.style.setProperty('--rcolor', RARITY[it.rarity].color);
+      // badge: EGG or PET or rarity
+      let badgeHtml = '';
+      if(it.isEgg) badgeHtml = `<div class="rar" style="right:8px;bottom:8px;background:rgba(255,255,255,.12);color:#fff;">EGG</div>`;
+      else badgeHtml = rarityBadge(it.rarity || 'common');
+
+      el.innerHTML = `<img src='${it.svg}' alt='${escapeXml(displayName(it.name))}'/><div style="position:absolute;top:6px;left:8px;font-size:12px;color:#fff;font-weight:700;text-shadow:0 1px 0 #000">${escapeXml(displayName(it.name))}</div>${badgeHtml}`;
+      el.style.setProperty('--rcolor', RARITY[it.rarity]?.color || 'var(--c-common)');
       const badge = el.querySelector('.rar');
-      badge.style.border = '2px solid rgba(255,255,255,.25)';
-      badge.style.color = '#111';
-      if(it.rarity === 'legacy'){
-        badge.style.color = 'transparent';
-        badge.style.background = 'linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c)';
-        badge.style.backgroundSize = '400% 100%';
-        badge.style.webkitBackgroundClip = 'text';
-        badge.style.backgroundClip = 'text';
-        badge.style.animation = 'rainbowShift 4s linear infinite';
-      }
-      if(it.rarity === 'mythic'){
-        badge.classList.add('t-mythic');
-      }
-      if(it.rarity === 'birthday'){
-        badge.classList.add('t-birthday');
+      if(badge) {
+        badge.style.border = '2px solid rgba(255,255,255,.25)';
+        badge.style.color = '#111';
       }
       el.addEventListener('click',()=>{
         state.selectedItemUid = (state.selectedItemUid===it.uid?null:it.uid);
@@ -731,6 +1053,55 @@ async function load() {
     });
   }
 
+  function checkExoticForge() {
+  const allLegacy = state.stands.every(uid => {
+    if (!uid) return false;
+    const it = state.placed[uid] || state.inventory.find(x => x.uid === uid);
+    return it && it.rarity && it.rarity.toLowerCase() === 'legacy';
+  });
+
+  let btn = document.getElementById('exoticForgeBtn');
+  if (allLegacy) {
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'exoticForgeBtn';
+      btn.textContent = 'FORGE EXOTIC';
+      btn.style.cssText = 'margin-top:6px;padding:10px 18px;border-radius:14px;background:linear-gradient(45deg, #7fefff, #4fd9ff);border:4px solid rgba(0,0,0,.35);color:#000;font-weight:900;box-shadow:0 8px 30px rgba(127,239,255,0.4);cursor:pointer;';
+      btn.addEventListener('click', () => {
+  // remove the 4 legacy items from stands
+  for (const uid of state.stands) {
+    if (uid) delete state.placed[uid];
+  }
+  state.stands = [null, null, null, null];
+
+  // create new exotic item and place it on stand 0
+  const name = ITEM_NAMES[Math.floor(Math.random() * ITEM_NAMES.length)];
+  const newItem = {
+    uid: uid(),
+    name,
+    rarity: 'exotic',
+    price: 0,
+    baseIdx: Math.floor(Math.random() * ITEM_NAMES.length),
+    svg: getItemSvg(name, Math.floor(Math.random() * 9999), 'exotic')
+  };
+
+  state.placed[newItem.uid] = newItem;
+  state.stands[0] = newItem.uid;  // place on first stand
+
+  recalcEPS();
+  renderInventory();
+  renderStands();
+  save();
+});
+      document.querySelector('.game').insertBefore(btn, document.querySelector('.inventory-wrap'));
+    }
+    btn.style.display = 'inline-block';
+  } else if (btn) {
+    btn.style.display = 'none';
+  }
+}
+
+  
   function renderStands() {
   const area = document.getElementById('stands');
   area.innerHTML = '';
@@ -768,26 +1139,40 @@ async function load() {
         // Select the badge element (the rarity label)
         const badge = p.querySelector('.rar');
 
-        // Add birthday animation if it's a birthday rarity
-        if (it.rarity === 'birthday') {
-          badge.classList.add('t-birthday');
-        }
+const rkey = String(it.rarity || '').toLowerCase();
 
-        // Add legacy animation if it's legacy
-        if (it.rarity === 'legacy') {
-          badge.style.color = 'transparent';
-          badge.style.background = 'linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c)';
-          badge.style.backgroundSize = '400% 100%';
-          badge.style.webkitBackgroundClip = 'text';
-          badge.style.backgroundClip = 'text';
-          badge.style.animation = 'rainbowShift 4s linear infinite';
-        }
+// birthday
+if (rkey === 'birthday') {
+  badge.classList.add('t-birthday');
+}
 
-        // Add mythic animation if it's mythic
-        if (it.rarity === 'mythic') {
-          badge.classList.add('t-mythic');
-          p.classList.add('glow');
-        }
+// legacy (rainbow)
+if (rkey === 'legacy') {
+  badge.style.color = 'transparent';
+  badge.style.background = 'linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c)';
+  badge.style.backgroundSize = '400% 100%';
+  badge.style.webkitBackgroundClip = 'text';
+  badge.style.backgroundClip = 'text';
+  badge.style.animation = 'rainbowShift 4s linear infinite';
+}
+
+// mythic (gold shimmer)
+if (rkey === 'mythic') {
+  badge.classList.add('t-mythic');
+  p.classList.add('glow');
+}
+
+// unique: sparkle-ish badge + glow
+if (rkey === 'unique') {
+  badge.classList.add('t-unique');
+  // no glow
+}
+
+// exotic: cyan glow + badge
+if (rkey === 'exotic') {
+  badge.classList.add('t-exotic');
+  p.classList.add('glow-exotic');  // apply to the <p> element with the SVG
+}
 
         box.appendChild(p);
       }
@@ -849,16 +1234,119 @@ async function load() {
 
     area.appendChild(box);
   }
+
+  // --- PET ROW (below main pedestals) ---
+  let petRow = document.querySelector('.pet-row');
+  if(!petRow){
+    petRow = document.createElement('div');
+    petRow.className = 'pet-row';
+  } else {
+    petRow.innerHTML = '';
+  }
+
+  // We want pet pedestals aligned so that pet0 is under main stand #2 (index 1),
+  // and pet1 is under main stand #3 (index 2). We'll render four columns and
+  // only place pedestals in columns 2 and 3 when purchased.
+  for(let col=0; col<4; col++){
+    const pbox = document.createElement('div');
+    pbox.className = 'pet-stand';
+    // If column matches where pet pedestals go:
+    let placeIndex = null;
+    if(col === 1 && state.petPedestalsPurchased >= 1) placeIndex = 0;
+    if(col === 2 && state.petPedestalsPurchased >= 2) placeIndex = 1;
+
+    if(placeIndex !== null){
+      const pPed = document.createElement('div');
+      pPed.className = 'pet-pedestal';
+      pbox.appendChild(pPed);
+
+      const placed = state.petStands[placeIndex];
+      if(placed){
+        const p = document.createElement('div');
+        p.className = 'pet-placed';
+        // If it's an egg, show egg image and name; if pet, show pet and badge
+        const nameLabel = escapeXml(displayName(placed.name || (placed.petType || 'Pet')));
+        p.innerHTML = `<img src='${placed.svg}' alt='${nameLabel}'/><div style="text-align:left"><strong>${nameLabel}</strong><br><span style="font-size:12px;color:#fff;opacity:.9">${placed.isEgg ? (placed.eggType || 'Egg') : (placed.petType || '')}</span></div>`;
+        pbox.appendChild(p);
+
+        // If egg incubating show timer badge
+        if(placed.isEgg && state.petTimers[placeIndex]){
+          const timer = document.createElement('div');
+          timer.className = 'pet-timer';
+          timer.dataset.index = placeIndex;
+          pbox.appendChild(timer);
+        }
+
+        // Add special glow for Flex T-Rex pet
+        if(!placed.isEgg && placed.petType === 'Flex T-Rex'){
+          p.classList.add('glow');
+        }
+      }
+
+      // Click handling for pet pedestal
+pbox.addEventListener('click', () => {
+  // If no selected item: remove placed item back to inventory
+  if (!state.selectedItemUid) {
+    const existing = state.petStands[placeIndex];
+    if (existing) {
+      state.inventory.push(existing);
+      state.petStands[placeIndex] = null;
+      delete state.petTimers[placeIndex];
+      recalcEPS();
+      renderInventory();
+      renderStands();
+      save();
+    }
+    return;
+  }
+
+  const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
+  if (!newItem) return;
+
+  // ✅ Allow eggs or pets here
+  if (!(newItem.isEgg || newItem.petType)) {
+    alert('Only eggs or pets can be placed on pet pedestals.');
+    return;
+  }
+
+  // If placing an egg, start hatch timer
+  if (newItem.isEgg) {
+    state.petStands[placeIndex] = newItem;
+    state.petTimers[placeIndex] = Date.now() + HATCH_DURATION;
+  } else {
+    // If placing a pet, no timer needed
+    state.petStands[placeIndex] = newItem;
+  }
+
+  // Remove from inventory
+  state.inventory = state.inventory.filter(it => it.uid !== newItem.uid);
+  state.selectedItemUid = null;
+
+  recalcEPS();
+  renderInventory();
+  renderStands();
+  save();
+});
+
+    }
+    petRow.appendChild(pbox);
+  }
+
+  // Insert or reinsert petRow after main stands
+  area.parentNode.insertBefore(petRow, area.nextSibling);
+
   checkForge();
+  checkExoticForge();
 }
 
-  function weightedPick(){
+function weightedPick(){
   const r = Math.random();
-  if(r < 0.005) return 'legacy';            // 0.5% chance (new)
-  if(r < 0.005 + 0.01) return 'legendary';  // 1% chance
-  if(r < 0.005 + 0.01 + 0.08) return 'epic';     // 8% chance
-  if(r < 0.005 + 0.01 + 0.08 + 0.10) return 'rare'; // 10% chance
-  return 'common';                           // remaining 80.5%
+  if (r < 0.003) return 'unique';                       // 0.3%
+  if (r < 0.003 + 0.005) return 'legacy';               // 0.5%
+  if (r < 0.003 + 0.005 + 0.01) return 'legendary';     // 1% (cumulative)
+  if (r < 0.003 + 0.005 + 0.01 + 0.08) return 'epic';    // 8%
+  if (r < 0.003 + 0.005 + 0.01 + 0.08 + 0.10) return 'rare'; // 10%
+  return 'common';
 }
   function priceFor(rarity){ const [a,b] = RARITY[rarity].price; return Math.floor(a + Math.random()*(b-a)); }
   function makeShopItems(){
@@ -986,6 +1474,8 @@ async function load() {
     renderStands();
     save();
   });
+    
+  
 
   $('#openShop').addEventListener('click',()=>{
     $('#shopOverlay').classList.add('show');
@@ -1027,24 +1517,34 @@ function updateMultiplierStatus() {
   const btn = document.getElementById("buyMultiplier");
   if (!status || !btn) return;
 
-  const now = Date.now();
   if (multiplierTimer) clearInterval(multiplierTimer);
 
   function refresh() {
     const now = Date.now();
 
-    // Case: Active
-    if (multiplierLevel > 1 && now < multiplierActiveUntil) {
+    // 🟢 Case: 2x Active (allow upgrading to 4x)
+    if (multiplierLevel === 2 && now < multiplierActiveUntil) {
       const left = Math.ceil((multiplierActiveUntil - now) / 1000);
       const min = Math.floor(left / 60);
       const sec = left % 60;
-      status.textContent = `Active: ${multiplierLevel}x (${min}:${String(sec).padStart(2,"0")} left)`;
+      status.textContent = `Active: 2x (${min}:${String(sec).padStart(2,"0")} left)`;
 
-      btn.disabled = true;
-      btn.textContent = "Active";
+      btn.disabled = state.money < MULTIPLIER_COST;
+      btn.textContent = "Upgrade to 4x";
       btn.style.background = "linear-gradient(#2ecc71,#1da85b)";
 
-    // Case: Cooldown
+    // 🟢 Case: 4x Active (fully maxed)
+    } else if (multiplierLevel === 4 && now < multiplierActiveUntil) {
+      const left = Math.ceil((multiplierActiveUntil - now) / 1000);
+      const min = Math.floor(left / 60);
+      const sec = left % 60;
+      status.textContent = `Active: 4x (${min}:${String(sec).padStart(2,"0")} left)`;
+
+      btn.disabled = true;
+      btn.textContent = "4x Active";
+      btn.style.background = "linear-gradient(#2ecc71,#1da85b)";
+
+    // Cooldown
     } else if (now < multiplierCooldownUntil) {
       const left = Math.ceil((multiplierCooldownUntil - now) / 1000);
       const min = Math.floor(left / 60);
@@ -1055,14 +1555,7 @@ function updateMultiplierStatus() {
       btn.textContent = "Cooldown";
       btn.style.background = "";
 
-    // Case: Maxed
-    } else if (multiplierLevel >= 4) {
-      status.textContent = "Multiplier Maxed (4x)";
-      btn.disabled = true;
-      btn.textContent = "Maxed";
-      btn.style.background = "";
-
-    // Case: Available
+    // Ready to buy again (no active, no cooldown)
     } else {
       status.textContent = "";
       btn.disabled = state.money < MULTIPLIER_COST;
@@ -1080,14 +1573,34 @@ function updateMultiplierStatus() {
 function buyMultiplier() {
   const now = Date.now();
   if (state.money < MULTIPLIER_COST) return;
-  if (now < multiplierCooldownUntil) return;
+
+  // If the previous effect & cooldown have fully ended, reset level
+  if (now > multiplierActiveUntil && now > multiplierCooldownUntil) {
+    multiplierLevel = 1;
+  }
+
+  // If already at 4x, stop
   if (multiplierLevel >= 4) return;
 
-  state.money -= MULTIPLIER_COST;
-  multiplierLevel = multiplierLevel === 1 ? 2 : 4;
-  multiplierActiveUntil = now + MULTIPLIER_DURATION;
-  multiplierCooldownUntil = now + MULTIPLIER_COOLDOWN;
+  // If no multiplier active yet
+  if (multiplierLevel < 2) {
+    // Block cooldown if one is still running
+    if (now < multiplierCooldownUntil) return;
 
+    multiplierLevel = 2;
+    multiplierActiveUntil = now + MULTIPLIER_DURATION;
+    multiplierCooldownUntil = now + MULTIPLIER_COOLDOWN;
+
+  // If already at 2x, upgrade to 4x without resetting timers
+  } else if (multiplierLevel === 2) {
+    multiplierLevel = 4;
+    // Do NOT change multiplierActiveUntil or multiplierCooldownUntil
+  }
+
+  state.money -= MULTIPLIER_COST;
+
+  // 🟢 Apply EPS boost immediately
+  recalcEPS();
   updateTop();
   updateMultiplierStatus();
   save();
@@ -1158,14 +1671,184 @@ recalcEPS = function() {
   });
   baseEPS = total;
 
-  // Apply multiplier (2x or 4x)
-  state.eps = applyMultiplier(baseEPS);
+  // Sum pet EPS
+  let petTotal = 0;
+  state.petStands.forEach(ps => {
+    if(!ps) return;
+    if(ps.petEps) petTotal += ps.petEps;
+  });
+
+  let combined = baseEPS + petTotal;
+  combined = combined * multiplierLevel * (state.permanentPetMultiplier || 1);
+  state.eps = Math.floor(combined);
 
   updateTop();
   save();
 };
 
 
+
+/* -----------------------
+   PET SHOP LOGIC
+   ----------------------- */
+
+const PET_PEDESTAL_COST = 15_000_000;
+const EGG_COSTS = { legendary: 10_000_000, mythical: 15_000_000, enchanted: 25_000_000 };
+const HATCH_DURATION = 10 * 60 * 1000; // 10 minutes (ms)
+
+// pet outcome tables & EPS values
+const PET_TABLES = {
+  legendary: [
+    { name: 'Dog',    chance: 0.70, eps: 5000 },
+    { name: 'Cat',    chance: 0.20, eps: 5000 },
+    { name: 'Gold Dog', chance: 0.10, eps: 10000 }
+  ],
+  mythical: [
+    { name: 'Lion', chance: 0.80, eps: 2000 },
+    { name: 'Bear', chance: 0.15, eps: 6000 },
+    { name: 'Dino', chance: 0.05, eps: 15000 }
+  ],
+  enchanted: [
+    { name: 'Owl', chance: 0.94, eps: 8000 },
+    { name: 'Rainbow Panda', chance: 0.05, eps: 35000 },
+    { name: 'Flex T-Rex', chance: 0.01, eps: 60000 } // special: grants permanent 5x
+  ]
+};
+
+function weightedPetPick(eggType){
+  const list = PET_TABLES[eggType];
+  const r = Math.random();
+  let acc = 0;
+  for(const p of list){
+    acc += p.chance;
+    if(r <= acc) return p;
+  }
+  return list[list.length-1];
+}
+
+function updatePetButtonsUI(){
+  const btn = document.getElementById('buyPetPedestal');
+  const status = document.getElementById('petPedestalStatus');
+  if(!btn || !status) return;
+  btn.disabled = state.petPedestalsPurchased >= 2 || state.money < PET_PEDESTAL_COST;
+  if(state.petPedestalsPurchased >= 2){
+    status.textContent = 'Max pedestals purchased';
+    btn.textContent = 'Purchased';
+    btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+  } else {
+    status.textContent = `Purchased: ${state.petPedestalsPurchased}/2`;
+    btn.textContent = 'Purchase';
+    btn.style.background = '';
+  }
+
+  // egg buttons enable based on money
+  document.getElementById('buyLegendEgg').disabled = state.money < EGG_COSTS.legendary;
+  document.getElementById('buyMythEgg').disabled = state.money < EGG_COSTS.mythical;
+  document.getElementById('buyEnchantedEgg').disabled = state.money < EGG_COSTS.enchanted;
+}
+
+// buy pedestal
+function buyPetPedestal(){
+  if(state.petPedestalsPurchased >= 2) return;
+  if(state.money < PET_PEDESTAL_COST) return;
+  state.money -= PET_PEDESTAL_COST;
+  state.petPedestalsPurchased++;
+  updateTop();
+  updatePetButtonsUI();
+  renderStands();
+  save();
+}
+
+// buy egg functions: create egg inventory item
+function buyEgg(type){
+  const cost = EGG_COSTS[type];
+  if(state.money < cost) return;
+  state.money -= cost;
+  const inv = {
+    uid: uid(),
+    name: (type.charAt(0).toUpperCase() + type.slice(1)) + ' Egg',
+    isEgg: true,
+    eggType: type,
+    svg: getEggSvg(type, Math.floor(Math.random()*99999)),
+    baseIdx: 0
+  };
+  state.inventory.push(inv);
+  updateTop();
+  renderInventory();
+  save();
+}
+
+// Check pet timers and hatch if needed
+function checkPetHatches(){
+  const now = Date.now();
+  let changed=false;
+  for(const idxStr in state.petTimers){
+    const idx = Number(idxStr);
+    const t = state.petTimers[idx];
+    if(!t) continue;
+    // update timer UI elements (if any)
+    const timerEl = document.querySelector(`.pet-timer[data-index='${idx}']`);
+    if(timerEl){
+      const left = Math.max(0, t - now);
+      const s = Math.floor(left/1000);
+      const m = Math.floor(s/60);
+      const sec = s%60;
+      timerEl.textContent = `${m}:${String(sec).padStart(2,'0')}`;
+    }
+    if(now >= t){
+      // hatch
+      const placed = state.petStands[idx];
+      if(placed && placed.isEgg){
+        // determine result
+        const result = weightedPetPick(placed.eggType || 'legendary');
+        const petObj = {
+          uid: uid(),
+          name: result.name,
+          isEgg: false,
+          eggType: null,
+          petType: result.name,
+          petEps: result.eps,
+          svg: getPetSvg(result.name, Math.floor(Math.random()*99999))
+        };
+        // apply Flex T-Rex permanent multiplier if hatched
+        if(result.name === 'Flex T-Rex'){
+          state.permanentPetMultiplier = 5;
+        }
+        state.petStands[idx] = petObj;
+        delete state.petTimers[idx];
+        changed=true;
+      } else {
+        delete state.petTimers[idx];
+      }
+    }
+  }
+  if(changed){
+    recalcEPS();
+    renderInventory();
+    renderStands();
+    save();
+  }
+}
+
+// Hook up pet UI open/close
+$('#openPetShop').addEventListener('click', ()=>{
+  $('#petOverlay').classList.add('show');
+  $('#petOverlay').setAttribute('aria-hidden','false');
+  updatePetButtonsUI();
+});
+$('#closePetShop').addEventListener('click', ()=>{
+  $('#petOverlay').classList.remove('show');
+  $('#petOverlay').setAttribute('aria-hidden','true');
+});
+
+document.getElementById('buyPetPedestal').addEventListener('click', buyPetPedestal);
+document.getElementById('buyLegendEgg').addEventListener('click', ()=>buyEgg('legendary'));
+document.getElementById('buyMythEgg').addEventListener('click', ()=>buyEgg('mythical'));
+document.getElementById('buyEnchantedEgg').addEventListener('click', ()=>buyEgg('enchanted'));
+
+/* -----------------------
+   BOOT
+----------------------- */
 
 async function boot(){
   await load();
