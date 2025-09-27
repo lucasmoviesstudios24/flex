@@ -494,6 +494,33 @@ body.deleting .slot .del-x { display:block !important; }
 #deleteToggleBtn svg{filter:none;opacity:.95;}
 #deleteToggleBtn.active svg{filter:drop-shadow(0 0 6px rgba(255,59,48,.6));stroke:#ff3b30;}
 
+
+/* --- Fix Achievements “Quests” tab oversize: constrain + scroll --- */
+#achOverlay .sheet{
+  /* keep same width as you already use; cap the height to the viewport */
+  max-height: min(90vh, 820px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;          /* prevent the sheet from expanding */
+}
+
+/* Make the inner content area scroll */
+#achOverlay .achv-wrap{
+  flex: 1 1 auto;
+  min-height: 0;             /* CRITICAL so the child is allowed to shrink + scroll */
+  overflow: auto;
+  padding-right: 6px;        /* so scrollbar doesn’t cover content */
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS/Safari */
+}
+
+/* (Optional) if you want the left rarity rail to stay visible while scrolling, add: */
+#achOverlay .rarity-rail{
+  position: sticky;
+  top: 0;                    /* stick to top inside the sheet */
+  align-self: flex-start;    /* ensure it sizes to its content */
+}
+
+
 </style>
 </head>
 <body>
@@ -702,7 +729,7 @@ document.getElementById("resetGame").addEventListener("click", function() {
     legacy:{ label:'LEGACY', color:'var(--c-legacy)', income: 8000, price:[900_000, 2_500_000], prob: 0.005 },
     birthday: { label:'BIRTHDAY', color:'#ff62d5', income: 15000, price:[0,0], prob: 0 },
     mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 },
-    unique:  { label:'UNIQUE', color:'navy', income: 10000, price:[0,0], prob: 0.003 },
+    unique:  { label:'UNIQUE', color:'navy', income: 10000, price:[2_500_000,4_000_000], prob: 0.003 },
     exotic:  { label:'EXOTIC', color:'cyan', income: 15000, price:[0,0], prob: 0 }
   };
 
