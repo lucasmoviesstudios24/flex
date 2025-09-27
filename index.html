@@ -535,6 +535,33 @@ body.deleting .slot .del-x { display:block !important; }
   box-sizing: border-box;
 }
 
+/* Right-side vertical list under Achievements */
+.right-rail{
+  position: fixed;
+  right: 16px;
+  top: 180px;
+  display: flex;
+  flex-direction: column;  /* vertical list */
+  gap: 16px;
+  z-index: 8;
+}
+
+/* Use the rail footprint; ignore any old fixed/inset styles */
+.right-rail #openBgSelector,
+.right-rail #deleteToggleBtn{
+  position: static !important;
+  inset: auto !important;
+  width: 76px; height: 76px;   /* same size as Achievements */
+  margin: 0;
+  display: grid; place-items: center;
+}
+
+/* Ensure the delete button is icon-only (no button background/border) */
+#deleteToggleBtn.delete-toggle-btn{
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 
 
 </style>
@@ -1973,19 +2000,32 @@ window.addEventListener("beforeunload", save);
 
 <!-- Right-side buttons -->
 <div class="right-rail">
+  <!-- Achievements -->
   <button id="openAchievements" class="icon-achievements" title="Achievements" onclick="document.getElementById('achOverlay').classList.add('show'); window.__achRefresh && window.__achRefresh();">
     <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="8" r="6"></circle><path d="M8 14v6l4-2 4 2v-6"></path>
     </svg>
   </button>
+
+  <!-- Background Changer (middle) -->
+  <button id="openBgSelector" class="bg-selector-btn" title="Backgrounds" onclick="document.getElementById('bgOverlay').classList.add('show'); window.__renderBgGrid && window.__renderBgGrid();">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 21H3V3h18zM7 17l3-4 2 3 3-5 2 6H7z"></path>
+    </svg>
+  </button>
+
+  <!-- Delete Mode (bottom) -->
+  <button id="deleteToggleBtn" class="delete-toggle-btn" aria-pressed="false" title="Toggle deletion mode">
+  <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e84545" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    <line x1="10" y1="11" x2="10" y2="17"></line>
+    <line x1="14" y1="11" x2="14" y2="17"></line>
+  </svg>
+  </button>
 </div>
 
-<!-- Background selector button -->
-<button id="openBgSelector" class="bg-selector-btn" title="Backgrounds" onclick="document.getElementById('bgOverlay').classList.add('show'); window.__renderBgGrid && window.__renderBgGrid();">
-  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 21H3V3h18zM7 17l3-4 2 3 3-5 2 6H7z"/>
-  </svg>
-</button>
+
 
 <!-- Achievements Overlay -->
 <div class="overlay" id="achOverlay" aria-hidden="true">
@@ -2010,15 +2050,6 @@ window.addEventListener("beforeunload", save);
 </div>
 
 
-<!-- Delete Mode Toggle (trash icon) -->
-<button id="deleteToggleBtn" title="Toggle deletion mode" style="position:fixed; right:300px; bottom:24px; z-index:9999; border:none; background:none; cursor:pointer; pointer-events:auto;">
-  <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e84545" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <polyline points="3 6 5 6 21 6"></polyline>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-    <line x1="10" y1="11" x2="10" y2="17"></line>
-    <line x1="14" y1="11" x2="14" y2="17"></line>
-  </svg>
-</button>
 
 
 <!-- Background Selector Overlay -->
