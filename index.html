@@ -440,6 +440,60 @@ body.redblue::after {
 }
 
 
+
+/* === Add-on: Achievements + Background Selector === */
+.right-rail{position:fixed;right:16px;top:180px;display:flex;flex-direction:column;gap:16px;z-index:8;}
+.icon-achievements,.bg-selector-btn{width:76px;height:76px;border-radius:20px;display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow);border:4px solid rgba(0,0,0,.4);}
+.icon-achievements{background:#ffd24a;}
+.bg-selector-btn{position:fixed;right:120px;bottom:24px;z-index:9;background:linear-gradient(45deg,#222,#444);}
+.icon-achievements svg,.bg-selector-btn svg{width:60%;height:60%;}
+
+.sheet{width:min(1024px,94%);background:#4a4a52;border-radius:30px;border:6px solid #212127;box-shadow:var(--shadow);padding:24px;color:#e8e8ee;position:relative;}
+.sheet h2{margin:0 0 18px;font-family:"Russo One";font-size:42px;letter-spacing:1px;text-align:center;}
+
+.rarity-rail{width:220px;background:#25252b;border-radius:24px;border:4px solid #111;padding:16px;display:flex;flex-direction:column;gap:8px;align-self:flex-start;}
+.achv-wrap{display:grid;grid-template-columns:220px 1fr;gap:18px;}
+.rail-btn{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:14px;background:#33333b;border:2px solid #1a1a1f;font-weight:800;cursor:pointer;}
+.rail-btn.active{outline:3px solid var(--ui-blue);}
+.badge-dot{width:10px;height:10px;border-radius:999px;background:#666;}
+.badge-dot.done{background:#58e36c;}
+
+.quest-card{background:#33333b;border-radius:22px;border:4px solid #1a1a1f;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;}
+.quest-card .q-left{display:flex;align-items:center;gap:12px;}
+.q-check{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;border:2px solid #111;background:#555;font-weight:900;}
+.q-check.ok{background:#58e36c;color:#111;}
+.reward-pill{padding:6px 10px;border-radius:12px;background:#ffb200;color:#000;font-weight:900;}
+
+.bg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;}
+.bg-tile{height:120px;border-radius:18px;border:4px solid #111;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.bg-tile.locked::after{content:"LOCKED";position:absolute;inset:auto 0 0 0;background:rgba(0,0,0,.55);color:#fff;text-align:center;padding:6px 0;font-weight:900;}
+.bg-apply{align-self:flex-end;margin-top:6px;}
+
+body.bg-green{background:linear-gradient(to bottom,#3edc64,#1e6f2b)!important;}
+body.bg-blue{background:linear-gradient(to bottom,#4aa3ff,#0b2e6e)!important;}
+body.bg-purple{background:linear-gradient(to bottom,#a76bff,#ff72c6)!important;}
+body.bg-orange{background:linear-gradient(to bottom,#ff9b3d,#b98200)!important;}
+body.bg-legacy{background:linear-gradient(135deg,#ff7eb3,#ff2a68)!important;}
+body.bg-unique{background:linear-gradient(135deg,#0a1a4b,#123a8c)!important;}
+body.bg-exotic{background:linear-gradient(135deg,#cfefff,#a0a9b8)!important;}
+body.bg-mythic{background:linear-gradient(135deg,#FFD700,#B8860B)!important;}
+body.bg-rainbow{background:linear-gradient(135deg,#ff004c,#ff7a00,#ffd400,#18e300,#00e7ff,#3a31ff,#ff31ff);background-size:400% 400%;animation:rainbowFlow 14s linear infinite;}
+@keyframes rainbowFlow{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+
+
+/* Deletion mode */
+body.deleting .slot .del-x { display:block !important; }
+.slot .del-x,
+.pet-placed .del-x {
+  display:none; position:absolute; right:-8px; top:-8px; width:26px; height:26px; border-radius:50%;
+  background:#ff3b30; color:#fff; font-weight:900; box-shadow:0 2px 6px rgba(0,0,0,.4);
+  border:2px solid #111; cursor:pointer; display:grid; place-items:center; z-index:3;
+}
+.slot { position:relative; }
+/* Trash toggle visual state */
+#deleteToggleBtn svg{filter:none;opacity:.95;}
+#deleteToggleBtn.active svg{filter:drop-shadow(0 0 6px rgba(255,59,48,.6));stroke:#ff3b30;}
+
 </style>
 </head>
 <body>
@@ -615,9 +669,16 @@ body.redblue::after {
   inventory bar sits fixed at the bottom like your concept art, pedestals/placed items are raised above it,
   and slots have larger sizes and a thick outlined container matching the visual.
 -->
-
+<button id="resetGame" style="margin-left:20px;background:#e74c3c;color:#fff;padding:8px 16px;border-radius:12px;border:none;font-weight:bold;cursor:pointer;">Reset Game</button>
 <script>
-
+document.getElementById("resetGame").addEventListener("click", function() {
+  if (confirm("Are you sure you want to reset your game? This cannot be undone.")) {
+    localStorage.removeItem("flexSave");
+    // Set a flag so boot knows NOT to load from localStorage
+    sessionStorage.setItem("doGameReset", "1");
+    location.reload();
+  }
+});
 /* ---------------------------
    Paste your entire original JavaScript here (unchanged).
    For brevity in this example I am keeping the JS unchanged from your provided code.
@@ -955,28 +1016,19 @@ function recalcEPS(){
   save();
 }
   let lastTick = performance.now();
-function tick(now) {
-  const dt = (now - lastTick)/1000;
-  lastTick = now;
+  function tick(now){
+    const dt = (now - lastTick)/1000;
+    lastTick = now;
+    if(state.eps>0){
+      state.money += state.eps * dt;
+      updateTop();
+    }
 
-  // 💰 Earnings
-  if (state.eps>0){
-    state.money += state.eps * dt;
-    updateTop();
+    // Check pet timers (hatch)
+    checkPetHatches();
+
+    requestAnimationFrame(tick);
   }
-
-  // 🐣 Pets
-  checkPetHatches();
-
-  // ⏲️ NEW: turn off multiplier after active time ends
-  if (multiplierLevel > 1 && Date.now() > multiplierActiveUntil) {
-    multiplierLevel = 1;
-    recalcEPS(); // recalc without the boost
-    updateMultiplierStatus();
-  }
-
-  requestAnimationFrame(tick);
-}
 
 function downloadSave() {
   try {
@@ -1574,11 +1626,6 @@ function buyMultiplier() {
   const now = Date.now();
   if (state.money < MULTIPLIER_COST) return;
 
-  // If the previous effect & cooldown have fully ended, reset level
-  if (now > multiplierActiveUntil && now > multiplierCooldownUntil) {
-    multiplierLevel = 1;
-  }
-
   // If already at 4x, stop
   if (multiplierLevel >= 4) return;
 
@@ -1699,9 +1746,9 @@ const HATCH_DURATION = 10 * 60 * 1000; // 10 minutes (ms)
 // pet outcome tables & EPS values
 const PET_TABLES = {
   legendary: [
-    { name: 'Dog',    chance: 0.70, eps: 5000 },
-    { name: 'Cat',    chance: 0.20, eps: 5000 },
-    { name: 'Gold Dog', chance: 0.10, eps: 10000 }
+    { name: 'Dog',    chance: 0.70, eps: 300 },
+    { name: 'Cat',    chance: 0.20, eps: 1200 },
+    { name: 'Gold Dog', chance: 0.10, eps: 4000 }
   ],
   mythical: [
     { name: 'Lion', chance: 0.80, eps: 2000 },
@@ -1709,9 +1756,9 @@ const PET_TABLES = {
     { name: 'Dino', chance: 0.05, eps: 15000 }
   ],
   enchanted: [
-    { name: 'Owl', chance: 0.94, eps: 8000 },
-    { name: 'Rainbow Panda', chance: 0.05, eps: 35000 },
-    { name: 'Flex T-Rex', chance: 0.01, eps: 60000 } // special: grants permanent 5x
+    { name: 'Owl', chance: 0.94, eps: 1000 },
+    { name: 'Rainbow Panda', chance: 0.05, eps: 12000 },
+    { name: 'Flex T-Rex', chance: 0.01, eps: 50000 } // special: grants permanent 5x
   ]
 };
 
@@ -1880,5 +1927,600 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
 window.addEventListener("beforeunload", save);
   window.addEventListener("beforeunload", save);
 </script>
+
+<!-- Right-side buttons -->
+<div class="right-rail">
+  <button id="openAchievements" class="icon-achievements" title="Achievements" onclick="document.getElementById('achOverlay').classList.add('show'); window.__achRefresh && window.__achRefresh();">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="8" r="6"></circle><path d="M8 14v6l4-2 4 2v-6"></path>
+    </svg>
+  </button>
+</div>
+
+<!-- Background selector button -->
+<button id="openBgSelector" class="bg-selector-btn" title="Backgrounds" onclick="document.getElementById('bgOverlay').classList.add('show'); window.__renderBgGrid && window.__renderBgGrid();">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 21H3V3h18zM7 17l3-4 2 3 3-5 2 6H7z"/>
+  </svg>
+</button>
+
+<!-- Achievements Overlay -->
+<div class="overlay" id="achOverlay" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="achTitle">
+    <button class="closeX" id="closeAchievements" aria-label="Close" onclick="document.getElementById('achOverlay').classList.remove('show')">✕</button>
+    <h2 id="achTitle">Achievements</h2>
+    <div class="achv-wrap">
+      <div class="rarity-rail" id="rarityRail">
+        <div class="rail-btn" data-tab="quests"><span>QUESTS</span><span class="badge-dot" id="questsDot"></span></div>
+        <div class="rail-btn" data-tab="common"><span>COMMON</span><span class="badge-dot" id="dot-common"></span></div>
+        <div class="rail-btn" data-tab="rare"><span>RARE</span><span class="badge-dot" id="dot-rare"></span></div>
+        <div class="rail-btn" data-tab="epic"><span>EPIC</span><span class="badge-dot" id="dot-epic"></span></div>
+        <div class="rail-btn" data-tab="legendary"><span>LEGENDARY</span><span class="badge-dot" id="dot-legendary"></span></div>
+        <div class="rail-btn" data-tab="legacy"><span>LEGACY</span><span class="badge-dot" id="dot-legacy"></span></div>
+        <div class="rail-btn" data-tab="unique"><span>UNIQUE</span><span class="badge-dot" id="dot-unique"></span></div>
+        <div class="rail-btn" data-tab="exotic"><span>EXOTIC</span><span class="badge-dot" id="dot-exotic"></span></div>
+        <div class="rail-btn" data-tab="mythic"><span>MYTHIC</span><span class="badge-dot" id="dot-mythic"></span></div>
+      </div>
+      <div id="achContent"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Delete Mode Toggle (trash icon) -->
+<button id="deleteToggleBtn" title="Toggle deletion mode" style="position:fixed; right:300px; bottom:24px; z-index:9999; border:none; background:none; cursor:pointer; pointer-events:auto;">
+  <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e84545" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    <line x1="10" y1="11" x2="10" y2="17"></line>
+    <line x1="14" y1="11" x2="14" y2="17"></line>
+  </svg>
+</button>
+
+
+<!-- Background Selector Overlay -->
+<div class="overlay" id="bgOverlay" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bgTitle">
+    <button class="closeX" id="closeBg" aria-label="Close" onclick="document.getElementById('bgOverlay').classList.remove('show')">✕</button>
+    <h2 id="bgTitle">Backgrounds</h2>
+    <div id="bgGrid" class="bg-grid"></div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  const RLIST=['common','rare','epic','legendary','legacy','unique','exotic','mythic'];
+  const R2BG={common:'green',rare:'blue',epic:'purple',legendary:'orange',legacy:'legacy',unique:'unique',exotic:'exotic',mythic:'mythic'};
+  const BG={green:{c:'bg-green',l:'GREEN'},blue:{c:'bg-blue',l:'BLUE'},purple:{c:'bg-purple',l:'PURPLE'},orange:{c:'bg-orange',l:'ORANGE'},legacy:{c:'bg-legacy',l:'LEGACY'},unique:{c:'bg-unique',l:'UNIQUE'},exotic:{c:'bg-exotic',l:'EXOTIC'},mythic:{c:'bg-mythic',l:'MYTHIC'},redblue:{c:'redblue',l:'RED/BLUE'},rainbow:{c:'bg-rainbow',l:'RAINBOW'}};
+
+  window.state=window.state||{};
+  state.ach=state.ach||{questsDone:{},petPedestalGranted:false};
+  state.unlockedBackgrounds=state.unlockedBackgrounds||{default:true};
+  state.selectedBackground=state.selectedBackground||'default';
+
+  const $=s=>document.querySelector(s);
+  const $$=s=>Array.from(document.querySelectorAll(s));
+  const keyOf=r=>String(r||'').toLowerCase();
+
+  function countAll(fn){let n=0;(state.inventory||[]).forEach(i=>{try{if(fn(i))n++;}catch{}});Object.values(state.placed||{}).forEach(i=>{try{if(fn(i))n++;}catch{}});return n;}
+  function countR(r){return countAll(i=>keyOf(i.rarity)===r);}
+  function hasPlaced(r){return Object.values(state.placed||{}).some(i=>keyOf(i.rarity)===r);}
+  function eggs(){return countAll(i=>!!i.isEgg);}
+
+  function unlockBG(k){state.unlockedBackgrounds[k]=true;__renderBgGrid&&__renderBgGrid(); if(typeof save==='function') save();}
+  function applyBG(k){
+    document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue');
+    if(k==='default'){state.selectedBackground='default';return;}
+    const d=BG[k]; if(!d) return;
+    document.body.classList.add(d.c); state.selectedBackground=k;
+  }
+
+  const GLOBAL=[
+    {id:'g_c15',label:'Purchase 15 Common',check:()=>countR('common')>=15},
+    {id:'g_r15',label:'Purchase 15 Rare',check:()=>countR('rare')>=15},
+    {id:'g_e5', label:'Own 5 Epic',check:()=>countR('epic')>=5},
+    {id:'g_l2', label:'Own 2 Legendary',check:()=>countR('legendary')>=2},
+    {id:'g_eg5',label:'Purchase 5 Eggs',check:()=>eggs()>=5},
+    {id:'g_pl4',label:'Fill all 4 pedestals',check:()=>Array.isArray(state.stands)&&state.stands.every(Boolean)},
+    {id:'g_maxpet',label:'Max Pet Pedestals',check:()=>(state.petPedestalsPurchased||0)>=2},
+    {id:'g_u1', label:'Own a Unique',check:()=>countR('unique')>=1},
+    {id:'g_ex1',label:'Own an Exotic',check:()=>countR('exotic')>=1},
+    {id:'g_my1',label:'Own a Mythic',check:()=>countR('mythic')>=1}
+  ];
+
+  function __isDone(q){ return (state.ach && state.ach.questsDone && !!state.ach.questsDone[q.id]) || (!!q.check && q.check()); }
+
+  const RQ={
+    common:[
+      {id:'c_own15',label:'Own 15 Common',check:()=>countR('common')>=15},
+      {id:'c_place',label:'Place a Common',check:()=>hasPlaced('common')},
+      {id:'c_own30',label:'Own 30 Common',check:()=>countR('common')>=30}
+    ],
+    rare:[
+      {id:'r_own15',label:'Own 15 Rare',check:()=>countR('rare')>=15},
+      {id:'r_place',label:'Place a Rare',check:()=>hasPlaced('rare')},
+      {id:'r_own25',label:'Own 25 Rare',check:()=>countR('rare')>=25}
+    ],
+    epic:[
+      {id:'e_own5',label:'Own 5 Epic',check:()=>countR('epic')>=5},
+      {id:'e_place',label:'Place an Epic',check:()=>hasPlaced('epic')},
+      {id:'e_own10',label:'Own 10 Epic',check:()=>countR('epic')>=10}
+    ],
+    legendary:[
+      {id:'l_own2',label:'Own 2 Legendary',check:()=>countR('legendary')>=2},
+      {id:'l_place',label:'Place a Legendary',check:()=>hasPlaced('legendary')},
+      {id:'l_own4',label:'Own 4 Legendary',check:()=>countR('legendary')>=4}
+    ],
+    legacy:[
+      {id:'lc_own1',label:'Own 1 Legacy',check:()=>countR('legacy')>=1},
+      {id:'lc_place',label:'Place a Legacy',check:()=>hasPlaced('legacy')},
+      {id:'lc_own2',label:'Own 2 Legacy',check:()=>countR('legacy')>=2}
+    ],
+    unique:[
+      {id:'u_own1',label:'Own 1 Unique',check:()=>countR('unique')>=1},
+      {id:'u_place',label:'Place a Unique',check:()=>hasPlaced('unique')},
+      {id:'u_own2',label:'Own 2 Unique',check:()=>countR('unique')>=2}
+    ],
+    exotic:[
+      {id:'x_own1',label:'Own 1 Exotic',check:()=>countR('exotic')>=1},
+      {id:'x_place',label:'Place an Exotic',check:()=>hasPlaced('exotic')},
+      {id:'x_own2',label:'Own 2 Exotic',check:()=>countR('exotic')>=2}
+    ],
+    mythic:[
+      {id:'m_own1',label:'Own 1 Mythic',check:()=>countR('mythic')>=1},
+      {id:'m_place',label:'Place a Mythic',check:()=>hasPlaced('mythic')},
+      {id:'m_own2',label:'Own 2 Mythic',check:()=>countR('mythic')>=2}
+    ]
+  };
+
+  // Persist completions for ANY quest that is currently true (runs even when overlay is closed)
+  function persistAllCompletions(){
+    let changed=false;
+    GLOBAL.forEach(q=>{ if(q.check && q.check() && !(state.ach.questsDone||{})[q.id]){ state.ach.questsDone[q.id]=true; changed=true; } });
+    RLIST.forEach(r=>{ (RQ[r]||[]).forEach(q=>{ if(q.check && q.check() && !(state.ach.questsDone||{})[q.id]){ state.ach.questsDone[q.id]=true; changed=true; } }); });
+    if(changed){ window.__addonSave&&__addonSave(); if(typeof save==='function') save(); }
+  }
+
+  function qRow(q){
+    const now = !!(q.check && q.check());
+    if(now){ state.ach.questsDone[q.id]=true; window.__addonSave&&__addonSave(); if(typeof save==='function') save(); }
+    const ok = __isDone(q);
+    const d=document.createElement('div');
+    d.className='quest-card';
+    d.innerHTML='<div class=\"q-left\">'
+      + '<div class=\"q-check '+(ok?'ok':'')+'\">'+(ok?'✓':'')+'</div>'
+      + '<div style=\"font-size:20px;font-weight:900;\">'+q.label+'</div>'
+      + '</div>';
+    return d;
+  }
+
+  function gDone(){ return GLOBAL.every(q => __isDone(q)); }
+
+  function refresh(){
+    // First, persist any newly-true quests permanently
+    persistAllCompletions();
+
+    const md=(id,done)=>{const el=document.getElementById(id); if(el) el.classList.toggle('done',!!done);};
+    md('questsDot', gDone());
+    RLIST.forEach(r=>{ const all=(RQ[r]||[]).every(q=>__isDone(q)); md('dot-'+r, all); });
+
+    if(gDone() && !state.ach.petPedestalGranted){
+  state.ach.petPedestalGranted=true;
+  state.ach.petThirdUnlocked=true;
+  if(!Array.isArray(state.petStands)) state.petStands=[null,null,null];
+  if(!Array.isArray(state.petTimers)) state.petTimers=[null,null,null];
+  if(typeof renderStands==='function') renderStands();
+  if(typeof recalcEPS==='function') recalcEPS();
+ window.__addonSave&&__addonSave();}
+
+    Object.entries(R2BG).forEach(([r,b])=>{ if((RQ[r]||[]).every(q=>__isDone(q))) unlockBG(b); window.__addonSave&&__addonSave(); });
+    if(RLIST.every(r => (RQ[r]||[]).every(q=>__isDone(q)))) unlockBG('rainbow'); window.__addonSave&&__addonSave();
+
+    const active=document.querySelector('.rail-btn.active');
+    if(active) renderTab(active.dataset.tab);
+
+    if(typeof save==='function') save();
+  }
+  window.__achRefresh=refresh;
+
+  function renderTab(tab){
+    const host=document.getElementById('achContent'); if(!host) return;
+    host.innerHTML='';
+    if(tab==='quests'){
+      const head=document.createElement('div');
+      head.innerHTML='<h3 style=\"margin:8px 0 10px;font-family:Bungee;letter-spacing:1px;\">Quests</h3>'
+        + '<div style=\"opacity:.85;margin-bottom:10px\">Complete the 10 quests to earn <span class=\"reward-pill\">+1 Pet Pedestal</span>.</div>';
+      host.appendChild(head);
+      GLOBAL.forEach(q=>host.appendChild(qRow(q)));
+      const done=GLOBAL.filter(q=>__isDone(q)).length;
+      const f=document.createElement('div'); f.style.cssText='margin-top:12px;font-weight:900;opacity:.9;';
+      f.textContent='Progress: '+done+' / '+GLOBAL.length; host.appendChild(f);
+      return;
+    }
+    const hdr=document.createElement('div');
+    hdr.innerHTML='<h3 style=\"margin:8px 0 10px;font-family:Bungee;letter-spacing:1px;\">'+tab.toUpperCase()+'</h3>'
+      + '<div style=\"opacity:.85;margin-bottom:10px\">Complete these to unlock a themed background '+(R2BG[tab]?'for this rarity':'')+'.</div>';
+    host.appendChild(hdr);
+    (RQ[tab]||[]).forEach(q=>host.appendChild(qRow(q)));
+    const c=(RQ[tab]||[]).filter(q=>__isDone(q)).length;
+    const f=document.createElement('div'); f.style.cssText='margin-top:12px;font-weight:900;opacity:.9;';
+    f.textContent='Progress: '+c+' / '+(RQ[tab]||[]).length; host.appendChild(f);
+  }
+
+  const rail=document.getElementById('rarityRail');
+  if(rail){
+    rail.addEventListener('click',e=>{
+      const b=e.target.closest('.rail-btn'); if(!b) return;
+      $$('.rail-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); renderTab(b.dataset.tab);
+    });
+    const first=rail.querySelector('[data-tab=\"quests\"]'); if(first){ first.classList.add('active'); renderTab('quests'); }
+  }
+
+  function __renderBgGrid(){
+    const g=document.getElementById('bgGrid'); if(!g) return; g.innerHTML='';
+    const tiles=[
+      {k:'default',l:'DEFAULT',css:'background:linear-gradient(to bottom,#89CFF0,#90EE90);'},
+      {k:'green',l:'GREEN',css:'background:linear-gradient(#3edc64,#1e6f2b);'},
+      {k:'blue',l:'BLUE',css:'background:linear-gradient(#4aa3ff,#0b2e6e);'},
+      {k:'purple',l:'PURPLE',css:'background:linear-gradient(#a76bff,#ff72c6);'},
+      {k:'orange',l:'ORANGE',css:'background:linear-gradient(#ff9b3d,#b98200);'},
+      {k:'legacy',l:'LEGACY',css:'background:linear-gradient(135deg,#ff7eb3,#ff2a68);'},
+      {k:'unique',l:'UNIQUE',css:'background:linear-gradient(135deg,#0a1a4b,#123a8c);'},
+      {k:'exotic',l:'EXOTIC',css:'background:linear-gradient(135deg,#cfefff,#a0a9b8);'},
+      {k:'mythic',l:'MYTHIC',css:'background:linear-gradient(135deg,#FFD700,#B8860B);'},
+      {k:'redblue',l:'RED/BLUE',css:'background:linear-gradient(#ff4b5c,#4b6aff);'},
+      {k:'rainbow',l:'RAINBOW',css:'background:linear-gradient(135deg,#ff004c,#ff7a00,#ffd400,#18e300,#00e7ff,#3a31ff,#ff31ff);background-size:300% 300%;'}
+    ];
+    tiles.forEach(t=>{
+      const el=document.createElement('div');
+      el.className='bg-tile'+(!state.unlockedBackgrounds[t.k]?' locked':'');
+      el.style.cssText+=t.css;
+      el.innerHTML='<div style=\"font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)\">'+t.l+'</div>'
+        + '<button class=\"buy bg-apply\" '+(!state.unlockedBackgrounds[t.k]?'disabled':'')+'>Apply</button>';
+      el.querySelector('.bg-apply').onclick=()=>{ if(!state.unlockedBackgrounds[t.k])return; applyBG(t.k); if(typeof save==='function') save(); };
+      g.appendChild(el);
+    });
+  }
+  window.__renderBgGrid=__renderBgGrid;
+
+  const tbtn=document.getElementById('toggleBackground');
+  if(tbtn){ tbtn.addEventListener('click', ()=>{ state.unlockedBackgrounds.redblue=true; if(typeof save==='function') save(); }); }
+
+  // Wrap lifecycle methods to ensure refresh runs on any major state change
+  const _ri=window.renderInventory||function(){}; window.renderInventory=function(){ _ri(); refresh(); };
+  const _rs=window.renderStands||function(){}; window.renderStands=function(){ _rs(); refresh(); };
+  const _re=window.recalcEPS||function(){}; window.recalcEPS=function(){ _re(); refresh(); };
+
+  // Initial sweep to persist any already-true quests
+  setTimeout(()=>{ persistAllCompletions(); refresh(); },0);
+})();
+</script>
+
+
+<script>
+// --- Add-on: Third Pet Pedestal renderer (non-destructive) ---
+(function(){
+  const HATCH_DURATION = window.HATCH_DURATION || (60*1000*5); // fallback 5 min if not defined
+
+  function ensureArrays(){
+    if(!Array.isArray(state.petStands)) state.petStands=[];
+    if(!Array.isArray(state.petTimers)) state.petTimers=[];
+    while(state.petStands.length<3) state.petStands.push(null);
+    while(state.petTimers.length<3) state.petTimers.push(null);
+  }
+
+  function renderThirdPetSlot(){
+    if(!(state.ach && state.ach.petThirdUnlocked)) return;
+    ensureArrays();
+    const row = document.querySelector('.pet-row');
+    if(!row) return;
+
+    // If we already drew the second row once, clear it to avoid duplicates
+    const old = row.querySelectorAll('.pet-stand.addon-second-row');
+    old.forEach(n=>n.remove());
+
+    // Create 4 boxes for the second row, but only col=1 gets the pedestal (index 2)
+    for(let col=0; col<4; col++){
+      const pbox=document.createElement('div');
+      pbox.className='pet-stand addon-second-row';
+      if(col===1){ // centered under the first two
+        const placeIndex = 2;
+        const pPed = document.createElement('div');
+        pPed.className='pet-pedestal';
+        pbox.appendChild(pPed);
+
+        const placed = state.petStands[placeIndex];
+        if(placed){
+          const p = document.createElement('div');
+          p.className='pet-placed';
+          const nameLabel = (placed.name && placed.name.trim()) ? placed.name : (placed.petType||placed.eggType||'Pet');
+          p.innerHTML = `<img src='${placed.svg}' alt='${nameLabel}' style="width:64px;height:64px;border-radius:12px;">`
+                       + `<div class="name-badge"><span>${nameLabel}</span></div>`;
+          pbox.appendChild(p);
+
+          if(placed.isEgg && state.petTimers[placeIndex]){
+            const timer=document.createElement('div');
+            timer.className='pet-timer';
+            timer.dataset.index=placeIndex;
+            pbox.appendChild(timer);
+          }
+        }
+
+        pbox.addEventListener('click', ()=>{
+          // Remove if nothing selected
+          if(!state.selectedItemUid){
+            if(state.petStands[placeIndex]){
+              state.inventory.push(state.petStands[placeIndex]);
+              state.petStands[placeIndex]=null;
+              state.petTimers[placeIndex]=null;
+              if(typeof recalcEPS==='function') recalcEPS();
+              if(typeof renderInventory==='function') renderInventory();
+              if(typeof renderStands==='function') renderStands();
+              if(typeof save==='function') save();
+            }
+            return;
+          }
+
+          const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
+          if(!newItem) return;
+          if(!(newItem.isEgg || newItem.petType)){
+            alert('Only eggs or pets can be placed on pet pedestals.');
+            return;
+          }
+          if(newItem.isEgg){
+            state.petStands[placeIndex]=newItem;
+            state.petTimers[placeIndex]=Date.now() + (window.HATCH_DURATION||HATCH_DURATION);
+          }else{
+            state.petStands[placeIndex]=newItem;
+          }
+          state.inventory = state.inventory.filter(it => it.uid !== newItem.uid);
+          state.selectedItemUid = null;
+          if(typeof recalcEPS==='function') recalcEPS();
+          if(typeof renderInventory==='function') renderInventory();
+          if(typeof renderStands==='function') renderStands();
+          if(typeof save==='function') save();
+        });
+      }
+      row.appendChild(pbox);
+    }
+  }
+
+  // Wrap original renderStands safely
+  const __origRenderStands = window.renderStands;
+  if(typeof __origRenderStands==='function'){
+    window.renderStands = function(){
+      __origRenderStands.apply(this, arguments);
+      try{ renderThirdPetSlot(); }catch(e){ /* no-op */ }
+    };
+  }
+
+  // On load
+  setTimeout(()=>{ try{ renderThirdPetSlot(); }catch(e){} }, 0);
+})();
+</script>
+
+
+<script>
+// --- Add-on persistence for achievements + backgrounds ---
+(function(){
+  const KEY='flex_addon_persist_v1';
+  function saveAddon(){
+    try{
+      const data={ach:state.ach, ubg:state.unlockedBackgrounds, sel:state.selectedBackground};
+      localStorage.setItem(KEY, JSON.stringify(data));
+    }catch(e){}
+  }
+  function loadAddon(){
+    try{
+      const raw=localStorage.getItem(KEY); if(!raw) return;
+      const d=JSON.parse(raw);
+      if(d.ach){
+        state.ach=state.ach||{questsDone:{}};
+        state.ach.questsDone={...(state.ach.questsDone||{}), ...(d.ach.questsDone||{})};
+        state.ach.petPedestalGranted = state.ach.petPedestalGranted || !!d.ach.petPedestalGranted;
+        state.ach.petThirdUnlocked = state.ach.petThirdUnlocked || !!d.ach.petThirdUnlocked;
+      }
+      if(d.ubg) state.unlockedBackgrounds={...(state.unlockedBackgrounds||{}), ...d.ubg};
+      if(d.sel) { state.selectedBackground=d.sel; try{ if(state.selectedBackground!=='default'){ document.body.classList.add(state.selectedBackground.startsWith('bg-')?state.selectedBackground:({bg:'bg-'}) ); } }catch(e){} }
+    }catch(e){}
+  }
+  // load immediately
+  loadAddon();
+  try{ if(state.selectedBackground && state.selectedBackground!=='default' && typeof applyBG==='function'){ applyBG(state.selectedBackground); } }catch(e){}
+
+  // wrap global save to include addon data and persist locally
+  const __save = window.save;
+  window.save = async function(){
+    try{ saveAddon(); }catch(e){}
+    if(typeof __save === 'function'){ try{ return await __save.apply(this, arguments); }catch(e){ return; } }
+  };
+  window.addEventListener('beforeunload', saveAddon);
+  window.__addonSave = saveAddon;
+})();
+</script>
+
+
+<script>
+(function(){
+  // toggle button -> deletion mode
+  window.state = window.state || {};
+  state.deletionMode = false; // default OFF
+
+  function reflectDeleteMode(){
+    const on = !!state.deletionMode;
+    document.body.classList.toggle('deleting', on);
+    const btn = document.getElementById('deleteToggleBtn');
+    if(btn){ btn.classList.toggle('active', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  }
+
+  function augmentInventorySlots(){
+    try{
+      const slots = Array.from(document.querySelectorAll('#inventory .slot'));
+      slots.forEach((slot, idx)=>{
+        let del = slot.querySelector('.del-x');
+        if(!del){
+          del = document.createElement('button');
+          del.className = 'del-x';
+          del.type = 'button';
+          del.title = 'Delete item';
+          del.textContent = '×';
+          slot.appendChild(del);
+          del.addEventListener('click', (ev)=>{
+            ev.preventDefault(); ev.stopPropagation();
+            if(!state.deletionMode) return;
+            if(!Array.isArray(state.inventory)) return;
+            const item = state.inventory[idx];
+            if(!item) return;
+            state.inventory.splice(idx,1);
+            if(typeof save==='function') try{ save(); }catch(e){}
+            if(typeof renderInventory==='function') try{ renderInventory(); }catch(e){}
+          });
+        }
+      });
+    }catch(e){}
+  }
+
+  // Initial reflect + augment once DOM is ready
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ()=>{ reflectDeleteMode(); augmentInventorySlots(); });
+  }else{
+    reflectDeleteMode(); augmentInventorySlots();
+  }
+
+  // Robust: delegate click to handle dynamic re-renders
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('#deleteToggleBtn');
+    if(!btn) return;
+    e.preventDefault();
+    state.deletionMode = !state.deletionMode;
+    reflectDeleteMode();
+    augmentInventorySlots();
+    if(typeof renderInventory==='function') try{ renderInventory(); }catch(e){}
+  });
+
+  // After every inventory render, augment again to ensure buttons exist
+  const __ri_hook = window.renderInventory;
+  if(typeof __ri_hook === 'function'){
+    window.renderInventory = function(){
+      __ri_hook.apply(this, arguments);
+      try{ augmentInventorySlots(); reflectDeleteMode(); }catch(e){}
+    };
+  }
+
+  // Wrap renderInventory to add delete badges mapped by index
+  const __ri = window.renderInventory;
+  if(typeof __ri==='function'){
+    window.renderInventory = function(){
+      __ri.apply(this, arguments);
+      try{
+        const list = Array.from(document.querySelectorAll('#inventory .slot'));
+        list.forEach((el, idx)=>{
+          let del = el.querySelector('.del-x');
+          if(!del){
+            del = document.createElement('button');
+            del.className='del-x'; del.textContent='×';
+            el.appendChild(del);
+            del.addEventListener('click', (ev)=>{
+              ev.stopPropagation();
+              if(!state.deletionMode) return;
+              if(!Array.isArray(state.inventory)) return;
+              const item = state.inventory[idx];
+              if(!item) return;
+              // remove item permanently
+              state.inventory.splice(idx,1);
+              if(typeof save==='function') save();
+              if(window.__addonSave) __addonSave();
+              renderInventory();
+            });
+          }
+        });
+      }catch(e){}
+    };
+  }
+
+  // (Deletion mode does not add delete buttons to pedestals.)
+</script>
+
+
+
+<script>
+(function(){
+  window.state = window.state || {};
+  state.deletionMode = false; // default OFF
+
+  function addDeleteBadgesToInventory(){
+    try{
+      const slots = Array.from(document.querySelectorAll('#inventory .slot'));
+      slots.forEach((slot, idx)=>{
+        let del = slot.querySelector('.del-x');
+        if(!del){
+          del = document.createElement('button');
+          del.className = 'del-x';
+          del.type = 'button';
+          del.title = 'Delete item';
+          del.textContent = '×';
+          slot.appendChild(del);
+          del.addEventListener('click', (ev)=>{
+            ev.preventDefault(); ev.stopPropagation();
+            if(!state.deletionMode) return;
+            if(!Array.isArray(state.inventory)) return;
+            const item = state.inventory[idx];
+            if(!item) return;
+            // Delete item from inventory
+            state.inventory.splice(idx,1);
+            if(typeof save==='function') try{ save(); }catch(e){}
+            if(typeof renderInventory==='function') try{ renderInventory(); }catch(e){}
+          });
+        }
+      });
+    }catch(e){ /* no-op */ }
+  }
+
+  function removeDeleteBadgesFromInventory(){
+    document.querySelectorAll('#inventory .slot .del-x').forEach(el=>el.remove());
+  }
+
+  function reflectDelete(){
+    const on = !!state.deletionMode;
+    const btn = document.getElementById('deleteToggleBtn');
+    document.body.classList.toggle('deleting', on);
+    if(btn){ btn.classList.toggle('active', on); btn.setAttribute('aria-pressed', on?'true':'false'); }
+    if(on){ addDeleteBadgesToInventory(); } else { removeDeleteBadgesFromInventory(); }
+  }
+
+  // Hook into renderInventory so badges sync with current mode after any render
+  const __ri = window.renderInventory;
+  if(typeof __ri === 'function'){
+    window.renderInventory = function(){
+      __ri.apply(this, arguments);
+      reflectDelete();
+    };
+  }
+
+  function init(){
+    // always start OFF on load
+    state.deletionMode = false;
+    reflectDelete();
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+  // Toggle button wiring
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('#deleteToggleBtn');
+    if(!btn) return;
+    e.preventDefault();
+    state.deletionMode = !state.deletionMode;
+    reflectDelete();
+  });
+
+  // Safety: ensure OFF on reload
+  window.addEventListener('beforeunload', ()=>{ state.deletionMode=false; });
+})();
+</script>
+
+
 </body>
 </html>
