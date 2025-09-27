@@ -495,30 +495,46 @@ body.deleting .slot .del-x { display:block !important; }
 #deleteToggleBtn.active svg{filter:drop-shadow(0 0 6px rgba(255,59,48,.6));stroke:#ff3b30;}
 
 
-/* --- Fix Achievements “Quests” tab oversize: constrain + scroll --- */
+/* === Achievements overlay: size, scroll, and no-overlap (final) === */
 #achOverlay .sheet{
-  /* keep same width as you already use; cap the height to the viewport */
   max-height: min(90vh, 820px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;          /* prevent the sheet from expanding */
+  overflow: hidden; /* keeps the sheet capped; inner area will scroll */
 }
 
-/* Make the inner content area scroll */
 #achOverlay .achv-wrap{
+  /* scrollable inner area */
   flex: 1 1 auto;
-  min-height: 0;             /* CRITICAL so the child is allowed to shrink + scroll */
+  min-height: 0;
   overflow: auto;
-  padding-right: 6px;        /* so scrollbar doesn’t cover content */
-  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS/Safari */
+
+  /* lock the two columns so they don't overlap */
+  display: grid !important;
+  grid-template-columns: 220px minmax(0, 1fr) !important;
+  gap: 16px;
+  align-items: start;
 }
 
-/* (Optional) if you want the left rarity rail to stay visible while scrolling, add: */
 #achOverlay .rarity-rail{
-  position: sticky;
-  top: 0;                    /* stick to top inside the sheet */
-  align-self: flex-start;    /* ensure it sizes to its content */
+  grid-column: 1;
+  width: 220px; min-width: 220px; max-width: 220px;
+  position: sticky; top: 0;      /* rail stays visible while the right side scrolls */
+  z-index: 1;
+  float: none;                   /* neutralize any stray float rules */
 }
+
+#achOverlay #achContent{
+  grid-column: 2;
+  min-width: 0;                  /* CRITICAL: lets content shrink within its grid track */
+}
+
+/* safety so children don't force overflow */
+#achOverlay .achv-wrap > *{
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 
 
 </style>
