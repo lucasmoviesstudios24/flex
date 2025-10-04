@@ -173,4 +173,29 @@ app.get('/api/game/files', async (_req, res) => {
 });
 
 
+// Download all saves as one JSON file
+app.get('/api/game/download-all.json', async (_req, res) => {
+  try {
+    const entries = await fsp.readdir(SAVE_DIR, { withFileTypes: true });
+    const jsonFiles = entries.filter(e => e.isFile() && e.name.endsWith('.json'));
+    const out = { exportedAt: new Date().toISOString(), files: {} };
+
+    for (const e of jsonFiles) {
+      try {
+        const raw = await fsp.readFile(path.join(SAVE_DIR, e.name), 'utf8');
+        out.files[e.name] = JSON.parse(raw);
+      } catch (err) {
+        out.files[e.name] = { _error: String(err) };
+      }
+    }
+
+    res.setHeader('Content-Disposition', `attachment; filename="all-saves-${Date.now()}.json"`);
+    res.json(out);
+  } catch (err) {
+    console.error('download-all error', err);
+    res.status(500).json({ error: 'Failed to read save directory' });
+  }
+});
+
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
