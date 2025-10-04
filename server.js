@@ -198,7 +198,7 @@ app.get('/api/game/download-all.json', async (_req, res) => {
   }
 });
 
-// Stream a ZIP of every .json save on the disk
+
 app.get('/api/game/download-all.zip', async (_req, res) => {
   try {
     res.setHeader('Content-Type', 'application/zip');
@@ -210,20 +210,19 @@ app.get('/api/game/download-all.zip', async (_req, res) => {
 
     const entries = await fsp.readdir(SAVE_DIR, { withFileTypes: true });
     const jsonFiles = entries.filter(e => e.isFile() && e.name.endsWith('.json'));
-
-    if (jsonFiles.length === 0) {
+    if (!jsonFiles.length) {
       archive.append('No JSON saves found in SAVE_DIR.', { name: 'README.txt' });
     } else {
       for (const e of jsonFiles) {
-        const filePath = path.join(SAVE_DIR, e.name);
-        archive.file(filePath, { name: e.name });
+        archive.file(path.join(SAVE_DIR, e.name), { name: e.name });
       }
     }
-
-    await archive.finalize(); // stream zip to client
+    await archive.finalize();
   } catch (err) {
     console.error('download-all.zip error:', err);
     if (!res.headersSent) res.status(500).json({ error: 'Failed to build zip' });
   }
 });
+
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
