@@ -148,4 +148,29 @@ app.get('/api/game/disk-info', async (_req, res) => {
 // Health
 app.get('/api/ping', (_req, res) => res.json({ status: 'ok' }));
 
+// List all files on the save disk (filename, size, mtime)
+app.get('/api/game/files', async (_req, res) => {
+  try {
+    const entries = await fsp.readdir(SAVE_DIR, { withFileTypes: true });
+    const files = await Promise.all(
+      entries
+        .filter(e => e.isFile())
+        .map(async e => {
+          const filePath = path.join(SAVE_DIR, e.name);
+          const stat = await fsp.stat(filePath);
+          return {
+            name: e.name,
+            size: stat.size,
+            mtime: stat.mtime.toISOString(),
+          };
+        })
+    );
+    res.json(files);
+  } catch (err) {
+    console.error('files list error', err);
+    res.status(500).json({ error: 'Failed to read save directory' });
+  }
+});
+
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
