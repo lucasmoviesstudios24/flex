@@ -579,6 +579,29 @@ body.money-red .cash{
   background: linear-gradient(#ff4b5c, #8b0000) !important;
   border-color: #3a0a0a !important;
 }
+
+/* === Pet Shop: make overlay scrollable & keep the X reachable === */
+#petOverlay{
+  overflow: auto;
+  padding: 24px 12px; /* breathing room so the dialog isn't flush to edges while scrolling */
+}
+#petOverlay .shop{
+  max-height: min(92dvh, 840px); /* cap height so content fits on small screens */
+  overflow: auto;                /* allow inner scrolling */
+}
+/* Keep the close button reachable while scrolling the Pet Shop */
+/* Pet Shop close button: like before (absolute); reach it by scrolling to the top */
+#petOverlay .shop .closeX{
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  margin-left: 0;
+  z-index: 20;
+}
+@media (max-width: 800px){
+  #petOverlay .shop{ max-height: min(92dvh, 740px); }
+}
+
 </style>
 </head>
 <body>
@@ -2169,6 +2192,20 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
   
 window.addEventListener("beforeunload", save);
   window.addEventListener("beforeunload", save);
+
+// Ensure Pet Shop opens scrolled to the top so the X is visible
+(function(){
+  const btn = document.getElementById('openPetShop');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const overlay = document.getElementById('petOverlay');
+      const sheet = overlay ? overlay.querySelector('.shop') : null;
+      if (sheet) sheet.scrollTop = 0;
+      if (overlay) overlay.scrollTop = 0;
+    });
+  }
+})();
+
 </script>
 
 <!-- Right-side buttons -->
