@@ -3030,7 +3030,7 @@ window.addEventListener("beforeunload", save);
       </div>
       <div class="cosmic-card" id="cardGalaxyEgg">
         <h3>Galaxy Egg</h3>
-        <p class="cosmic-desc">Hatches: Alien 94% (same as Universal), Cosmic Unicorn 5% (+$45,000 EPS), Robot 1% (+$55,000 EPS). Robot has a 25% hourly chance to convert a placed MYTHIC to COSMIC when both are on pedestals.</p>
+        <p class="cosmic-desc">Hatches: Alien 91% (same as Universal), Cosmic Unicorn 6% (+$45,000 EPS), Robot 3% (+$55,000 EPS). Robot has a 25% hourly chance to convert a placed MYTHIC to COSMIC when both are on pedestals.</p>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
           <div class="cosmic-price">$20,000,000,000</div>
           <button class="cosmic-buy" id="buyGalaxyEgg">Purchase</button>
@@ -3248,9 +3248,9 @@ window.addEventListener("beforeunload", save);
         if(u && u.eps) alienEPS = u.eps;
       }catch(e){}
       PET_TABLES.galaxy = [
-        { name:'Alien', chance: 0.94, eps: alienEPS },
-        { name:'Cosmic Unicorn', chance: 0.05, eps: 45000 },
-        { name:'Robot', chance: 0.01, eps: 55000 }
+        { name:'Alien', chance: 0.91, eps: alienEPS },
+        { name:'Cosmic Unicorn', chance: 0.06, eps: 45000 },
+        { name:'Robot', chance: 0.03, eps: 55000 }
       ];
       // Ensure getPetSvg knows files (these were mentioned by the user)
       window.getPetSvg = (function(orig){
