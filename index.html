@@ -603,6 +603,86 @@ body.money-red .cash{
 }
 
 </style>
+
+<style>
+/* === Cosmic Event (Limited Time) === */
+.icon-cosmic{ background: radial-gradient(circle at 30% 30%, #1a2a6c, #000428); position:relative; }
+.icon-cosmic::after{
+  content:""; position:absolute; inset:0; border-radius:20px; pointer-events:none;
+  background: radial-gradient(2px 2px at 25% 35%, #ffd84a 0 60%, transparent 60%),
+              radial-gradient(2.5px 2.5px at 68% 22%, #8fd3ff 0 60%, transparent 60%),
+              radial-gradient(1.6px 1.6px at 70% 64%, #ffd84a 0 60%, transparent 60%),
+              radial-gradient(1.8px 1.8px at 44% 76%, #8fd3ff 0 60%, transparent 60%);
+  animation: cosmicBtnSparkle 3.5s linear infinite;
+}
+@keyframes cosmicBtnSparkle {
+  0% { opacity: .7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: .7; transform: scale(1); }
+}
+
+/* Event Sheet */
+#cosmicOverlay .sheet{ background: radial-gradient(1200px 600px at 50% -200px, #0b1a35, #151823) #151823;
+  color:#e6f3ff; border-color:#0b0f1a; }
+#cosmicOverlay h2{ color:#7fd0ff; text-shadow:0 2px 0 rgba(0,0,0,.6); }
+.cosmic-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.cosmic-card{ background:#1f2433; border-radius:22px; border:4px solid #0d1222; padding:18px; min-height:170px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.45) }
+.cosmic-card h3{ margin:0; font-family:"Russo One"; color:#d7ecff; }
+.cosmic-desc{ opacity:.9; font-size:18px; }
+.cosmic-price{ font-weight:900; font-size:20px; }
+.cosmic-buy{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer;
+  background:linear-gradient(#59a7ff,#2973e3); color:#fff; }
+.cosmic-badge{ font-family:"Bungee"; letter-spacing:1px; font-size:24px; -webkit-text-stroke:2px #000; }
+
+/* Cosmic rarity label + sparkle */
+.t-cosmic{
+  color:#8fd0ff;
+  text-shadow:0 0 8px rgba(0,180,255,.65), 0 0 16px rgba(0,120,255,.4);
+  position:relative; font-weight:900;
+}
+.t-cosmic::after{
+  content:""; position:absolute; left:-6px; top:-6px; right:-6px; bottom:-6px; pointer-events:none;
+  background: radial-gradient(1.5px 1.5px at 12% 30%, #ffd84a 0 60%, transparent 61%),
+              radial-gradient(1.2px 1.2px at 72% 20%, #ffd84a 0 60%, transparent 61%),
+              radial-gradient(1.8px 1.8px at 30% 78%, #ffd84a 0 60%, transparent 61%),
+              radial-gradient(1.6px 1.6px at 86% 62%, #ffd84a 0 60%, transparent 61%);
+  animation: cosmicSparkle 2.2s linear infinite;
+}
+@keyframes cosmicSparkle{
+  0%{ background-position: 0 0, 0 0, 0 0, 0 0; opacity:.8; }
+  50%{ background-position: 6px 6px, -4px 3px, 2px -5px, -6px -2px; opacity:1; }
+  100%{ background-position: 0 0, 0 0, 0 0, 0 0; opacity:.8; }
+}
+
+/* Pull-up reward animation */
+.cosmic-reveal{
+  position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:1000;
+  background: radial-gradient(800px 400px at 50% 50%, rgba(15,22,40,.86), rgba(0,0,0,.85));
+}
+.cosmic-reveal.show{ display:flex; }
+.cosmic-reveal .card{
+  background:#0e1628; border:5px solid #0a0f1a; border-radius:24px; padding:22px; text-align:center; color:#e6f3ff;
+  box-shadow:0 0 80px rgba(80,180,255,.28), 0 20px 60px rgba(0,0,0,.65);
+  animation: popin .25s ease-out;
+}
+@keyframes popin{ from{ transform: scale(.8); opacity:0; } to{ transform: scale(1); opacity:1; } }
+.cosmic-reveal img{ width:110px; height:110px; border-radius:16px; display:block; margin:8px auto; }
+
+/* Background: Space View */
+body.bg-spaceview{background:url('space_view_files/space_view.png') center center / cover no-repeat fixed !important;}
+body.bg-spaceview::before{
+  content:""; position:fixed; inset:0; z-index:-2; background:#04060c;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.9) 0 60%, transparent 61%),
+    radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,.8) 0 60%, transparent 61%),
+    radial-gradient(2px 2px at 70% 10%, rgba(255,255,255,.9) 0 60%, transparent 61%),
+    radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,.9) 0 60%, transparent 61%);
+  animation: starDrift 24s linear infinite;
+}
+@keyframes starDrift { 0%{ background-position: 0 0, 0 0, 0 0, 0 0; } 100%{ background-position: -500px 240px, -200px 160px, -600px 400px, -300px 260px; } }
+</style>
+
 </head>
 <body>
 <div class="game">
@@ -1071,7 +1151,7 @@ async function save() {
   };
   for(const k in state.placed){
     const it = state.placed[k];
-    if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx };
+    if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx, svg: it.svg };
   }
   // serialize pet stands
   state.petStands.forEach((ps, idx) => {
@@ -1128,7 +1208,7 @@ async function load() {
     if(dat.placed){
       for(const k in dat.placed){
         const it = dat.placed[k];
-        state.placed[k] = { ...it, uid:it.uid, svg: getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0 };
+        state.placed[k] = { ...it, uid:it.uid, svg: it.svg || getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0 };
       }
     }
 
@@ -1975,10 +2055,13 @@ function petCountsByEgg(){
   const totals={}, owned={};
   const dex = ensurePetDex();
   for(const [egg, list] of Object.entries(PET_TABLES)){
+    if(egg === 'galaxy') continue; // Exclude Galaxy Egg from Pet Quests tallies
     const names=[];
     list.forEach(e => { if(e.name==='IRL' && Array.isArray(e.subset)) names.push(...e.subset); else names.push(e.name); });
-    totals[egg]=names.length; owned[egg]=names.filter(n => !!dex[n]).length; }
-  return {totals, owned}; }
+    totals[egg]=names.length; owned[egg]=names.filter(n => !!dex[n]).length;
+  }
+  return {totals, owned};
+}
 function hasAllPets(){ const pc = petCountsByEgg(); return Object.keys(pc.totals).every(k => pc.owned[k]===pc.totals[k]); }
 const PET_TABLES = { legendary: [
     { name: 'Dog',    chance: 0.70, eps: 300 },
@@ -2441,8 +2524,10 @@ window.addEventListener("beforeunload", save);
       host.appendChild(head);
 
       const pc = petCountsByEgg();
-      Object.keys(PET_TABLES).forEach(egg=>{
-        const row=document.createElement('div');
+      Object.keys(PET_TABLES)
+        .filter(k => k !== 'galaxy') // hide Galaxy Egg from Pet Quests UI
+        .forEach(egg=>{
+          const row=document.createElement('div');
         const owned = pc.owned[egg]||0, total = pc.totals[egg]||0;
         const pct = total? Math.floor((owned/total)*100) : 0;
         row.className='quest-card';
@@ -2919,6 +3004,311 @@ window.addEventListener("beforeunload", save);
 })();
 </script>
 
+
+
+<!-- Cosmic Event Overlay -->
+<div class="overlay" id="cosmicOverlay" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cosmicTitle">
+    <button class="closeX" id="closeCosmic" aria-label="Close">✕</button>
+    <h2 id="cosmicTitle">COSMIC EVENT</h2>
+    <div class="cosmic-grid">
+      <div class="cosmic-card" id="cardSpacePack">
+        <h3>Space Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
+        <p class="cosmic-desc">Open to receive a random Space Item in EPIC/LEGENDARY/LEGACY/MYTHIC/COSMIC. Cosmic is rarest and sparkles. Reward auto‑adds to inventory.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="cosmic-price">$1,000,000,000</div>
+          <button class="cosmic-buy" id="buySpacePack">Purchase</button>
+        </div>
+      </div>
+      <div class="cosmic-card" id="cardSpaceView">
+        <h3>Space View</h3>
+        <p class="cosmic-desc">Animated galaxy background. After purchase, apply it from the Backgrounds menu.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="cosmic-price">$10,000,000,000,000</div>
+          <button class="cosmic-buy" id="buySpaceView">Purchase</button>
+        </div>
+      </div>
+      <div class="cosmic-card" id="cardGalaxyEgg">
+        <h3>Galaxy Egg</h3>
+        <p class="cosmic-desc">Hatches: Alien 94% (same as Universal), Cosmic Unicorn 5% (+$45,000 EPS), Robot 1% (+$55,000 EPS). Robot has a 25% hourly chance to convert a placed MYTHIC to COSMIC when both are on pedestals.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="cosmic-price">$20,000,000,000</div>
+          <button class="cosmic-buy" id="buyGalaxyEgg">Purchase</button>
+        </div>
+      </div>
+      <div class="cosmic-card">
+        <h3>Cosmic Info</h3>
+        <div class="cosmic-desc">
+          Event items are limited‑time. The event button disappears when over, but anything you bought stays in your save forever.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick reward reveal -->
+<div class="cosmic-reveal" id="cosmicReveal">
+  <div class="card">
+    <div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
+    <img id="revealImg" alt="reward">
+    <div id="revealName" style="font-weight:900;margin-top:6px;"></div>
+    <div id="revealRarity" class="rar" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
+  </div>
+</div>
+
+<script>
+// === Cosmic Event bootstrap ===
+(function(){
+  // Add button to left rail (star)
+  try{
+    const rail = document.querySelector('.left-rail');
+    if(rail && !document.getElementById('openCosmic')){
+      const btn = document.createElement('button');
+      btn.className = 'icon-btn icon-cosmic';
+      btn.id = 'openCosmic';
+      btn.title = 'Cosmic Event';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd84a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.2L22 9l-5 4.8 1.2 6.9L12 17.8 5.8 20.7 7 13.8 2 9l7.1-.8L12 2z"/></svg>';
+      rail.insertBefore(btn, rail.children[1] || null);
+      btn.addEventListener('click', ()=>{
+        document.getElementById('cosmicOverlay').classList.add('show');
+        document.getElementById('cosmicOverlay').setAttribute('aria-hidden','false');
+        updateSpaceViewUI();
+      });
+    }
+  }catch(e){}
+
+  // Close handler
+  document.getElementById('closeCosmic')?.addEventListener('click', ()=>{
+    document.getElementById('cosmicOverlay').classList.remove('show');
+    document.getElementById('cosmicOverlay').setAttribute('aria-hidden','true');
+  });
+
+  // Extend rarity table with COSMIC
+  try{
+    window.RARITY = window.RARITY || {};
+    if(!RARITY.cosmic){
+      RARITY.cosmic = { label:'COSMIC', color:'#8fd0ff', income: 35000, price:[0,0], prob: 0 };
+    }
+  }catch(e){}
+
+  // Reward reveal helpers
+  function showReveal(name, rarity, imgPath){
+    const host = document.getElementById('cosmicReveal');
+    const rn = document.getElementById('revealName');
+    const rr = document.getElementById('revealRarity');
+    const ri = document.getElementById('revealImg');
+    ri.src = imgPath;
+    rn.textContent = name;
+    rr.textContent = (RARITY[String(rarity).toLowerCase()]?.label || String(rarity||'').toUpperCase());
+    rr.className = 'rar t-' + String(rarity).toLowerCase();
+    host.classList.add('show');
+    setTimeout(()=>{ host.classList.remove('show'); }, 3000);
+  }
+
+  // Space Pack logic
+  const SPACE_PACK_COST = 1_000_000_000;
+  const SPACE_ITEMS = [
+    ["Space Ship","space_ship.png"],
+    ["Mars","mars.png"],
+    ["Earth","earth.png"],
+    ["Space Suit","space_suit.png"],
+    ["Asteroid","asteroid.png"],
+    ["Moon","moon.png"],
+    ["Black Hole","black_hole.png"],
+    ["Sun","sun.png"]
+  ];
+  // Weights: EPIC 60, LEGENDARY 25, LEGACY 10, MYTHIC 4, COSMIC 1
+  const SP_RARITY_BUCKETS = [
+    ["epic",58],["legendary",25],["legacy",10],["mythic",4],["cosmic",3]
+  ];
+  function pickWeighted(bucket){
+    const total = bucket.reduce((s, r)=>s+r[1], 0);
+    let roll = Math.random() * total;
+    for(const [val,w] of bucket){
+      roll -= w;
+      if(roll <= 0) return val;
+    }
+    return bucket[bucket.length-1][0];
+  }
+
+  function buySpacePack(){
+    if((state.money||0) < SPACE_PACK_COST) return;
+    state.money -= SPACE_PACK_COST;
+    const [name, file] = SPACE_ITEMS[Math.floor(Math.random()*SPACE_ITEMS.length)];
+    const rar = pickWeighted(SP_RARITY_BUCKETS);
+    const inv = {
+      uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
+      name,
+      rarity: rar,
+      price: 0,
+      baseIdx: 0,
+      svg: 'space_pack_items/'+file
+    };
+    state.inventory.push(inv);
+    showReveal(name, rar, inv.svg);
+    if(typeof updateTop==='function') updateTop();
+    if(typeof renderInventory==='function') renderInventory();
+    if(typeof save==='function') save();
+  }
+  document.getElementById('buySpacePack')?.addEventListener('click', buySpacePack);
+
+  // Space View purchase
+  const SPACE_VIEW_COST = 10_000_000_000_000;
+  function updateSpaceViewUI(){
+    const btn = document.getElementById('buySpaceView');
+    if(!btn) return;
+    const owned = !!(state.unlockedBackgrounds && state.unlockedBackgrounds.spaceview);
+    if(owned){
+      btn.disabled = true;
+      btn.textContent = 'Purchased';
+      btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+    }else{
+      btn.disabled = (state.money||0) < SPACE_VIEW_COST;
+      btn.textContent = 'Purchase';
+      btn.style.background = '';
+    }
+  }
+  function buySpaceView(){
+    if((state.unlockedBackgrounds||{}).spaceview) return;
+    if((state.money||0) < SPACE_VIEW_COST) return;
+    state.money -= SPACE_VIEW_COST;
+    state.unlockedBackgrounds = state.unlockedBackgrounds || {};
+    state.unlockedBackgrounds.spaceview = true;
+    // add selectable tile now
+    if(typeof window.__renderBgGrid==='function') window.__renderBgGrid();
+    updateSpaceViewUI();
+    if(typeof updateTop==='function') updateTop();
+    if(typeof save==='function') save();
+  }
+  document.getElementById('buySpaceView')?.addEventListener('click', buySpaceView);
+
+  // Extend Background grid with Space View option
+  (function extendBgGrid(){
+    const orig = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if(typeof orig === 'function') orig();
+      try{
+        const g=document.getElementById('bgGrid');
+        if(!g) return;
+        if(!g.querySelector('[data-spaceview]')){
+          const el=document.createElement('div');
+          el.setAttribute('data-spaceview','1');
+          el.className='bg-tile'+(!(state.unlockedBackgrounds||{}).spaceview?' locked':'');
+          el.style.cssText='background:radial-gradient(1200px 600px at 50% -200px,#091225,#04060c)';
+          el.innerHTML='<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">SPACE VIEW</div><button class="buy bg-apply" '+(!(state.unlockedBackgrounds||{}).spaceview?'disabled':'')+'>Apply</button>';
+          el.querySelector('.bg-apply').onclick=()=>{
+            if(!(state.unlockedBackgrounds||{}).spaceview) return;
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue');
+            document.body.classList.add('bg-spaceview');
+            state.selectedBackground='spaceview';
+            if(typeof save==='function') save();
+          };
+          g.appendChild(el);
+        }
+      }catch(e){}
+    };
+  })();
+
+  // Galaxy Egg purchase + hatch
+  const GALAXY_EGG_COST = 20_000_000_000;
+  function buyGalaxyEgg(){
+    if((state.money||0) < GALAXY_EGG_COST) return;
+    state.money -= GALAXY_EGG_COST;
+    const egg = {
+      uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
+      name: 'Galaxy Egg',
+      isEgg: true,
+      eggType: 'galaxy',
+      svg: (function(){
+        // sparkly yellow-blue blend
+        const size=96, gid='gal'+Math.floor(Math.random()*99999);
+        const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 96 96">
+          <defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffdf6a"/><stop offset="100%" stop-color="#67b7ff"/></linearGradient></defs>
+          <rect x="4" y="4" width="88" height="88" rx="14" fill="#333"/><ellipse cx="48" cy="52" rx="22" ry="28" fill="url(#${gid})"/>
+        </svg>`;
+        return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+      })()
+    };
+    state.inventory.push(egg);
+    if(typeof updateTop==='function') updateTop();
+    if(typeof renderInventory==='function') renderInventory();
+    if(typeof save==='function') save();
+  }
+  document.getElementById('buyGalaxyEgg')?.addEventListener('click', buyGalaxyEgg);
+
+  // Inject Galaxy table + robot passive
+  (function extendPets(){
+    try{
+      window.PET_TABLES = window.PET_TABLES || {};
+      // Alien same EPS as Universal egg table (fallback to 15000000 if unknown)
+      let alienEPS = 15000000;
+      try{
+        const u = PET_TABLES.universal?.find(p=>p.name==='Alien');
+        if(u && u.eps) alienEPS = u.eps;
+      }catch(e){}
+      PET_TABLES.galaxy = [
+        { name:'Alien', chance: 0.94, eps: alienEPS },
+        { name:'Cosmic Unicorn', chance: 0.05, eps: 45000 },
+        { name:'Robot', chance: 0.01, eps: 55000 }
+      ];
+      // Ensure getPetSvg knows files (these were mentioned by the user)
+      window.getPetSvg = (function(orig){
+        return function(petName, seed){
+          const map = {
+            "Alien":"alien.png",
+            "Cosmic Unicorn":"cosmic_unicorn.png",
+            "Robot":"robot.png"
+          };
+          if(map[petName]) return 'pets/'+map[petName];
+          try{ return orig ? orig(petName, seed) : 'pets/'+(map[petName]||'alien.png'); }catch(e){ return 'pets/'+(map[petName]||'alien.png'); }
+        };
+      })(window.getPetSvg);
+    }catch(e){}
+  })();
+
+  // When a Robot is placed, once per hour do a 10% roll to turn a MYTHIC to COSMIC
+  (function robotPassive(){
+    state.__robotLastCheck = state.__robotLastCheck || 0;
+    const HOUR = 3600*1000;
+    function doCheck(){
+      const now = Date.now();
+      if(now - (state.__robotLastCheck||0) < HOUR) return;
+      state.__robotLastCheck = now;
+      // Is a Robot placed on any pet pedestal?
+      const robotPlaced = (state.petStands||[]).some(p=>p && !p.isEgg && (p.petType==='Robot' || p.name==='Robot'));
+      if(!robotPlaced) return;
+      // Is there a MYTHIC on a main pedestal?
+      let mythicUid = null;
+      (state.stands||[]).forEach(uid=>{
+        if(!uid) return;
+        const it = state.placed[uid] || state.inventory.find(x=>x.uid===uid);
+        if(it && String(it.rarity).toLowerCase()==='mythic' && !mythicUid) mythicUid = uid;
+      });
+      if(!mythicUid) return;
+      // 10% chance
+      if(Math.random() <= 0.25){
+        const it = state.placed[mythicUid] || state.inventory.find(x=>x.uid===mythicUid);
+        if(it){
+          it.rarity = 'cosmic';
+          // visuals update
+          try{ it.svg = it.svg; }catch(e){}
+          if(typeof recalcEPS==='function') recalcEPS();
+          if(typeof renderStands==='function') renderStands();
+          if(typeof renderInventory==='function') renderInventory();
+          if(typeof save==='function') save();
+        }
+      }
+    }
+    // hook into the main tick
+    const _tick = window.tick;
+    window.tick = function(now){
+      try{ doCheck(); }catch(e){}
+      return _tick ? _tick.apply(this, arguments) : undefined;
+    };
+  })();
+})();
+</script>
 
 </body>
 </html>
