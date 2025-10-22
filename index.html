@@ -683,6 +683,92 @@ body.bg-spaceview::before{
 @keyframes starDrift { 0%{ background-position: 0 0, 0 0, 0 0, 0 0; } 100%{ background-position: -500px 240px, -200px 160px, -600px 400px, -300px 260px; } }
 </style>
 
+
+<style>
+/* === LA Dodgers Event === */
+
+/* Improved icon rendering via CSS var (works even if <img> fails) */
+.icon-dodger{ 
+  background:linear-gradient(180deg, #ffffff 0%, #dff1ff 35%, #9fd5ff 100%); position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: inset 0 0 0 2px #cfe9ff, 0 6px 16px rgba(0,84,164,.15);
+}
+.icon-dodger::after{
+  content: ""; position:absolute; inset:14%; border-radius:12px;
+  background: var(--dodger-icon, none) center/contain no-repeat;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.4));
+}
+.icon-dodger .fallback-text{
+  font-family:"Bungee", system-ui; font-weight:900; font-size:22px; letter-spacing:1px;
+  color:#0a5aa8; text-shadow:0 2px 0 rgba(255,255,255,.7);
+}
+#dodgerShopLogo{ width: 140px; height: 100px; object-fit: contain; }
+#dodgerShopLogo.fallback{
+  display:grid; place-items:center; background:linear-gradient(180deg,#ffffff,#e6f4ff); color:#0a5aa8; font-weight:900; 
+  width: 140px; height: 100px; border-radius:14px; box-shadow: inset 0 0 0 2px #cfe9ff;
+}
+
+.icon-dodger{ background:#0b2e6e; position:relative; overflow:hidden; }
+.icon-dodger img{ width:64%; height:64%; object-fit:contain; image-rendering:auto; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+
+#dodgerOverlay .sheet{ background: radial-gradient(1200px 600px at 50% -200px,#ffffff,#e9f5ff 45%,#cfe9ff 75%); color:#0d2640; border-color:#d2ebff; }
+#dodgerOverlay h2{ color:#0b74ff; text-shadow:0 1px 0 rgba(255,255,255,.9); }
+.dodger-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.dodger-card{ background:rgba(255,255,255,.96); border-radius:22px; border:3px solid #d8ecff; padding:18px; min-height:170px; box-shadow:0 12px 28px rgba(0,84,164,.12); }
+.dodger-card h3{ margin:0; font-family:"Russo One"; color:#0d3b66; }
+.dodger-desc{ opacity:.9; font-size:18px; color:#123b5f; }
+.dodger-price{ font-weight:900; font-size:20px; }
+.dodger-buy{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer; background:linear-gradient(#a6d9ff,#65b9ff); color:#093054; }
+
+/* Dodger rarity label */
+.t-dodger{
+  color:#0b74ff;
+  text-shadow:0 0 10px rgba(255,255,255,.9), 0 0 18px rgba(11,116,255,.55);
+  position:relative; font-weight:900;
+}
+
+/* Blue & white animated waves around the placed item when rarity=DODGER */
+.placed.dodger-waves::before,
+.placed.dodger-waves::after{
+  content:""; position:absolute; inset:-6px; border-radius:16px; pointer-events:none;
+  background: conic-gradient(from 0deg, rgba(255,255,255,0), rgba(255,255,255,.35) 15%, rgba(30,144,255,.55) 30%, rgba(255,255,255,.35) 45%, rgba(255,255,255,0) 60%);
+  animation:dodgerSpin 3.2s linear infinite; mix-blend-mode: screen;
+}
+.placed.dodger-waves::after{ filter: blur(4px); animation-duration:5s; opacity:.6; }
+@keyframes dodgerSpin{ to{ transform: rotate(360deg); } }
+
+/* Background: Dodger Stadium Style */
+body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') center center / cover no-repeat fixed !important; }
+</style>
+
+
+<style>
+/* === Backgrounds overlay: scrollable grid === */
+#bgOverlay .sheet{
+  max-height: min(92vh, 860px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* cap the dialog; inner grid will scroll */
+}
+#bgOverlay h2{ margin: 0 0 12px 0; }
+#bgOverlay #bgGrid{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;   /* avoid content under scrollbar */
+  scroll-behavior: smooth;
+}
+
+/* Optional: subtle custom scrollbar */
+#bgOverlay #bgGrid::-webkit-scrollbar{ width: 10px; }
+#bgOverlay #bgGrid::-webkit-scrollbar-thumb{ background: rgba(0,0,0,.15); border-radius: 8px; }
+#bgOverlay #bgGrid::-webkit-scrollbar-track{ background: transparent; }
+
+@media (max-width: 800px){
+  #bgOverlay .sheet{ max-height: min(92vh, 720px); }
+}
+</style>
+
 </head>
 <body>
 <div class="game">
@@ -2598,6 +2684,13 @@ window.addEventListener("beforeunload", save);
 
   // Initial sweep to persist any already-true quests
   setTimeout(()=>{ persistAllCompletions(); refresh(); },0);
+ensureDodgerBgURL(function(){});
+
+// Re-apply icons on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', ()=> setDodgerEventIcons());
+// MutationObserver to catch dynamic button insertion
+new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childList:true, subtree:true});
+
 })();
 </script>
 
@@ -2780,6 +2873,13 @@ window.addEventListener("beforeunload", save);
     }
     setTimeout(()=>{ try{ renderFourthPetSlot(); }catch(e){} }, 0);
   })();
+ensureDodgerBgURL(function(){});
+
+// Re-apply icons on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', ()=> setDodgerEventIcons());
+// MutationObserver to catch dynamic button insertion
+new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childList:true, subtree:true});
+
 })();
 </script>
 
@@ -2821,6 +2921,13 @@ window.addEventListener("beforeunload", save);
   };
   window.addEventListener('beforeunload', saveAddon);
   window.__addonSave = saveAddon;
+ensureDodgerBgURL(function(){});
+
+// Re-apply icons on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', ()=> setDodgerEventIcons());
+// MutationObserver to catch dynamic button insertion
+new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childList:true, subtree:true});
+
 })();
 </script>
 
@@ -3001,6 +3108,13 @@ window.addEventListener("beforeunload", save);
 
   // Safety: ensure OFF on reload
   window.addEventListener('beforeunload', ()=>{ state.deletionMode=false; });
+ensureDodgerBgURL(function(){});
+
+// Re-apply icons on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', ()=> setDodgerEventIcons());
+// MutationObserver to catch dynamic button insertion
+new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childList:true, subtree:true});
+
 })();
 </script>
 
@@ -3307,6 +3421,345 @@ window.addEventListener("beforeunload", save);
       return _tick ? _tick.apply(this, arguments) : undefined;
     };
   })();
+ensureDodgerBgURL(function(){});
+
+// Re-apply icons on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', ()=> setDodgerEventIcons());
+// MutationObserver to catch dynamic button insertion
+new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childList:true, subtree:true});
+
+})();
+</script>
+
+
+<!-- LA Dodgers Event Overlay -->
+<div class="overlay" id="dodgerOverlay" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dodgerTitle">
+    <button class="closeX" id="closeDodger" aria-label="Close">✕</button>
+    <h2 id="dodgerTitle">LA DODGERS EVENT</h2>
+    <div class="dodger-grid">
+      <div class="dodger-card" id="cardLAPack">
+        <h3>LA Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
+        <p class="dodger-desc">Open to receive a random LA item in EPIC/LEGENDARY/LEGACY/UNIQUE/MYTHIC/DODGER. Dodger is rarest and adds blue–white waves. Reward auto‑adds to inventory.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="dodger-price">$2,000,000,000</div>
+          <button class="dodger-buy" id="buyLAPack">Purchase</button>
+        </div>
+      </div>
+      <div class="dodger-card" id="cardDodgerStyle">
+        <h3>Dodger Stadium Style</h3>
+        <p class="dodger-desc">A themed stadium background. After purchase, apply it from Backgrounds.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="dodger-price">$10,000,000,000,000</div>
+          <button class="dodger-buy" id="buyDodgerStyle">Purchase</button>
+        </div>
+      </div>
+      <div class="dodger-card">
+        <h3>Dodger Info</h3>
+        <div class="dodger-desc">Event items are limited‑time. When the event ends the button goes away, but your rewards stay forever. Dodger rarity gives +40,000 EPS with animated waves.</div>
+      </div>
+      <div class="dodger-card" style="display:grid;place-items:center;">
+        <img id="dodgerShopLogo" alt="LA" style="height:120px;filter:drop-shadow(0 8px 30px rgba(30,144,255,.35));opacity:.95;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dodgers Reward Reveal -->
+<div class="cosmic-reveal" id="dodgerReveal">
+  <div class="card" style="background:#0e1628;border-color:#0a0f1a;">
+    <div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
+    <img id="dodgerRevealImg" alt="reward">
+    <div id="dodgerRevealName" style="font-weight:900;margin-top:6px;"></div>
+    <div id="dodgerRevealRarity" class="rar" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
+  </div>
+</div>
+
+
+<script>
+
+// Helper to resolve assets by trying multiple extensions.
+// Use base folder and a file *stem* (no extension), like ('la_dodgers_files','event')
+function resolveAsset(base, stem, cb){
+  const exts = ['.png', '.webp', '.jpg', ''];
+  let i = 0;
+  function tryNext(){
+    const url = base + '/' + stem + exts[i];
+    const img = new Image();
+    img.onload = ()=>cb(url);
+    img.onerror = ()=>{
+      i++;
+      if(i < exts.length) tryNext();
+      else cb(base + '/' + stem + '.png'); // fall back
+    };
+  }
+  tryNext();
+}
+
+// Set the event icon image in the shop card and left-rail button
+function setDodgerEventIcons(btnEl){
+  // If a specific button element is passed, use that; else search.
+  const setBtnBg = function(url){
+    try{
+      const btn = btnEl || document.getElementById('openDodger');
+      if(btn){
+        btn.style.setProperty('--dodger-icon', "url('"+url+"')");
+        const ft = btn.querySelector('.fallback-text');
+        if(ft) ft.style.opacity = '0';
+      }
+    }catch(e){}
+  };
+
+  
+  
+  (function(){
+    const candidates = [
+      'la_dodgers_files/event.png',
+      'la_dodgers_filesevent.png',
+      'event.png'
+    ];
+    (function tryNext(i){
+      if(i >= candidates.length){
+        // final fallback: show "LA" text, leave CSS var unset
+        const shopImg = document.getElementById('dodgerShopLogo');
+        if(shopImg){
+          shopImg.classList.add('fallback');
+          shopImg.removeAttribute('src');
+          shopImg.textContent = 'LA';
+        }
+        return;
+      }
+      const test = new Image();
+      test.onload = function(){
+        const url = candidates[i];
+        const shopImg = document.getElementById('dodgerShopLogo');
+        if(shopImg){
+          shopImg.classList.remove('fallback');
+          shopImg.src = url;
+        }
+        setBtnBg(url);
+      };
+      test.onerror = function(){ tryNext(i+1); };
+      test.src = candidates[i];
+    })(0);
+  })();
+}
+// Prepare and cache the stadium background URL, update CSS and BG grid tile
+var __dodgerBgURL = null;
+function ensureDodgerBgURL(cb){
+  if(__dodgerBgURL){ cb(__dodgerBgURL); return; }
+  resolveAsset('la_dodgers_style_files','la_dodgers_style', function(url){
+    __dodgerBgURL = url;
+    // write/update CSS rule dynamically
+    let st = document.getElementById('dodgerBgStyle');
+    if(!st){
+      st = document.createElement('style');
+      st.id = 'dodgerBgStyle';
+      document.head.appendChild(st);
+    }
+    st.textContent = "body.bg-dodger{background:url('"+url+"') center center / cover no-repeat fixed !important;}";
+    cb(url);
+  });
+}
+
+// === LA Dodgers Event bootstrap ===
+(function(){
+  // Add event icon button to left rail (uses provided PNG)
+  try{
+    const rail = document.querySelector('.left-rail');
+    if(rail && !document.getElementById('openDodger')){
+      const btn = document.createElement('button');
+      btn.className = 'icon-btn icon-dodger';
+      btn.id = 'openDodger';
+      btn.title = 'LA Dodgers Event';
+      btn.innerHTML = '<span class="fallback-text">LA</span>';
+      setDodgerEventIcons(btn);
+      rail.insertBefore(btn, rail.children[1] || null);
+      btn.addEventListener('click', ()=>{
+        document.getElementById('dodgerOverlay').classList.add('show');
+        document.getElementById('dodgerOverlay').setAttribute('aria-hidden','false');
+        updateDodgerStyleUI();
+        setDodgerEventIcons();
+      });
+    }
+  }catch(e){}
+
+  document.getElementById('closeDodger')?.addEventListener('click', ()=>{
+    document.getElementById('dodgerOverlay').classList.remove('show');
+    document.getElementById('dodgerOverlay').setAttribute('aria-hidden','true');
+  });
+
+  // Extend rarity table with DODGER (40,000 EPS)
+  try{
+    window.RARITY = window.RARITY || {};
+    if(!RARITY.dodger){
+      RARITY.dodger = { label:'DODGER', color:'#1e90ff', income: 40000, price:[0,0], prob: 0 };
+    }
+  }catch(e){}
+
+  // After every stand render, add the wave aura to any placed item with t-dodger badge
+  (function hookDodgerWaves(){
+    const orig = window.renderStands;
+    window.renderStands = function(){
+      if(typeof orig === 'function') orig.apply(this, arguments);
+      try{
+        document.querySelectorAll('.placed').forEach(el=>{
+          const hasDodger = !!el.querySelector('.rar.t-dodger');
+          el.classList.toggle('dodger-waves', hasDodger);
+        });
+      }catch(e){}
+    };
+    setTimeout(()=>{
+      try{
+        document.querySelectorAll('.placed').forEach(el=>{
+          const hasDodger = !!el.querySelector('.rar.t-dodger');
+          el.classList.toggle('dodger-waves', hasDodger);
+        });
+      }catch(e){}
+    },0);
+  })();
+
+  // Reward reveal helper
+  function showDodgerReveal(name, rarity, imgPath){
+    const host = document.getElementById('dodgerReveal');
+    const rn = document.getElementById('dodgerRevealName');
+    const rr = document.getElementById('dodgerRevealRarity');
+    const ri = document.getElementById('dodgerRevealImg');
+    ri.src = imgPath;
+    rn.textContent = name;
+    rr.textContent = (RARITY[String(rarity).toLowerCase()]?.label || String(rarity||'').toUpperCase());
+    rr.className = 'rar t-' + String(rarity).toLowerCase();
+    host.classList.add('show');
+    setTimeout(()=>{ host.classList.remove('show'); }, 3000);
+  }
+
+  // LA Pack purchase logic
+  const LA_PACK_COST = 2_000_000_000;
+  const LA_ITEMS = [
+    ['Dodger Hat','dodger_hat.png'],
+    ['Dodger Stadium','dodger_stadium.png'],
+    ['World Series','world_series.png'],
+    ['Shohei Ohtani','shohei_ohtani.png'],
+    ['Will Smith','will_smith.png'],
+    ['Freddie Freeman','freddie_freeman.png'],
+    ['Mookie Betts','mookie_betts.png'],
+    ['Dodger Baseball','dodger_baseball.png'],
+    ['Dodger Welcome','dodger_welcome.png']
+  ];
+  // EPIC/LEGENDARY/LEGACY/UNIQUE/MYTHIC/DODGER (Dodger rarest)
+  const LA_RARITY_BUCKETS = [
+    ['epic',48], ['legendary',25], ['legacy',10], ['unique',8], ['mythic',5], ['dodger',4]
+  ];
+  function pickWeighted(bucket){
+    const total = bucket.reduce((s, r)=>s+r[1], 0);
+    let roll = Math.random() * total;
+    for(const [val,w] of bucket){
+      roll -= w;
+      if(roll <= 0) return val;
+    }
+    return bucket[bucket.length-1][0];
+  }
+  function buyLAPack(){
+    if((state.money||0) < LA_PACK_COST) return;
+    state.money -= LA_PACK_COST;
+    const [name, file] = LA_ITEMS[Math.floor(Math.random()*LA_ITEMS.length)];
+    const rar = pickWeighted(LA_RARITY_BUCKETS);
+    const inv = {
+      uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
+      name,
+      rarity: rar,
+      price: 0,
+      baseIdx: 0,
+      svg: 'la_dodgers_items/' + file
+    };
+    state.inventory.push(inv);
+    if(typeof updateTop==='function') updateTop();
+    if(typeof renderInventory==='function') renderInventory();
+    if(typeof save==='function') save();
+    showDodgerReveal(name, rar, inv.svg);
+  }
+  document.getElementById('buyLAPack')?.addEventListener('click', buyLAPack);
+
+  // Dodger Stadium Style background purchase
+  const DODGER_STYLE_COST = 10_000_000_000_000;
+  function updateDodgerStyleUI(){
+    const btn = document.getElementById('buyDodgerStyle');
+    if(!btn) return;
+    const owned = !!(state.unlockedBackgrounds && state.unlockedBackgrounds.dodger);
+    if(owned){
+      btn.disabled = true;
+      btn.textContent = 'Purchased';
+      btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+    }else{
+      btn.disabled = (state.money||0) < DODGER_STYLE_COST;
+      btn.textContent = 'Purchase';
+      btn.style.background = '';
+    }
+  }
+  function buyDodgerStyle(){
+    if((state.unlockedBackgrounds||{}).dodger) return;
+    if((state.money||0) < DODGER_STYLE_COST) return;
+    state.money -= DODGER_STYLE_COST;
+    state.unlockedBackgrounds = state.unlockedBackgrounds || {};
+    state.unlockedBackgrounds.dodger = true;
+    updateDodgerStyleUI();
+        setDodgerEventIcons();
+    if(typeof window.__renderBgGrid==='function') window.__renderBgGrid();
+    if(typeof updateTop==='function') updateTop();
+    if(typeof save==='function') save();
+  }
+  document.getElementById('buyDodgerStyle')?.addEventListener('click', buyDodgerStyle);
+
+  // Extend Background grid with Dodger style
+  (function extendBgGrid(){
+    const orig = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if(typeof orig === 'function') orig();
+      try{
+        const g=document.getElementById('bgGrid');
+        if(!g) return;
+        if(!g.querySelector('[data-dodgerbg]')){
+          const el=document.createElement('div');
+          el.setAttribute('data-dodgerbg','1');
+          el.className='bg-tile'+(!(state.unlockedBackgrounds||{}).dodger?' locked':'');
+          el.style.cssText='background-image:url("la_dodgers_style_files/la_dodgers_style.png");background-size:cover;background-position:center;';
+          el.innerHTML='<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">DODGER STADIUM STYLE</div><button class="buy bg-apply" '+(!(state.unlockedBackgrounds||{}).dodger?'disabled':'')+'>Apply</button>';
+          el.querySelector('.bg-apply').onclick=()=>{
+            if(!(state.unlockedBackgrounds||{}).dodger) return;
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue','bg-spaceview');
+            document.body.classList.add('bg-dodger');
+            state.selectedBackground='dodger';
+            if(typeof save==='function') save();
+          };
+          g.appendChild(el);
+        }
+      }catch(e){}
+    };
+  })();
+ensureDodgerBgURL(function(){});
+
+// Re-apply icons on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', ()=> setDodgerEventIcons());
+// MutationObserver to catch dynamic button insertion
+new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childList:true, subtree:true});
+
+})();
+</script>
+
+
+<script>
+(function(){
+  const btn = document.getElementById('openBgSelector');
+  if(btn){
+    btn.addEventListener('click', ()=>{
+      const overlay = document.getElementById('bgOverlay');
+      const sheet = overlay ? overlay.querySelector('.sheet') : null;
+      const grid = document.getElementById('bgGrid');
+      if (overlay) overlay.scrollTop = 0;
+      if (sheet) sheet.scrollTop = 0;
+      if (grid) grid.scrollTop = 0;
+    }, { passive: true });
+  }
 })();
 </script>
 
