@@ -1205,10 +1205,24 @@ function getPetSvg(petName, seed){
  const SERVER_BASE = 'https://flex-sdww.onrender.com/api/game'; // use your actual Render.com URL
 
 // Identify user (for demo, use a prompt and store in localStorage)
+// Username prompt (first run): Cancel or "guest" -> Guest
 let USER_ID = localStorage.getItem('flex-userid');
 if (!USER_ID) {
-  USER_ID = prompt('Enter your username (or type "guest"):');
-  localStorage.setItem('flex-userid', USER_ID);
+  // Require a real username (no guest, no empty, no cancel)
+  while (true) {
+    let input = prompt('Enter a username to play (required).');
+    if (input === null) { alert('A username is required.'); continue; }
+    input = String(input).trim();
+    if (!input || input.toLowerCase() === 'guest') {
+      alert('Please enter a non-empty username. "guest" is not allowed.');
+      continue;
+    }
+    USER_ID = input;
+    localStorage.setItem('flex-userid', USER_ID);
+    // Mark that we just set a username this session so load() can check uniqueness once.
+    try { sessionStorage.setItem('flex-userid-just-set', '1'); } catch (e) {}
+    break;
+  }
 }
 document.getElementById("userDisplay").textContent = USER_ID ? `User: ${USER_ID}` : "No user";
 
@@ -1261,8 +1275,48 @@ async function load() {
     if (!res.ok) return;
     const dat = await res.json();
     if (!dat) return;
-
-    state.money = dat.money ?? state.money;
+                        // If this is the very first time we set a username this session and it's already in use on the server,
+            // re-prompt until they choose a free, non-empty name (no "guest").
+            try {
+              const justSet = sessionStorage.getItem('flex-userid-just-set') === '1';
+              if (justSet && USER_ID) {
+                const hasServerSave = dat && typeof dat === 'object' && Object.keys(dat).length > 0;
+                if (hasServerSave) {
+                  alert('That username is already taken. Please choose another.');
+                  while (true) {
+                    const input = prompt('Enter a different username (required).');
+                    if (input === null) { alert('A username is required.'); continue; }
+                    const trimmed = String(input).trim();
+                    if (!trimmed || trimmed.toLowerCase() === 'guest') {
+                      alert('Please enter a non-empty username. "guest" is not allowed.');
+                      continue;
+                    }
+                    // Check the new name against the server (best effort)
+                    try {
+                      const chk = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
+                      const j = chk.ok ? await chk.json().catch(()=>null) : null;
+                      if (j && Object.keys(j).length) {
+                        alert('That username is already taken. Try again.');
+                        continue;
+                      }
+                    } catch (e) {
+                      // Network check failed; accept the name to keep the game playable
+                    }
+                    USER_ID = trimmed;
+                    localStorage.setItem('flex-userid', USER_ID);
+                    const ud = document.getElementById("userDisplay");
+                    if (ud) ud.textContent = USER_ID ? `User: ${USER_ID}` : "No user";
+                    sessionStorage.removeItem('flex-userid-just-set');
+                    // Re-run load under the new USER_ID and stop processing the old data
+                    return await load();
+                  }
+                }
+              }
+              // Either not first set this session or name wasn't taken; clear the marker.
+              sessionStorage.removeItem('flex-userid-just-set');
+            } catch (e) {
+              // ignore
+            }state.money = dat.money ?? state.money;
     state.eps = dat.eps ?? state.eps;
     state.inventory = (dat.inventory||[]).map(it=>({
       ...it, uid:it.uid, svg: it.svg || (it.isEgg ? getEggSvg(it.eggType || 'legendary', Math.floor(Math.random()*9999)) : getItemSvg(it.name, it.baseIdx||0, it.rarity)), baseIdx: it.baseIdx||0
