@@ -769,8 +769,40 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
 }
 </style>
 
+
+<style id="no-scroll-patch">
+  /* Lock the main page from scrolling; overlays handle their own internal scroll */
+  html, body { overflow: hidden !important; height: 100%; }
+</style>
+
+
+<style id="event-row-style">
+  .event-row{
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    gap: 12px;
+    z-index: 9;
+  }
+  .event-row .icon-btn{
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+  }
+  .event-row .icon-btn svg{
+    width: 60%;
+    height: 60%;
+  }
+  @media (max-width: 800px){
+    .event-row{ top: 12px; left: 12px; gap: 10px; }
+    .event-row .icon-btn{ width: 64px; height: 64px; }
+  }
+</style>
+
 </head>
 <body>
+<div class="event-row" id="eventRow"></div>
 <div class="game">
   <div class="topbar">
     <div class="cash" id="cash">$1,000,000</div>
@@ -795,15 +827,16 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
     </button>
 
     <!-- NEW: Pet Shop button (paw) -->
-    <button class="icon-btn icon-pets" id="openPetShop" aria-label="Pet Shop" title="Pet Shop">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 21s-4-2.5-6.5-5.5C2.5 12 5 8 7.5 8c1.5 0 2.5 1 3.5 1s2-1 3.5-1C17 8 19.5 12 18.5 15.5 16 18.5 12 21 12 21z" fill="none"/>
-        <circle cx="7" cy="7" r="2" fill="none"/>
-        <circle cx="17" cy="7" r="2" fill="none"/>
-        <circle cx="6" cy="12" r="1.5" fill="none"/>
-        <circle cx="18" cy="12" r="1.5" fill="none"/>
-      </svg>
-    </button>
+    <button class="icon-btn icon-pets" id="openPetShop" aria-label="Pet Shop" title="Pet Shop">  <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- toes -->
+  <circle cx="7.5" cy="7.5" r="2"></circle>
+  <circle cx="12"  cy="6"   r="2"></circle>
+  <circle cx="16.5" cy="7.5" r="2"></circle>
+  <circle cx="10" cy="10.5" r="1.8" style="display:none"></circle> <!-- (optional hidden) -->
+  <!-- main pad outline -->
+  <path d="M12 13c-2.8 0-6 2.2-6 5 0 2.2 3 3.5 6 3.5s6-1.3 6-3.5c0-2.8-3.2-5-6-5z"></path>
+</svg>
+</button>
 
     <button class="icon-btn icon-music" id="musicBtn" aria-label="Toggle music" title="Toggle music">
       <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></svg>
@@ -968,6 +1001,8 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
 document.getElementById("resetGame").addEventListener("click", function() {
   if (confirm("Are you sure you want to reset your game? This cannot be undone.")) {
     localStorage.removeItem("flexSave");
+    try { localStorage.removeItem(LOCAL_BACKUP_KEY); localStorage.removeItem(LS_KEY); } catch (e) {}
+
     // Set a flag so boot knows NOT to load from localStorage
     sessionStorage.setItem("doGameReset", "1");
     location.reload();
@@ -1181,6 +1216,7 @@ function getPetSvg(petName, seed){
   function displayName(n){ return (n && n.trim()) ? n : 'Mystery'; }
 
   const LS_KEY = 'flex-save-v1';
+  const LOCAL_BACKUP_KEY = 'flex-main-save-v3';
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
@@ -1227,6 +1263,9 @@ if (!USER_ID) {
 document.getElementById("userDisplay").textContent = USER_ID ? `User: ${USER_ID}` : "No user";
 
 async function save() {
+  // Write a fast local backup first so spam-refresh can't wipe state
+  const __nowTs = Date.now();
+
   const payload = {
     money: state.money,
     eps: state.eps,
@@ -1258,7 +1297,10 @@ async function save() {
     if(ps) payload.petStands[idx] = { uid:ps.uid, name:ps.name, isEgg:!!ps.isEgg, eggType:ps.eggType||null, petType:ps.petType||null, petEps:ps.petEps||0, svg:ps.svg, baseIdx: ps.baseIdx||0 };
   });
 
+  // add timestamp and local backup
   try {
+    payload.__ts = __nowTs;
+    try { localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: payload.__ts, data: payload })); } catch (e) {}
     await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent(USER_ID)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1270,11 +1312,33 @@ async function save() {
 }
 
 async function load() {
+  // Local backup candidate (mirrors how achievements/backgrounds persist)
+  let __localCandidate = null;
   try {
-    const res = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent(USER_ID)}`);
-    if (!res.ok) return;
-    const dat = await res.json();
+    if (sessionStorage.getItem('doGameReset') === '1') {
+      try { localStorage.removeItem(LOCAL_BACKUP_KEY); } catch (e) {}
+      sessionStorage.removeItem('doGameReset');
+    } else {
+      const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+      if (raw) { const obj = JSON.parse(raw); __localCandidate = obj && (obj.data || null); }
+    }
+  } catch (e) {}
+
+  try {
+    let dat = null;
+    let res = null;
+    try { res = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent(USER_ID)}`); } catch (e) { res = null; }
+    if (res && res.ok) { dat = await res.json(); } else { dat = __localCandidate; }
     if (!dat) return;
+    // Prefer the fresher/richer of (server dat) vs local backup
+    try {
+      const ldat = __localCandidate;
+      const lts = (ldat && ldat.__ts) ? ldat.__ts : 0;
+      const sts = (dat && dat.__ts) ? dat.__ts : 0;
+      const richness = d => !d ? -1 : ((d.inventory||[]).length) + (Array.isArray(d.stands)? d.stands.filter(Boolean).length : 0) * 2 + (d.petStands ? Object.keys(d.petStands).length : 0);
+      if (ldat && ((lts > sts) || (lts === sts && richness(ldat) > richness(dat)))) { dat = ldat; }
+    } catch (e) {}
+
                         // If this is the very first time we set a username this session and it's already in use on the server,
             // re-prompt until they choose a free, non-empty name (no "guest").
             try {
@@ -1373,6 +1437,8 @@ async function load() {
     state.permanentPetMultiplier = dat.permanentPetMultiplier ?? state.permanentPetMultiplier;
     // PetDex (owned pets across eggs)
     state.petDex = dat.petDex || state.petDex || {};
+    // Update local backup with the chosen data so rapid refresh can't regress
+    try { localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: dat.__ts || Date.now(), data: dat })); } catch (e) {}
   } catch (e) {
     console.warn("load failed", e);
   }
@@ -2415,6 +2481,8 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
   
 window.addEventListener("beforeunload", save);
   window.addEventListener("beforeunload", save);
+  window.addEventListener("pagehide", save);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") try{ save(); }catch(e){} });
 
 // Ensure Pet Shop opens scrolled to the top so the X is visible
 (function(){
@@ -3184,7 +3252,7 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
         <h3>Space Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
         <p class="cosmic-desc">Open to receive a random Space Item in EPIC/LEGENDARY/LEGACY/MYTHIC/COSMIC. Cosmic is rarest and sparkles. Reward auto‑adds to inventory.</p>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="cosmic-price">$25,000,000,000</div>
+          <div class="cosmic-price">$1,000,000,000</div>
           <button class="cosmic-buy" id="buySpacePack">Purchase</button>
         </div>
       </div>
@@ -3236,8 +3304,16 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
       btn.id = 'openCosmic';
       btn.title = 'Cosmic Event';
       btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd84a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.2L22 9l-5 4.8 1.2 6.9L12 17.8 5.8 20.7 7 13.8 2 9l7.1-.8L12 2z"/></svg>';
-      rail.insertBefore(btn, rail.children[1] || null);
-      btn.addEventListener('click', ()=>{
+      (function(){ 
+  var row = document.querySelector('.event-row') || document.getElementById('eventRow');
+  if(!row){
+    row = document.createElement('div');
+    row.className = 'event-row';
+    document.body.appendChild(row);
+  }
+  row.appendChild(btn);
+})();
+btn.addEventListener('click', ()=>{
         document.getElementById('cosmicOverlay').classList.add('show');
         document.getElementById('cosmicOverlay').setAttribute('aria-hidden','false');
         updateSpaceViewUI();
@@ -3274,7 +3350,7 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
   }
 
   // Space Pack logic
-  const SPACE_PACK_COST = 25_000_000_000;
+  const SPACE_PACK_COST = 1_000_000_000;
   const SPACE_ITEMS = [
     ["Space Ship","space_ship.png"],
     ["Mars","mars.png"],
@@ -3628,8 +3704,16 @@ function ensureDodgerBgURL(cb){
       btn.title = 'LA Dodgers Event';
       btn.innerHTML = '<span class="fallback-text">LA</span>';
       setDodgerEventIcons(btn);
-      rail.insertBefore(btn, rail.children[1] || null);
-      btn.addEventListener('click', ()=>{
+      (function(){ 
+  var row = document.querySelector('.event-row') || document.getElementById('eventRow');
+  if(!row){
+    row = document.createElement('div');
+    row.className = 'event-row';
+    document.body.appendChild(row);
+  }
+  row.appendChild(btn);
+})();
+btn.addEventListener('click', ()=>{
         document.getElementById('dodgerOverlay').classList.add('show');
         document.getElementById('dodgerOverlay').setAttribute('aria-hidden','false');
         updateDodgerStyleUI();
