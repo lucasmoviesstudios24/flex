@@ -602,6 +602,26 @@ body.money-red .cash{
   #petOverlay .shop{ max-height: min(92dvh, 740px); }
 }
 
+
+/* ===== admin broadcast banner ===== */
+#adminMsgBanner{
+  position:fixed; left:0; right:0; top:-120px; z-index:9999;
+  display:flex; gap:12px; align-items:center; justify-content:center;
+  min-height:56px; padding:10px 16px;
+  font-weight:800; letter-spacing:.2px;
+  color:#000; text-shadow:0 1px 0 rgba(255,255,255,.4);
+  border-bottom:4px solid rgba(0,0,0,.35);
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+  transition: transform .35s ease, top .35s ease, background .25s;
+  transform: translateY(-100%);
+}
+#adminMsgBanner.show{ top:0; transform: translateY(0); }
+#adminMsgBanner .msg{ max-width:1100px; text-align:center; }
+#adminMsgBanner .close{ margin-left:auto; cursor:pointer; font-weight:900; }
+#adminMsgBanner.info{ background: #79ffe1; }
+#adminMsgBanner.warn{ background: #ffd86a; }
+#adminMsgBanner.success{ background: #a7ff83; }
+
 </style>
 
 <style>
@@ -800,6 +820,15 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
   }
 </style>
 
+<style id="no-scroll-patch">
+  /* Restore scrolling for the whole page */
+  html, body { 
+    overflow-y: auto !important; 
+    overflow-x: hidden; 
+    height: auto !important; 
+  }
+  body { min-height: 100%; }
+</style>
 </head>
 <body>
 <div class="event-row" id="eventRow"></div>
@@ -1817,6 +1846,14 @@ pbox.addEventListener('click', () => {
 
   const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
   if (!newItem) return;
+  // If a pet/egg is already here, return it to inventory before placing the new one
+  const existingHere = state.petStands[placeIndex];
+  if (existingHere) {
+    state.inventory.push(existingHere);
+    state.petStands[placeIndex] = null;
+    delete state.petTimers[placeIndex];
+  }
+
 
   // ✅ Allow eggs or pets here
   if (!(newItem.isEgg || newItem.petType)) {
@@ -2883,6 +2920,14 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
           const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
           if(!newItem) return;
+  // If a pet/egg is already here, return it to inventory before placing the new one
+  const existingHere = state.petStands[placeIndex];
+  if (existingHere) {
+    state.inventory.push(existingHere);
+    state.petStands[placeIndex] = null;
+    delete state.petTimers[placeIndex];
+  }
+
           if(!(newItem.isEgg || newItem.petType)){
             alert('Only eggs or pets can be placed on pet pedestals.');
             return;
@@ -2919,70 +2964,107 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
   // On load
   setTimeout(()=>{ try{ renderThirdPetSlot(); }catch(e){} }, 0);
 
-  function renderFourthPetSlot(){
-    if(!(state.ach && state.ach.petFourthUnlocked)) return;
-    if(!Array.isArray(state.petStands)) state.petStands = [null,null,null,null];
-    while(state.petStands.length<4) state.petStands.push(null);
-    if(!Array.isArray(state.petTimers)) state.petTimers = [null,null,null,null];
-    while(state.petTimers.length<4) state.petTimers.push(null);
+  
+function renderFourthPetSlot(){
+  if(!(state.ach && state.ach.petFourthUnlocked)) return;
 
-    const row = document.querySelector('.pet-row'); if(!row) return;
-    const old = row.querySelectorAll('.pet-stand.addon-fourth-slot'); old.forEach(n=>n.remove());
+  // Ensure arrays have a 4th slot (index 3)
+  if(!Array.isArray(state.petStands)) state.petStands = [null,null,null,null];
+  while(state.petStands.length < 4) state.petStands.push(null);
+  if(!Array.isArray(state.petTimers)) state.petTimers = [null,null,null,null];
+  while(state.petTimers.length < 4) state.petTimers.push(null);
 
+  const row = document.querySelector('.pet-row'); if(!row) return;
+
+  // Ensure the "second row" placeholders (addon-second-row) exist and contain 4 boxes.
+  let secondRow = Array.from(row.querySelectorAll('.pet-stand.addon-second-row'));
+  if(secondRow.length !== 4){
+    // Clear any partial second rows and rebuild them exactly once.
+    row.querySelectorAll('.pet-stand.addon-second-row').forEach(n=>n.remove());
     for(let col=0; col<4; col++){
       const pbox=document.createElement('div');
-      pbox.className='pet-stand addon-fourth-slot';
-      if(col===2){
-        const placeIndex = 3; // 4th slot
-        const pPed = document.createElement('div'); pPed.className='pet-pedestal'; pbox.appendChild(pPed);
-        const placed = state.petStands[placeIndex];
-        if(placed){
-          const p = document.createElement('div'); p.className='pet-placed';
-          const nameLabel = (placed.name && placed.name.trim()) ? placed.name : (placed.petType||placed.eggType||'Pet');
-          p.innerHTML = `<img src='${placed.svg}' alt='${nameLabel}' style="width:72px;height:72px;border-radius:12px;">`
-            + `<div style="display:flex;flex-direction:column;margin-left:8px;">`
-            + `<div style="font-weight:900;">${nameLabel}</div>`
-            + `<div class="rar">${placed.isEgg ? (placed.eggType||'Egg') : (placed.petType||'')}</div>`
-            + `</div>`;
-          pbox.appendChild(p);
-          if(placed.isEgg && state.petTimers[placeIndex]){
-            const timer=document.createElement('div'); timer.className='pet-timer'; timer.dataset.index=placeIndex; pbox.appendChild(timer);
-          }
-        }
-        pbox.addEventListener('click', ()=>{
-          if(!state.selectedItemUid){
-            if(state.petStands[placeIndex]){
-              state.inventory.push(state.petStands[placeIndex]);
-              state.petStands[placeIndex]=null; state.petTimers[placeIndex]=null;
-              if(typeof recalcEPS==='function') recalcEPS();
-              if(typeof renderInventory==='function') renderInventory();
-              if(typeof renderStands==='function') renderStands();
-              if(typeof save==='function') save();
-            }
-            return;
-          }
-          const newItem = state.inventory.find(it=>it.uid===state.selectedItemUid); if(!newItem) return;
-          if(!(newItem.isEgg || newItem.petType)){ alert('Only eggs or pets can be placed on pet pedestals.'); return; }
-          if(newItem.isEgg){
-            state.petStands[placeIndex]=newItem;
-            if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
-            const TWO_MIN = 2*60*1000;
-            state.petTimers[placeIndex]=Date.now() + (window.FOURTH_HATCH_DURATION || TWO_MIN);
-          } else {
-            state.petStands[placeIndex]=newItem;
-            if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
-          }
-          state.inventory = state.inventory.filter(it => it.uid !== newItem.uid);
-          state.selectedItemUid=null;
-          if(typeof recalcEPS==='function') recalcEPS();
-          if(typeof renderInventory==='function') renderInventory();
-          if(typeof renderStands==='function') renderStands();
-          if(typeof save==='function') save();
-        });
-      }
+      pbox.className='pet-stand addon-second-row';
       row.appendChild(pbox);
     }
+    secondRow = Array.from(row.querySelectorAll('.pet-stand.addon-second-row'));
   }
+
+  // The 3rd pedestal uses col===1, so place the 4th at col===2 within the SAME row.
+  const placeIndex = 3; // fourth pet slot index in state
+  const pbox = secondRow[2]; // column 2 (0-based) of the second row
+  if(!pbox) return;
+
+  // Clear prior content to prevent duplicates, then build pedestal + placed item if any.
+  pbox.innerHTML = '';
+  const pPed = document.createElement('div');
+  pPed.className = 'pet-pedestal';
+  pbox.appendChild(pPed);
+
+  const placed = state.petStands[placeIndex];
+  if(placed){
+    const p = document.createElement('div');
+    p.className='pet-placed';
+    const nameLabel = (placed.name && placed.name.trim()) ? placed.name : (placed.petType||placed.eggType||'Pet');
+    p.innerHTML = `<img src='${placed.svg}' alt='${nameLabel}' style="width:64px;height:64px;border-radius:12px;">`
+                + `<div class="name-badge"><span>${nameLabel}</span></div>`;
+    pbox.appendChild(p);
+
+    if(placed.isEgg && state.petTimers[placeIndex]){
+      const timer=document.createElement('div');
+      timer.className='timer-badge';
+      timer.textContent='⏳';
+      p.appendChild(timer);
+    }
+  } else { /* no placeholder */ }
+
+  // Click behavior (swap-in/out and 2-minute hatch for eggs)
+  pbox.addEventListener('click', ()=>{
+    // If nothing selected, remove current pet/egg back to inventory
+    if(!state.selectedItemUid){
+      if(state.petStands[placeIndex]){
+        state.inventory.push(state.petStands[placeIndex]);
+        state.petStands[placeIndex] = null;
+        state.petTimers[placeIndex] = null;
+        if(typeof recalcEPS==='function') recalcEPS();
+        if(typeof renderInventory==='function') renderInventory();
+        if(typeof renderStands==='function') renderStands();
+        if(typeof save==='function') save();
+      }
+      return;
+    }
+    const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
+    if(!newItem) return;
+
+    // If a pet/egg is already here, return it to inventory before placing the new one
+    const existingHere = state.petStands[placeIndex];
+    if (existingHere) {
+      state.inventory.push(existingHere);
+      state.petStands[placeIndex] = null;
+      delete state.petTimers[placeIndex];
+    }
+
+    if(!(newItem.isEgg || newItem.petType)){
+      alert('Only eggs or pets can be placed on pet pedestals.');
+      return;
+    }
+    if(newItem.isEgg){
+      state.petStands[placeIndex] = newItem;
+      // 2-minute timer for the 4th pedestal
+      const TWO_MIN = 2*60*1000;
+      state.petTimers[placeIndex] = Date.now() + (window.FOURTH_HATCH_DURATION || TWO_MIN);
+    }else{
+      state.petStands[placeIndex] = newItem;
+      if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
+    }
+    state.inventory = state.inventory.filter(it => it.uid !== newItem.uid);
+    state.selectedItemUid = null;
+    if(typeof recalcEPS==='function') recalcEPS();
+    if(typeof renderInventory==='function') renderInventory();
+    if(typeof renderStands==='function') renderStands();
+    if(typeof save==='function') save();
+  });
+}
+
 
   (function(){
     const __rs = window.renderStands;
@@ -3898,6 +3980,483 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
       if (grid) grid.scrollTop = 0;
     }, { passive: true });
   }
+})();
+</script>
+
+<script>
+// ===== Admin broadcast listener + auto-update =====
+(function(){
+  const CLIENT_BUILD = 'v48-msgs1';
+  let _queue = [];
+  let _showing = false;
+  let lastG = Number(localStorage.getItem('flex_msg_lastG')||0);
+  let lastU = Number(localStorage.getItem('flex_msg_lastU')||0);
+
+  function ensureBanner(){
+    if(document.getElementById('adminMsgBanner')) return;
+    const el = document.createElement('div');
+    el.id = 'adminMsgBanner';
+    el.innerHTML = '<div class="msg"></div><button class="close" aria-label="Close">×</button>';
+    document.body.appendChild(el);
+    el.querySelector('.close').addEventListener('click', ()=>{ hideBanner(); _queue=[]; });
+  }
+
+  function showBanner(msg){
+    ensureBanner();
+    const el = document.getElementById('adminMsgBanner');
+    el.classList.remove('info','warn','success');
+    el.classList.add(msg.style||'info');
+    el.querySelector('.msg').textContent = String(msg.text||'');
+    el.classList.add('show');
+    _showing = true;
+    const lifetime = 5000 + Math.min(5000, (String(msg.text||'').length * 15));
+    setTimeout(()=>hideBanner(), lifetime);
+  }
+  function hideBanner(){
+    const el = document.getElementById('adminMsgBanner');
+    if(!el) return;
+    el.classList.remove('show');
+    _showing = false;
+    setTimeout(()=>maybeNext(), 250);
+  }
+  function enqueue(msg){
+    _queue.push(msg);
+    maybeNext();
+  }
+  function maybeNext(){
+    if(_showing) return;
+    const msg = _queue.shift();
+    if(!msg) return;
+    showBanner(msg);
+  }
+
+  async function fetchJson(u){
+    try{
+      const r = await fetch(u, { cache:'no-store' });
+      if(!r.ok) return null;
+      return await r.json();
+    }catch(e){ return null; }
+  }
+
+  async function pollOnce(){
+    try{
+      // global
+      const g = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__broadcast')}&t=${Date.now()}`) || {};
+      const glist = Array.isArray(g.list) ? g.list : [];
+      glist.forEach(m=>{ if((m.ts||0) > lastG){ if(m && m.op === 'freeze'){ activateHardFreeze(m.text); } else { enqueue(m); } lastG = Math.max(lastG, m.ts||0); } });
+// user inbox
+      const u = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__inbox_'+USER_ID)}&t=${Date.now()}`) || {};
+      const ulist = Array.isArray(u.list) ? u.list : [];
+      ulist.forEach(m=>{ if((m.ts||0) > lastU){ if(m && m.op === 'freeze'){ activateHardFreeze(m.text); } else { enqueue(m); } lastU = Math.max(lastU, m.ts||0); } });
+localStorage.setItem('flex_msg_lastG', String(lastG));
+      localStorage.setItem('flex_msg_lastU', String(lastU));
+    }catch(e){ /* ignore */ }
+
+    // auto-update: check the "latest" pointer
+    try{
+      const cfg = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__flex_latest')}&t=${Date.now()}`) || null;
+      if(cfg && cfg.url){
+        const should = (cfg.force===true) || (cfg.v && String(cfg.v)!==String(CLIENT_BUILD));
+        if(should){
+          // Hard navigate to the latest client URL (works for GitHub raw or any host)
+          const url = cfg.url + (cfg.url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+          window.location.href = url;
+          return;
+        }
+      }
+    }catch(e){ /* ignore */ }
+
+    
+  // ===== Hard Freeze (admin-triggered) =====
+  function __escapeHtml_(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function activateHardFreeze(msgText){
+    if(window.__HARD_FREEZE_ACTIVE__) return;
+    window.__HARD_FREEZE_ACTIVE__ = true;
+    try{ window.__origRAF = window.requestAnimationFrame; window.requestAnimationFrame = function(){}; }catch(e){}
+    var st = document.getElementById('hardFreezeStyle');
+    if(!st){
+      st = document.createElement('style'); st.id = 'hardFreezeStyle';
+      st.textContent = [
+        '#hardFreezeOverlay{position:fixed;inset:0;background:#000;color:#fff;z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}',
+        '#hardFreezeOverlay .inner{max-width:880px;padding:28px;text-align:center;}',
+        '#hardFreezeOverlay h1{margin:0 0 12px;font-size:clamp(24px,5vw,48px);font-weight:900;letter-spacing:.4px;}',
+        '#hardFreezeOverlay p{margin:8px 0;font-size:clamp(14px,2.2vw,22px);opacity:.9;}'
+      ].join('\n');
+      document.head.appendChild(st);
+    }
+    var ov = document.getElementById('hardFreezeOverlay');
+    if(!ov){
+      ov = document.createElement('div'); ov.id = 'hardFreezeOverlay';
+      ov.innerHTML = '<div class="inner"><h1>Update Required</h1><p>'+__escapeHtml_(msgText||'Admin paused the game for an update.')+'</p><p><strong>Use your browser\'s Reload button to continue.</strong></p></div>';
+      document.body.appendChild(ov);
+    }
+    var trap = function(e){ try{ e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); }catch(_){} return false; };
+    ['keydown','keyup','keypress','pointerdown','pointerup','click','dblclick','contextmenu','wheel','touchstart','touchend'].forEach(function(ev){
+      window.addEventListener(ev, trap, true);
+    });
+  }
+setTimeout(pollOnce, 1500);
+  }
+
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(pollOnce, 100); });
+  window.addEventListener('load', ()=>{
+    // Inject banner CSS if not present
+    if(!document.getElementById('adminMsgBannerStyle')){
+      const st = document.createElement('style'); st.id='adminMsgBannerStyle';
+      st.textContent = '"\\n/* ===== admin broadcast banner ===== */\\n#adminMsgBanner{\\n  position:fixed; left:0; right:0; top:-120px; z-index:9999;\\n  display:flex; gap:12px; align-items:center; justify-content:center;\\n  min-height:56px; padding:10px 16px;\\n  font-weight:800; letter-spacing:.2px;\\n  color:#000; text-shadow:0 1px 0 rgba(255,255,255,.4);\\n  border-bottom:4px solid rgba(0,0,0,.35);\\n  box-shadow:0 10px 30px rgba(0,0,0,.35);\\n  transition: transform .35s ease, top .35s ease, background .25s;\\n  transform: translateY(-100%);\\n}\\n#adminMsgBanner.show{ top:0; transform: translateY(0); }\\n#adminMsgBanner .msg{ max-width:1100px; text-align:center; }\\n#adminMsgBanner .close{ margin-left:auto; cursor:pointer; font-weight:900; }\\n#adminMsgBanner.info{ background: #79ffe1; }\\n#adminMsgBanner.warn{ background: #ffd86a; }\\n#adminMsgBanner.success{ background: #a7ff83; }\\n"';
+      document.head.appendChild(st);
+    }
+    ensureBanner();
+    pollOnce();
+  });
+})();
+</script>
+
+<script>
+// --- Pet Quest: Unlock 4th Pet Pedestal when ALL pets owned (2-minute hatch slot) ---
+(function(){
+  function unlockFourthIfAllPets(){
+    try{
+      if (typeof hasAllPets !== 'function') return;
+      if (!hasAllPets()) return;
+      window.state = window.state || {};
+      state.ach = state.ach || {};
+      if (!state.ach.petFourthUnlocked) {
+        state.ach.petFourthUnlocked = true;
+        // Ensure arrays have 4 slots
+        if (!Array.isArray(state.petStands)) state.petStands = [null,null,null,null];
+        while (state.petStands.length < 4) state.petStands.push(null);
+        if (!Array.isArray(state.petTimers)) state.petTimers = [null,null,null,null];
+        while (state.petTimers.length < 4) state.petTimers.push(null);
+        // Re-render UI
+        try { if (typeof renderStands === 'function') renderStands(); } catch(e){}
+        try { if (typeof recalcEPS === 'function') recalcEPS(); } catch(e){}
+        try { if (window.__addonSave) __addonSave(); } catch(e){}
+      }
+    } catch(e){}
+  }
+
+  // Run once after load (ensures PET_TABLES/hasAllPets exist)
+  window.addEventListener('load', function(){ setTimeout(unlockFourthIfAllPets, 0); });
+
+  // Also check on visibility regain (common after tab switching)
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) setTimeout(unlockFourthIfAllPets, 50);
+  });
+
+  // Wrap global save() so any state change re-checks the quest
+  const __save = window.save;
+  window.save = async function(){
+    try { unlockFourthIfAllPets(); } catch(e){}
+    if (typeof __save === 'function') {
+      try { return await __save.apply(this, arguments); } catch (e) { return; }
+    }
+  };
+})();
+</script>
+
+
+<style>
+/* === Dodger Quests background === */
+body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_style.png') center center / cover no-repeat fixed !important; }
+.dq-box .dq-row{display:flex;align-items:center;gap:10px;margin:10px 0;font-weight:900;letter-spacing:.3px;}
+.dq-box .dq-check{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;border:2px solid #111;background:#555;font-weight:900;color:#111;}
+.dq-box .dq-check.ok{background:#58e36c;color:#111;}
+.dq-box .dq-sub{font-size:14px;opacity:.85;font-weight:800;margin-top:-6px;margin-left:38px;}
+.dq-claim{margin-top:8px;}
+</style>
+
+<script>
+// === Dodger Quests (LA Event) ===
+(function(){
+  const DQ_KEY = 'flex_dodger_quests_v1';
+  const EARN_GOAL = 10_000_000_000; // $10B
+  const OWN_GOAL = 15;              // lowered to 15 Dodger-rarity items
+  const EXOTIC_LA_GOAL = 6;         // 6 exotics forged from only LA items
+
+  // load / init
+  window.state = window.state || {};
+  state.dodgerQuests = (function(){
+    try{ const d = JSON.parse(localStorage.getItem(DQ_KEY)||'null'); if(d) return d; }catch(e){}
+    return { earned: 0, exoticsLA: 0, unlocked: false };
+  })();
+
+  function saveDQ(){
+    try{ localStorage.setItem(DQ_KEY, JSON.stringify(state.dodgerQuests)); }catch(e){}
+    try{ if(typeof save==='function') save(); }catch(e){}
+  }
+
+  function countDodgerRarityOwned(){
+    let n = 0;
+    try{
+      (state.inventory||[]).forEach(i=>{ if(i && String(i.rarity).toLowerCase()==='dodger') n++; });
+      Object.values(state.placed||{}).forEach(i=>{ if(i && String(i.rarity).toLowerCase()==='dodger') n++; });
+    }catch(e){}
+    return n;
+  }
+
+  function currentDodgerEPS(){
+    let base = 0;
+    try{
+      (state.stands||[]).forEach(uid=>{
+        if(!uid) return;
+        const it = (state.placed||{})[uid] || (state.inventory||[]).find(x=>x.uid===uid);
+        if(!it) return;
+        if(String(it.rarity).toLowerCase()==='dodger'){
+          const key='dodger';
+          const inc = (window.RARITY && RARITY[key] && +RARITY[key].income) ? +RARITY[key].income : 0;
+          base += inc;
+        }
+      });
+    }catch(e){}
+    const mult = (window.multiplierLevel||1) * ((state.permanentPetMultiplier||1));
+    return base * mult;
+  }
+
+  function isLAItem(it){
+    if(!it) return false;
+    if(it.la === true) return true;
+    const s = String(it.svg||'');
+    return /la_dodgers/i.test(s) || /dodger_/i.test(s);
+  }
+
+  // ===== Forge Output: use only REAL items (present in ICON_PATHS), Exotic rarity =====
+  function getRealItemNames(){
+    try{
+      const ks = Object.keys(ICON_PATHS||{});
+      if(Array.isArray(ks) && ks.length) return ks;
+    }catch(e){}
+    try{
+      return (ITEM_NAMES||[]).filter(n => ICON_PATHS && Object.prototype.hasOwnProperty.call(ICON_PATHS, n));
+    }catch(e){}
+    return [];
+  }
+  function createRandomNormalExotic(){
+    const real = getRealItemNames();
+    const name = real.length ? real[Math.floor(Math.random()*real.length)] : '24 King Crown';
+    const baseIdx = Math.floor(Math.random()*20);
+    const svg = (typeof getItemSvg==='function') ? getItemSvg(name, baseIdx, 'exotic') : '';
+    return { uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity:'exotic', price:0, baseIdx, svg };
+  }
+
+  // Hook Exotic Forge button so output is normal Exotic and LA-only inputs count for quest
+  function hookExoticForgeBtn(){
+    const btn = document.getElementById('exoticForgeBtn');
+    if(!btn || btn.dataset.dqHooked==='1') return;
+    const clone = btn.cloneNode(true);
+    btn.replaceWith(clone);
+    clone.dataset.dqHooked = '1';
+    clone.addEventListener('click', function(){
+      // Validate all 4 stands are legacy (any type)
+      const ok = (state.stands||[]).every(uid=>{
+        if(!uid) return false;
+        const it = state.placed[uid] || (state.inventory||[]).find(x=>x.uid===uid);
+        return it && String(it.rarity).toLowerCase()==='legacy';
+      });
+      if(!ok) return;
+
+      // Check LA-only inputs for quest 3
+      const allLA = (state.stands||[]).every(uid=>{
+        const it = state.placed[uid] || (state.inventory||[]).find(x=>x.uid===uid);
+        return isLAItem(it);
+      });
+
+      // Consume 4 inputs
+      (state.stands||[]).forEach(uid=>{ if(uid && state.placed[uid]) delete state.placed[uid]; });
+      state.stands = [null,null,null,null];
+
+      // Create a proper random exotic from REAL items only
+      const ex = createRandomNormalExotic();
+      state.placed[ex.uid] = ex;
+      state.stands[0] = ex.uid;
+
+      if(typeof recalcEPS==='function') recalcEPS();
+      if(typeof renderInventory==='function') renderInventory();
+      if(typeof renderStands==='function') renderStands();
+      saveDQ();
+      if(allLA){
+        state.dodgerQuests.exoticsLA = (state.dodgerQuests.exoticsLA||0) + 1;
+        saveDQ();
+        updateDodgerQuestsUI();
+      }
+    });
+  }
+  setInterval(hookExoticForgeBtn, 1200);
+
+  // Mark LA items when bought from LA Pack (best-effort)
+  (function tryWrapBuyLAPack(){
+    if(window.__wrappedBuyLAPack) return;
+    const pol = setInterval(()=>{
+      const btn = document.getElementById('buyLAPack');
+      if(btn){
+        btn.addEventListener('click', ()=>{
+          setTimeout(()=>{
+            try{
+              const inv = state.inventory||[];
+              for(let i=inv.length-1;i>=0;i--){
+                const it = inv[i];
+                if(isLAItem(it)){ it.la = true; break; }
+              }
+              saveDQ();
+            }catch(e){}
+          }, 10);
+        });
+        window.__wrappedBuyLAPack = true;
+        clearInterval(pol);
+      }
+    }, 600);
+  })();
+
+  // Inject Dodger Quests card (takes over logo box)
+  function injectDodgerQuestsCard(){
+    const overlay = document.getElementById('dodgerOverlay');
+    if(!overlay) return;
+    const logoImg = overlay.querySelector('#dodgerShopLogo');
+    let hostCard = logoImg ? logoImg.closest('.dodger-card') : overlay.querySelector('.dodger-card:last-child');
+    if(!hostCard) return;
+    hostCard.id = 'cardDodgerQuests';
+    hostCard.style.display = 'block';
+    hostCard.style.placeItems = 'initial';
+    hostCard.innerHTML = '<h3>Dodger Quests</h3>'
+      + '<div class="dq-box">'
+      +   '<div class="dq-row"><div class="dq-check" id="dqEarnChk"></div>'
+      +   '<div style="flex:1">Earn $10,000,000,000 from Dodger rarity</div></div>'
+      +   '<div class="dq-sub" id="dqEarnSub"></div>'
+      +   '<div class="dq-row"><div class="dq-check" id="dqOwnChk"></div>'
+      +   '<div style="flex:1">Own 15 items that are a Dodger rarity</div></div>'
+      +   '<div class="dq-sub" id="dqOwnSub"></div>'
+      +   '<div class="dq-row"><div class="dq-check" id="dqForgeChk"></div>'
+      +   '<div style="flex:1">Forge 6 EXOTICS from only LA Pack items</div></div>'
+      +   '<div class="dq-sub" id="dqForgeSub"></div>'
+      +   '<button class="dodger-buy dq-claim" id="dqClaimBtn" disabled>Claim Background</button>'
+      +   '<div class="dq-sub" id="dqClaimNote">Reward: LA Dodgers Quests background (apply via Backgrounds)</div>'
+      + '</div>';
+    document.getElementById('dqClaimBtn').addEventListener('click', claimReward);
+    updateDodgerQuestsUI();
+  }
+
+  function fmt(n){ try{return (n||0).toLocaleString(undefined,{maximumFractionDigits:0});}catch(e){ return String(n); } }
+  function updateDodgerQuestsUI(){
+    const earned = Math.floor(state.dodgerQuests.earned||0);
+    const own = countDodgerRarityOwned();
+    const forged = Math.floor(state.dodgerQuests.exoticsLA||0);
+
+    const earnOk = earned >= EARN_GOAL;
+    const ownOk = own >= OWN_GOAL;
+    const forgeOk = forged >= EXOTIC_LA_GOAL;
+
+    const earnPct = Math.min(100, Math.floor(earned/EARN_GOAL*100));
+    const ownPct = Math.min(100, Math.floor(own/OWN_GOAL*100));
+    const forgePct = Math.min(100, Math.floor(forged/EXOTIC_LA_GOAL*100));
+
+    const E = document.getElementById('dqEarnChk'); if(E){ E.classList.toggle('ok', earnOk); E.textContent = earnOk?'✓':''; }
+    const O = document.getElementById('dqOwnChk'); if(O){ O.classList.toggle('ok', ownOk); O.textContent = ownOk?'✓':''; }
+    const F = document.getElementById('dqForgeChk'); if(F){ F.classList.toggle('ok', forgeOk); F.textContent = forgeOk?'✓':''; }
+
+    const Es = document.getElementById('dqEarnSub'); if(Es){ Es.textContent = fmt(earned) + ' / ' + fmt(EARN_GOAL) + ' ('+earnPct+'%)'; }
+    const Os = document.getElementById('dqOwnSub'); if(Os){ Os.textContent = own + ' / ' + OWN_GOAL + ' ('+ownPct+'%)'; }
+    const Fs = document.getElementById('dqForgeSub'); if(Fs){ Fs.textContent = forged + ' / ' + EXOTIC_LA_GOAL + ' ('+forgePct+'%)'; }
+
+    const all = earnOk && ownOk && forgeOk;
+    const btn = document.getElementById('dqClaimBtn');
+    if(btn){
+      btn.disabled = !(all && !state.dodgerQuests.unlocked);
+      btn.textContent = state.dodgerQuests.unlocked ? 'Unlocked' : (all ? 'Claim Background' : 'Locked');
+    }
+  }
+
+  // Reward: unlock BG tile
+  let __dqBgURL = null;
+  function ensureDodgerQuestBgURL(cb){
+    if(__dqBgURL){ cb(__dqBgURL); return; }
+    const img = new Image();
+    const url = 'la_dodgers_style_files/la_dodgers_quests_style.png';
+    img.onload = ()=>{ __dqBgURL = url; cb(url); };
+    img.onerror = ()=>{ __dqBgURL = url; cb(url); };
+    img.src = url;
+  }
+
+  function claimReward(){
+    state.dodgerQuests.unlocked = true;
+    state.unlockedBackgrounds = state.unlockedBackgrounds || {};
+    state.unlockedBackgrounds.dodgerquests = true;
+    saveDQ();
+    ensureDodgerQuestBgURL(function(url){
+      try{
+        var st = document.getElementById('dqBgStyle');
+        if(!st){ st = document.createElement('style'); st.id='dqBgStyle'; document.head.appendChild(st); }
+        st.textContent = "body.bg-dodgerquests{background:url('"+url+"') center center / cover no-repeat fixed !important;}";
+      }catch(e){}
+      if(typeof window.__renderBgGrid==='function') window.__renderBgGrid();
+      updateDodgerQuestsUI();
+      alert('Dodger Quests background unlocked! Apply it from Backgrounds.');
+    });
+  }
+
+  // Add tile to Background selector
+  (function extendBgGrid(){
+    const orig = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if(typeof orig === 'function') orig();
+      try{
+        const g = document.getElementById('bgGrid'); if(!g) return;
+        if(!g.querySelector('[data-dodgerquests]')){
+          const el = document.createElement('div');
+          el.setAttribute('data-dodgerquests','1');
+          el.className = 'bg-tile' + (!((state.unlockedBackgrounds||{}).dodgerquests)?' locked':'');
+          ensureDodgerQuestBgURL(function(url){
+            el.style.cssText = "background:url('"+url+"') center/cover no-repeat;border-color:#0b2e6e;";
+          });
+          el.innerHTML = '<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">DODGER QUESTS</div><button class="buy bg-apply" '+(!((state.unlockedBackgrounds||{}).dodgerquests)?'disabled':'')+'>Apply</button>';
+          el.querySelector('.bg-apply').onclick = function(){
+            if(!((state.unlockedBackgrounds||{}).dodgerquests)) return;
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-spaceview','bg-dodger','redblue');
+            document.body.classList.add('bg-dodgerquests');
+            state.selectedBackground = 'dodgerquests';
+            saveDQ();
+          };
+          g.appendChild(el);
+        }else{
+          const el = g.querySelector('[data-dodgerquests]');
+          el.classList.toggle('locked', !((state.unlockedBackgrounds||{}).dodgerquests));
+          const btn = el.querySelector('.bg-apply'); if(btn) btn.disabled = !((state.unlockedBackgrounds||{}).dodgerquests);
+        }
+      }catch(e){}
+    };
+  })();
+
+  // When Dodgers overlay opens, inject the card
+  (function hookOpenDodgers(){
+    const poll = setInterval(()=>{
+      const btn = document.getElementById('openDodger');
+      if(btn){
+        btn.addEventListener('click', ()=> setTimeout(injectDodgerQuestsCard, 0));
+        clearInterval(poll);
+      }
+    }, 500);
+  })();
+
+  // Continuous earnings tracker
+  let last = performance.now();
+  function dqLoop(ts){
+    const dt = Math.max(0, (ts - last) / 1000);
+    last = ts;
+    const eps = currentDodgerEPS();
+    if(eps > 0){
+      state.dodgerQuests.earned = (state.dodgerQuests.earned||0) + eps * dt;
+      if((Math.random()<0.05)) saveDQ();
+    }
+    const ov = document.getElementById('dodgerOverlay');
+    if(ov && ov.classList.contains('show')) updateDodgerQuestsUI();
+    requestAnimationFrame(dqLoop);
+  }
+  requestAnimationFrame(dqLoop);
+
+  const _ri = window.renderInventory;
+  window.renderInventory = function(){ if(_ri) _ri.apply(this, arguments); updateDodgerQuestsUI(); };
+  const _rs = window.renderStands;
+  window.renderStands = function(){ if(_rs) _rs.apply(this, arguments); updateDodgerQuestsUI(); };
+
 })();
 </script>
 
