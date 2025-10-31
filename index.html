@@ -3391,324 +3391,18 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
 
 
-<!-- Cosmic Event Overlay -->
-<div class="overlay" id="cosmicOverlay" aria-hidden="true">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cosmicTitle">
-    <button class="closeX" id="closeCosmic" aria-label="Close">✕</button>
-    <h2 id="cosmicTitle">COSMIC EVENT</h2>
-    <div class="cosmic-grid">
-      <div class="cosmic-card" id="cardSpacePack">
-        <h3>Space Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
-        <p class="cosmic-desc">Open to receive a random Space Item in EPIC/LEGENDARY/LEGACY/MYTHIC/COSMIC. Cosmic is rarest and sparkles. Reward auto‑adds to inventory.</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="cosmic-price">$1,000,000,000</div>
-          <button class="cosmic-buy" id="buySpacePack">Purchase</button>
-        </div>
-      </div>
-      <div class="cosmic-card" id="cardSpaceView">
-        <h3>Space View</h3>
-        <p class="cosmic-desc">Animated galaxy background. After purchase, apply it from the Backgrounds menu.</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="cosmic-price">$10,000,000,000,000</div>
-          <button class="cosmic-buy" id="buySpaceView">Purchase</button>
-        </div>
-      </div>
-      <div class="cosmic-card" id="cardGalaxyEgg">
-        <h3>Galaxy Egg</h3>
-        <p class="cosmic-desc">Hatches: Alien 91% (same as Universal), Cosmic Unicorn 6% (+$45,000 EPS), Robot 3% (+$55,000 EPS). Robot has a 25% hourly chance to convert a placed MYTHIC to COSMIC when both are on pedestals.</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="cosmic-price">$20,000,000,000</div>
-          <button class="cosmic-buy" id="buyGalaxyEgg">Purchase</button>
-        </div>
-      </div>
-      <div class="cosmic-card">
-        <h3>Cosmic Info</h3>
-        <div class="cosmic-desc">
-          Event items are limited‑time. The event button disappears when over, but anything you bought stays in your save forever.
-        </div>
-      </div>
-    </div>
+
   </div>
 </div>
 
 <!-- Quick reward reveal -->
-<div class="cosmic-reveal" id="cosmicReveal">
-  <div class="card">
-    <div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
-    <img id="revealImg" alt="reward">
+<img id="revealImg" alt="reward">
     <div id="revealName" style="font-weight:900;margin-top:6px;"></div>
     <div id="revealRarity" class="rar" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
   </div>
 </div>
 
-<script>
-// === Cosmic Event bootstrap ===
-(function(){
-  // Add button to left rail (star)
-  try{
-    const rail = document.querySelector('.left-rail');
-    if(rail && !document.getElementById('openCosmic')){
-      const btn = document.createElement('button');
-      btn.className = 'icon-btn icon-cosmic';
-      btn.id = 'openCosmic';
-      btn.title = 'Cosmic Event';
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd84a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.2L22 9l-5 4.8 1.2 6.9L12 17.8 5.8 20.7 7 13.8 2 9l7.1-.8L12 2z"/></svg>';
-      (function(){ 
-  var row = document.querySelector('.event-row') || document.getElementById('eventRow');
-  if(!row){
-    row = document.createElement('div');
-    row.className = 'event-row';
-    document.body.appendChild(row);
-  }
-  row.appendChild(btn);
-})();
-btn.addEventListener('click', ()=>{
-        document.getElementById('cosmicOverlay').classList.add('show');
-        document.getElementById('cosmicOverlay').setAttribute('aria-hidden','false');
-        updateSpaceViewUI();
-      });
-    }
-  }catch(e){}
 
-  // Close handler
-  document.getElementById('closeCosmic')?.addEventListener('click', ()=>{
-    document.getElementById('cosmicOverlay').classList.remove('show');
-    document.getElementById('cosmicOverlay').setAttribute('aria-hidden','true');
-  });
-
-  // Extend rarity table with COSMIC
-  try{
-    window.RARITY = window.RARITY || {};
-    if(!RARITY.cosmic){
-      RARITY.cosmic = { label:'COSMIC', color:'#8fd0ff', income: 35000, price:[0,0], prob: 0 };
-    }
-  }catch(e){}
-
-  // Reward reveal helpers
-  function showReveal(name, rarity, imgPath){
-    const host = document.getElementById('cosmicReveal');
-    const rn = document.getElementById('revealName');
-    const rr = document.getElementById('revealRarity');
-    const ri = document.getElementById('revealImg');
-    ri.src = imgPath;
-    rn.textContent = name;
-    rr.textContent = (RARITY[String(rarity).toLowerCase()]?.label || String(rarity||'').toUpperCase());
-    rr.className = 'rar t-' + String(rarity).toLowerCase();
-    host.classList.add('show');
-    setTimeout(()=>{ host.classList.remove('show'); }, 3000);
-  }
-
-  // Space Pack logic
-  const SPACE_PACK_COST = 1_000_000_000;
-  const SPACE_ITEMS = [
-    ["Space Ship","space_ship.png"],
-    ["Mars","mars.png"],
-    ["Earth","earth.png"],
-    ["Space Suit","space_suit.png"],
-    ["Asteroid","asteroid.png"],
-    ["Moon","moon.png"],
-    ["Black Hole","black_hole.png"],
-    ["Sun","sun.png"]
-  ];
-  // Weights: EPIC 60, LEGENDARY 25, LEGACY 10, MYTHIC 4, COSMIC 1
-  const SP_RARITY_BUCKETS = [
-    ["epic",58],["legendary",25],["legacy",10],["mythic",4],["cosmic",3]
-  ];
-  function pickWeighted(bucket){
-    const total = bucket.reduce((s, r)=>s+r[1], 0);
-    let roll = Math.random() * total;
-    for(const [val,w] of bucket){
-      roll -= w;
-      if(roll <= 0) return val;
-    }
-    return bucket[bucket.length-1][0];
-  }
-
-  function buySpacePack(){
-    if((state.money||0) < SPACE_PACK_COST) return;
-    state.money -= SPACE_PACK_COST;
-    const [name, file] = SPACE_ITEMS[Math.floor(Math.random()*SPACE_ITEMS.length)];
-    const rar = pickWeighted(SP_RARITY_BUCKETS);
-    const inv = {
-      uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
-      name,
-      rarity: rar,
-      price: 0,
-      baseIdx: 0,
-      svg: 'space_pack_items/'+file
-    };
-    state.inventory.push(inv);
-    showReveal(name, rar, inv.svg);
-    if(typeof updateTop==='function') updateTop();
-    if(typeof renderInventory==='function') renderInventory();
-    if(typeof save==='function') save();
-  }
-  document.getElementById('buySpacePack')?.addEventListener('click', buySpacePack);
-
-  // Space View purchase
-  const SPACE_VIEW_COST = 10_000_000_000_000;
-  function updateSpaceViewUI(){
-    const btn = document.getElementById('buySpaceView');
-    if(!btn) return;
-    const owned = !!(state.unlockedBackgrounds && state.unlockedBackgrounds.spaceview);
-    if(owned){
-      btn.disabled = true;
-      btn.textContent = 'Purchased';
-      btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
-    }else{
-      btn.disabled = (state.money||0) < SPACE_VIEW_COST;
-      btn.textContent = 'Purchase';
-      btn.style.background = '';
-    }
-  }
-  function buySpaceView(){
-    if((state.unlockedBackgrounds||{}).spaceview) return;
-    if((state.money||0) < SPACE_VIEW_COST) return;
-    state.money -= SPACE_VIEW_COST;
-    state.unlockedBackgrounds = state.unlockedBackgrounds || {};
-    state.unlockedBackgrounds.spaceview = true;
-    // add selectable tile now
-    if(typeof window.__renderBgGrid==='function') window.__renderBgGrid();
-    updateSpaceViewUI();
-    if(typeof updateTop==='function') updateTop();
-    if(typeof save==='function') save();
-  }
-  document.getElementById('buySpaceView')?.addEventListener('click', buySpaceView);
-
-  // Extend Background grid with Space View option
-  (function extendBgGrid(){
-    const orig = window.__renderBgGrid;
-    window.__renderBgGrid = function(){
-      if(typeof orig === 'function') orig();
-      try{
-        const g=document.getElementById('bgGrid');
-        if(!g) return;
-        if(!g.querySelector('[data-spaceview]')){
-          const el=document.createElement('div');
-          el.setAttribute('data-spaceview','1');
-          el.className='bg-tile'+(!(state.unlockedBackgrounds||{}).spaceview?' locked':'');
-          el.style.cssText='background:radial-gradient(1200px 600px at 50% -200px,#091225,#04060c)';
-          el.innerHTML='<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">SPACE VIEW</div><button class="buy bg-apply" '+(!(state.unlockedBackgrounds||{}).spaceview?'disabled':'')+'>Apply</button>';
-          el.querySelector('.bg-apply').onclick=()=>{
-            if(!(state.unlockedBackgrounds||{}).spaceview) return;
-            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue');
-            document.body.classList.add('bg-spaceview');
-            state.selectedBackground='spaceview';
-            if(typeof save==='function') save();
-          };
-          g.appendChild(el);
-        }
-      }catch(e){}
-    };
-  })();
-
-  // Galaxy Egg purchase + hatch
-  const GALAXY_EGG_COST = 20_000_000_000;
-  function buyGalaxyEgg(){
-    if((state.money||0) < GALAXY_EGG_COST) return;
-    state.money -= GALAXY_EGG_COST;
-    const egg = {
-      uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
-      name: 'Galaxy Egg',
-      isEgg: true,
-      eggType: 'galaxy',
-      svg: (function(){
-        // sparkly yellow-blue blend
-        const size=96, gid='gal'+Math.floor(Math.random()*99999);
-        const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 96 96">
-          <defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#ffdf6a"/><stop offset="100%" stop-color="#67b7ff"/></linearGradient></defs>
-          <rect x="4" y="4" width="88" height="88" rx="14" fill="#333"/><ellipse cx="48" cy="52" rx="22" ry="28" fill="url(#${gid})"/>
-        </svg>`;
-        return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
-      })()
-    };
-    state.inventory.push(egg);
-    if(typeof updateTop==='function') updateTop();
-    if(typeof renderInventory==='function') renderInventory();
-    if(typeof save==='function') save();
-  }
-  document.getElementById('buyGalaxyEgg')?.addEventListener('click', buyGalaxyEgg);
-
-  // Inject Galaxy table + robot passive
-  (function extendPets(){
-    try{
-      window.PET_TABLES = window.PET_TABLES || {};
-      // Alien same EPS as Universal egg table (fallback to 15000000 if unknown)
-      let alienEPS = 15000000;
-      try{
-        const u = PET_TABLES.universal?.find(p=>p.name==='Alien');
-        if(u && u.eps) alienEPS = u.eps;
-      }catch(e){}
-      PET_TABLES.galaxy = [
-        { name:'Alien', chance: 0.91, eps: alienEPS },
-        { name:'Cosmic Unicorn', chance: 0.06, eps: 45000 },
-        { name:'Robot', chance: 0.03, eps: 55000 }
-      ];
-      // Ensure getPetSvg knows files (these were mentioned by the user)
-      window.getPetSvg = (function(orig){
-        return function(petName, seed){
-          const map = {
-            "Alien":"alien.png",
-            "Cosmic Unicorn":"cosmic_unicorn.png",
-            "Robot":"robot.png"
-          };
-          if(map[petName]) return 'pets/'+map[petName];
-          try{ return orig ? orig(petName, seed) : 'pets/'+(map[petName]||'alien.png'); }catch(e){ return 'pets/'+(map[petName]||'alien.png'); }
-        };
-      })(window.getPetSvg);
-    }catch(e){}
-  })();
-
-  // When a Robot is placed, once per hour do a 10% roll to turn a MYTHIC to COSMIC
-  (function robotPassive(){
-    state.__robotLastCheck = state.__robotLastCheck || 0;
-    const HOUR = 3600*1000;
-    function doCheck(){
-      const now = Date.now();
-      if(now - (state.__robotLastCheck||0) < HOUR) return;
-      state.__robotLastCheck = now;
-      // Is a Robot placed on any pet pedestal?
-      const robotPlaced = (state.petStands||[]).some(p=>p && !p.isEgg && (p.petType==='Robot' || p.name==='Robot'));
-      if(!robotPlaced) return;
-      // Is there a MYTHIC on a main pedestal?
-      let mythicUid = null;
-      (state.stands||[]).forEach(uid=>{
-        if(!uid) return;
-        const it = state.placed[uid] || state.inventory.find(x=>x.uid===uid);
-        if(it && String(it.rarity).toLowerCase()==='mythic' && !mythicUid) mythicUid = uid;
-      });
-      if(!mythicUid) return;
-      // 10% chance
-      if(Math.random() <= 0.25){
-        const it = state.placed[mythicUid] || state.inventory.find(x=>x.uid===mythicUid);
-        if(it){
-          it.rarity = 'cosmic';
-          // visuals update
-          try{ it.svg = it.svg; }catch(e){}
-          if(typeof recalcEPS==='function') recalcEPS();
-          if(typeof renderStands==='function') renderStands();
-          if(typeof renderInventory==='function') renderInventory();
-          if(typeof save==='function') save();
-        }
-      }
-    }
-    // hook into the main tick
-    const _tick = window.tick;
-    window.tick = function(now){
-      try{ doCheck(); }catch(e){}
-      return _tick ? _tick.apply(this, arguments) : undefined;
-    };
-  })();
-ensureDodgerBgURL(function(){});
-
-// Re-apply icons on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', ()=> setDodgerEventIcons());
-// MutationObserver to catch dynamic button insertion
-new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childList:true, subtree:true});
-
-})();
-</script>
 
 
 <!-- LA Dodgers Event Overlay -->
@@ -4555,6 +4249,47 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
   const _rs = window.renderStands;
   window.renderStands = function(){ if(_rs) _rs.apply(this, arguments); updateDodgerQuestsUI(); };
 
+})();
+</script>
+
+
+<script>
+// === Cosmic Event: turned off (UI/page removed). Preserve existing content. ===
+(function(){
+  try {
+    window.RARITY = window.RARITY || {};
+    if (!RARITY.cosmic) {
+      // Keep COSMIC rarity so existing items still earn EPS and display correctly.
+      RARITY.cosmic = { label: 'COSMIC', color: '#8fd0ff', income: 35000, price:[0,0], prob: 0 };
+    }
+  } catch(e){}
+
+  // Keep Space View usable if previously unlocked; do not expose purchase.
+  (function extendBgGridForSpaceView(){
+    const orig = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if (typeof orig === 'function') orig();
+      try{
+        const g = document.getElementById('bgGrid'); if(!g) return;
+        // Only add tile if the player already owns it.
+        if ((state.unlockedBackgrounds||{}).spaceview && !g.querySelector('[data-spaceview]')){
+          const el = document.createElement('div');
+          el.setAttribute('data-spaceview','1');
+          el.className = 'bg-tile';
+          el.style.cssText = 'background:radial-gradient(1200px 600px at 50% -200px,#091225,#04060c)';
+          el.innerHTML = '<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">SPACE VIEW</div>'
+                       + '<button class="buy bg-apply">Apply</button>';
+          el.querySelector('.bg-apply').onclick = function(){
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-dodger','bg-dodgerquests','redblue');
+            document.body.classList.add('bg-spaceview');
+            state.selectedBackground = 'spaceview';
+            try{ if(typeof save==='function') save(); }catch(e){}
+          };
+          g.appendChild(el);
+        }
+      }catch(e){}
+    };
+  })();
 })();
 </script>
 
