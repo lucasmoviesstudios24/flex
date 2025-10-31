@@ -410,6 +410,14 @@ body.redblue::after {
 
 .price{ font-weight:900; font-size:22px; }
 .buy{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer; background:linear-gradient(var(--ui-blue), var(--ui-blue-dark)); color:#fff; box-shadow:var(--shadow); }
+.upgrade{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer;
+  background:linear-gradient(45deg,#ffd86a,#ff7a00); color:#111; box-shadow:var(--shadow); }
+.upgrade:disabled{ filter:grayscale(1) brightness(.7); cursor:not-allowed; }
+
+/* Badge above EPS for total multiplier (pet + rebirth) */
+#multBadge{ padding:2px 10px; border-radius:12px; background:linear-gradient(45deg,#ffd86a,#ff7a00); color:#000;
+  font-weight:900; display:none; margin-left:6px; }
+
 .buy:disabled{ filter:grayscale(1) brightness(.7); cursor:not-allowed; }
 .closeX{ position:absolute; right:12px; top:8px; font-size:28px; background:#222; color:#fff; border:none; border-radius:14px; width:44px; height:44px; cursor:pointer; }
 
@@ -836,6 +844,7 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
   <div class="topbar">
     <div class="cash" id="cash">$1,000,000</div>
     <div class="eps" id="eps">+ $0 / sec</div>
+    <div id="multBadge" class="eps"></div>
   </div>
 
   <div class="left-rail">
@@ -959,18 +968,18 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
     <h2 id="gearTitle" style="color:#ff5050;text-align:center;">Gear</h2>
     <div class="grid">
 
-      <!-- Multiplier Tool -->
-      <div class="card" id="multiplierCard">
-        <h3>Multiplier x2</h3>
-        <div style="font-size:18px; opacity:0.85;">Doubles EPS for 20 minutes.<br>Max 4x.<br>Cooldown: 30 min.</div>
+      
+      <!-- Rebirth Multiplier -->
+      <div class="card" id="rebirthCard">
+        <h3>Rebirth X <span id="rebirthLevelTag" style="font-size:18px;opacity:.8;">(Level 0)</span></h3>
+        <div style="font-size:18px; opacity:0.85;">Resets money to $1,000,000, increases multiplier. Max level 10.</div>
+        <div id="rebirthStatus" style="margin-top:6px;font-weight:700;color:#6dff79;">Current Rebirth Multiplier: x1</div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$3,000,000</div>
-          <button class="buy" id="buyMultiplier">Purchase</button>
+          <div class="price" id="rebirthPrice">$1,000,000,000</div>
+          <button class="upgrade" id="rebirthUpgrade">Upgrade</button>
         </div>
-        <div id="multiplierStatus" style="margin-top:6px;font-weight:700;color:#6dff79;"></div>
       </div>
-
-      <!-- Background Tool -->
+<!-- Background Tool -->
       <div class="card" id="backgroundCard">
         <h3>Background Red/Blue</h3>
         <div style="font-size:18px; opacity:0.85;">Switch gradient to red/blue.<br>One-time purchase.</div>
@@ -1263,7 +1272,8 @@ function getPetSvg(petName, seed){
     petPedestalsPurchased: 0,           // 0..2
     petStands: [null,null],             // each entry: null or { uid,name,isEgg,eggType,petType,petEps,svg,baseIdx }
     petTimers: {},                      // map index -> timestamp (ms) when hatch will happen
-    permanentPetMultiplier: 1           // becomes 5 if Flex T-Rex hatched
+    permanentPetMultiplier: 1,
+    rebirthLevel: 0           // becomes 5 if Flex T-Rex hatched
   };
 
   function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
@@ -1315,7 +1325,8 @@ async function save() {
     petStands: {}, // serialized by index
     petTimers: state.petTimers,
     permanentPetMultiplier: state.permanentPetMultiplier,
-    petDex: (state.petDex || {})
+    petDex: (state.petDex || {}),
+    rebirthLevel: state.rebirthLevel || 0
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -1464,6 +1475,7 @@ async function load() {
     }
     state.petTimers = dat.petTimers ?? state.petTimers;
     state.permanentPetMultiplier = dat.permanentPetMultiplier ?? state.permanentPetMultiplier;
+    state.rebirthLevel = dat.rebirthLevel || 0;
     // PetDex (owned pets across eggs)
     state.petDex = dat.petDex || state.petDex || {};
     // Update local backup with the chosen data so rapid refresh can't regress
@@ -1473,7 +1485,7 @@ async function load() {
   }
 }
   function fmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
-  function updateTop(){ $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money))); $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec'; }
+  function updateTop(){ $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money))); $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec';  updateMultiplierBadge(); }
 function recalcEPS(){
   // Recalculate base EPS without multiplier; tolerant to uppercase/missing rarities
   let baseTotal = 0;
@@ -2057,6 +2069,61 @@ const MULTIPLIER_COOLDOWN = 30 * 60 * 1000; // 30 minutes
 const BACKGROUND_COST = 4_000_000;
 
 const RED_MONEY_COST = 1_000_000_000_000;
+// === Rebirth Multiplier System ===
+const REBIRTH_LEVEL_MULTS = [2,3,4,5,6,7,8,9,10];
+const REBIRTH_LEVEL_COSTS = [1_000_000_000,20_000_000_000,40_000_000_000,75_000_000_000,125_000_000_000,400_000_000_000,700_000_000_000,1_000_000_000_000,10_000_000_000_000];
+
+function getRebirthMultiplier(){ 
+  const lvl = state.rebirthLevel || 0;
+  if(lvl<=0) return 1;
+  return REBIRTH_LEVEL_MULTS[Math.min(lvl-1, REBIRTH_LEVEL_MULTS.length-1)] || 1;
+}
+function nextRebirthCost(){
+  const lvl = state.rebirthLevel || 0;
+  if(lvl >= REBIRTH_LEVEL_MULTS.length) return null;
+  return REBIRTH_LEVEL_COSTS[lvl];
+}
+function updateRebirthUI(){
+  const lvl = state.rebirthLevel || 0;
+  const mult = getRebirthMultiplier();
+  const priceEl = document.getElementById("rebirthPrice");
+  const levelTag = document.getElementById("rebirthLevelTag");
+  const status = document.getElementById("rebirthStatus");
+  const btn = document.getElementById("rebirthUpgrade");
+  if(levelTag) levelTag.textContent = `(Level ${lvl})`;
+  if(status) status.textContent = `Current Rebirth Multiplier: x${mult}`;
+  const cost = nextRebirthCost();
+  if(priceEl) priceEl.textContent = cost ? `$${fmt(cost)}` : 'MAXED';
+  if(btn){
+    if(cost===null){ btn.disabled = true; btn.textContent = 'Maxed'; }
+    else { btn.disabled = state.money < cost; btn.textContent = 'Upgrade'; }
+  }
+}
+function doRebirthUpgrade(){
+  const cost = nextRebirthCost();
+  if(cost===null) return;
+  if(state.money < cost) return;
+  state.rebirthLevel = (state.rebirthLevel||0) + 1;
+  state.money = 1_000_000; // reset money only
+  recalcEPS();
+  updateTop();
+  updateRebirthUI();
+  save();
+}
+
+function updateMultiplierBadge(){
+  const badge = document.getElementById('multBadge');
+  if(!badge) return;
+  const petMult = state.permanentPetMultiplier || 1;
+  const rebirthMult = getRebirthMultiplier();
+  const hasAny = (petMult>1) || (rebirthMult>1);
+  if(!hasAny){ badge.style.display='none'; badge.textContent=''; return; }
+  // Display style rule per request: show as sum (e.g., x15 for pet x5 + rebirth x10)
+  const displayVal = (petMult>1?petMult:0) + (rebirthMult>1?rebirthMult:0) || 1;
+  badge.textContent = 'x' + displayVal;
+  badge.style.display = 'inline-block';
+}
+
 let redMoneyPurchased = false;
 let redMoneyEnabled = false;
 
@@ -2155,7 +2222,7 @@ function buyMultiplier() {
   // 🟢 Apply EPS boost immediately
   recalcEPS();
   updateTop();
-  updateMultiplierStatus();
+  updateRebirthUI();
   save();
 }
 
@@ -2232,7 +2299,7 @@ function toggleRedMoney(){
 document.getElementById("toolsBtn").addEventListener("click", () => {
   document.getElementById("gearOverlay").classList.add("show");
   document.getElementById("gearOverlay").setAttribute("aria-hidden", "false");
-  updateMultiplierStatus();
+  updateRebirthUI();
   updateRedMoneyUI();
 });
 document.getElementById("closeGear").addEventListener("click", () => {
@@ -2241,7 +2308,7 @@ document.getElementById("closeGear").addEventListener("click", () => {
 });
 
 // Gear button actions
-document.getElementById("buyMultiplier").addEventListener("click", buyMultiplier);
+document.getElementById("rebirthUpgrade")?.addEventListener("click", doRebirthUpgrade);
 document.getElementById("buyBackground").addEventListener("click", buyBackground);
 document.getElementById("toggleBackground").addEventListener("click", toggleBackground);
 document.getElementById("buyRedMoney")?.addEventListener("click", buyRedMoney);
@@ -2271,7 +2338,7 @@ recalcEPS = function() {
   });
 
   let combined = baseEPS + petTotal;
-  combined = combined * multiplierLevel * (state.permanentPetMultiplier || 1);
+  combined = combined * getRebirthMultiplier() * (state.permanentPetMultiplier || 1);
   state.eps = Math.floor(combined);
 
   updateTop();
@@ -2501,7 +2568,7 @@ async function boot(){
   renderStands();
   recalcEPS();
   ensureShop();
-  updateMultiplierStatus();
+  updateRebirthUI();
 
   requestAnimationFrame(tick);
 }
@@ -3992,7 +4059,34 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
   let lastG = Number(localStorage.getItem('flex_msg_lastG')||0);
   let lastU = Number(localStorage.getItem('flex_msg_lastU')||0);
 
-  function ensureBanner(){
+  
+  // Prime baselines so only players with the tab open at send-time see admin messages or forced reloads.
+  let __MSG_PRIMED__ = false;
+  let _latestSeenTs = Number(localStorage.getItem('flex_latest_seenTs')||0);
+  async function primeBaselines(){
+    try{
+      // Snapshot current last message timestamps so we won't replay older broadcasts or inbox messages
+      const g0 = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__broadcast')}&t=${Date.now()}`) || {};
+      if (typeof g0.last === 'number') { lastG = g0.last; } else if (Array.isArray(g0.list) && g0.list.length){ lastG = Math.max(0, ...g0.list.map(m=>m && m.ts || 0)); }
+      const u0 = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__inbox_'+USER_ID)}&t=${Date.now()}`) || {};
+      if (typeof u0.last === 'number') { lastU = u0.last; } else if (Array.isArray(u0.list) && u0.list.length){ lastU = Math.max(0, ...u0.list.map(m=>m && m.ts || 0)); }
+      localStorage.setItem('flex_msg_lastG', String(lastG||0));
+      localStorage.setItem('flex_msg_lastU', String(lastU||0));
+      // Snapshot the latest force reload timestamp so new tabs opened later won't auto-refresh from old requests
+      const cfg0 = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__flex_latest')}&t=${Date.now()}`) || {};
+      if (cfg0 && typeof cfg0.forceTs === 'number') {
+        _latestSeenTs = cfg0.forceTs;
+      } else {
+        // Use "now" as a floor so existing forced reloads from the past won't trigger on late joiners
+        _latestSeenTs = Date.now();
+      }
+      localStorage.setItem('flex_latest_seenTs', String(_latestSeenTs||0));
+    }catch(e){ /* ignore priming errors */ }
+    __MSG_PRIMED__ = true;
+  window.addEventListener('load', ()=>{ try{ setInterval(pollOnce, 15000); }catch(e){} });
+
+  }
+function ensureBanner(){
     if(document.getElementById('adminMsgBanner')) return;
     const el = document.createElement('div');
     el.id = 'adminMsgBanner';
@@ -4039,6 +4133,8 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
   }
 
   async function pollOnce(){
+    if(!__MSG_PRIMED__) await primeBaselines();
+
     try{
       // global
       const g = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__broadcast')}&t=${Date.now()}`) || {};
@@ -4056,7 +4152,9 @@ localStorage.setItem('flex_msg_lastG', String(lastG));
     try{
       const cfg = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__flex_latest')}&t=${Date.now()}`) || null;
       if(cfg && cfg.url){
-        const should = (cfg.force===true) || (cfg.v && String(cfg.v)!==String(CLIENT_BUILD));
+        const forced = (typeof cfg.forceTs === 'number') && (cfg.forceTs > Number(localStorage.getItem('flex_latest_seenTs')||0));
+        const should = forced || (cfg.v && String(cfg.v)!==String(CLIENT_BUILD));
+        if (forced) { localStorage.setItem('flex_latest_seenTs', String(cfg.forceTs)); }
         if(should){
           // Hard navigate to the latest client URL (works for GitHub raw or any host)
           const url = cfg.url + (cfg.url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
