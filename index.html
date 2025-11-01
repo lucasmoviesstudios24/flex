@@ -837,6 +837,30 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
   }
   body { min-height: 100%; }
 </style>
+
+<style>
+/* === CRYPTO rarity === */
+.t-crypto{
+  background: linear-gradient(90deg, #ff62d5, #ffd84a, #ff62d5);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 900;
+  animation: cryptoShift 2s linear infinite;
+}
+@keyframes cryptoShift {
+  0%   { background-position: 0% 50%;   letter-spacing: 1px; }
+  50%  { background-position: 100% 50%; letter-spacing: 3px; }
+  100% { background-position: 0% 50%;   letter-spacing: 1px; }
+}
+/* Glow on placed container when CRYPTO is present */
+.crypto-glow{
+  filter: drop-shadow(0 0 10px rgba(255,120,220,.85))
+          drop-shadow(0 0 18px rgba(255,216,74,.6));
+}
+</style>
+
 </head>
 <body>
 <div class="event-row" id="eventRow"></div>
@@ -1070,7 +1094,8 @@ document.getElementById("resetGame").addEventListener("click", function() {
     birthday: { label:'BIRTHDAY', color:'#ff62d5', income: 15000, price:[0,0], prob: 0 },
     mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 },
     unique:  { label:'UNIQUE', color:'navy', income: 10000, price:[2_500_000,4_000_000], prob: 0.003 },
-    exotic:  { label:'EXOTIC', color:'cyan', income: 15000, price:[0,0], prob: 0 }
+    exotic:  { label:'EXOTIC', color:'cyan', income: 15000, price:[0,0], prob: 0 },
+     crypto:  { label:'CRYPTO', color:'#ff62d5', income: 50000, price:[0,0], prob: 0 }
   };
 
   const ITEM_NAMES = [
@@ -1160,7 +1185,8 @@ document.getElementById("resetGame").addEventListener("click", function() {
         legacy:'#ffffff',
         mythic:'#ffd86a',
         unique:'navy',
-        exotic:'cyan'
+        exotic:'cyan',
+        crypto:'#ff62d5'
     };
     const accent = accentByRarity[rarity] || '#cfd3d7';
     const hue = (idx*53 + (rarity==='legendary'?40:rarity==='epic'?20:0)) % 360;
@@ -1277,7 +1303,7 @@ function getPetSvg(petName, seed){
   };
 
   function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
- const SERVER_BASE = 'https://flex-sdww.onrender.com/api/game'; // use your actual Render.com URL
+ const SERVER_BASE = `${location.origin}/api/game`;
 
 // Identify user (for demo, use a prompt and store in localStorage)
 // Username prompt (first run): Cancel or "guest" -> Guest
@@ -1349,6 +1375,12 @@ async function save() {
   } catch (e) {
     console.error('Failed to save game:', e);
   }
+  await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent(USER_ID)}`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+  keepalive: true
+});
 }
 
 async function load() {
@@ -1367,8 +1399,15 @@ async function load() {
   try {
     let dat = null;
     let res = null;
-    try { res = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent(USER_ID)}`); } catch (e) { res = null; }
+    try {
+  res = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent(USER_ID)}`, { cache: 'no-store' });
+} catch (e) {
+  res = null;
+}
     if (res && res.ok) { dat = await res.json(); } else { dat = __localCandidate; }
+    // If the server returns nothing/empty, prefer the local backup
+const isEmpty = !dat || (typeof dat === 'object' && Object.keys(dat).length === 0);
+if (isEmpty && __localCandidate) dat = __localCandidate;
     if (!dat) return;
     // Prefer the fresher/richer of (server dat) vs local backup
     try {
@@ -2583,7 +2622,7 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
 });
 
   
-window.addEventListener("beforeunload", save);
+
   window.addEventListener("beforeunload", save);
   window.addEventListener("pagehide", save);
   document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") try{ save(); }catch(e){} });
@@ -3849,12 +3888,33 @@ localStorage.setItem('flex_msg_lastG', String(lastG));
         const forced = (typeof cfg.forceTs === 'number') && (cfg.forceTs > Number(localStorage.getItem('flex_latest_seenTs')||0));
         const should = forced || (cfg.v && String(cfg.v)!==String(CLIENT_BUILD));
         if (forced) { localStorage.setItem('flex_latest_seenTs', String(cfg.forceTs)); }
-        if(should){
-          // Hard navigate to the latest client URL (works for GitHub raw or any host)
-          const url = cfg.url + (cfg.url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-          window.location.href = url;
-          return;
-        }
+        if (should) {
+  // Only allow updates that keep us on the SAME ORIGIN to preserve localStorage/state.
+  // - Relative URLs are allowed (auto-resolve to same origin).
+  // - Absolute URLs must match location.origin exactly.
+  let nextUrl;
+  try {
+    // Resolve cfg.url relative to the current page (handles relative & absolute inputs)
+    const resolved = new URL(cfg.url, location.href);
+
+    // Same-origin required
+    if (resolved.origin !== location.origin) {
+      // Ignore cross-origin "latest" URLs to avoid losing origin-scoped data
+      console.warn('[auto-update] Ignored cross-origin latest url:', resolved.href);
+    } else {
+      // Cache-bust so we definitely get the new client
+      resolved.searchParams.set('cb', String(Date.now()));
+      nextUrl = resolved.toString();
+    }
+  } catch (e) {
+    console.warn('[auto-update] Bad latest url:', cfg.url, e);
+  }
+
+  if (nextUrl) {
+    window.location.href = nextUrl;
+    return;
+  }
+}
       }
     }catch(e){ /* ignore */ }
 
@@ -4290,6 +4350,111 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
       }catch(e){}
     };
   })();
+})();
+</script>
+
+
+<script>
+// === CRYPTO rarity + forge (2 Mythic + 2 Exotic => 1 random CRYPTO, 50,000 EPS) ===
+(function(){
+  try{
+    // Ensure rarity entry exists
+    window.RARITY = window.RARITY || {};
+    if(!RARITY.crypto){
+      RARITY.crypto = { label:'CRYPTO', color:'#ff62d5', income: 50000, price:[0,0], prob: 0 };
+    }
+
+    function _getRealItemNames(){
+      try{
+        const ks = Object.keys(window.ICON_PATHS || {});
+        if(Array.isArray(ks) && ks.length) return ks;
+      }catch(e){}
+      try{
+        return (window.ITEM_NAMES||[]).filter(n => window.ICON_PATHS && Object.prototype.hasOwnProperty.call(window.ICON_PATHS, n));
+      }catch(e){}
+      return [];
+    }
+
+    function _randomCrypto(){
+      const real = _getRealItemNames();
+      const name = real.length ? real[Math.floor(Math.random()*real.length)] : '24 King Crown';
+      const baseIdx = Math.floor(Math.random()*20);
+      const svg = (typeof window.getItemSvg==='function') ? getItemSvg(name, baseIdx, 'crypto') : '';
+      return { uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity:'crypto', price:0, baseIdx, svg };
+    }
+
+    function checkCryptoForge(){
+      try{
+        const stands = (window.state && Array.isArray(state.stands)) ? state.stands.slice() : [];
+        if(stands.length !== 4) return hideBtn();
+        // Must be all 4 filled, only mythic/exotic, and counts = 2 + 2
+        let myth=0, exo=0, ok=true;
+        for(const uid of stands){
+          if(!uid){ ok=false; break; }
+          const it = (state.placed||{})[uid] || (state.inventory||[]).find(x=>x.uid===uid);
+          if(!it || !it.rarity){ ok=false; break; }
+          const r = String(it.rarity).toLowerCase();
+          if(r==='mythic') myth++;
+          else if(r==='exotic') exo++;
+          else { ok=false; break; }
+        }
+        if(!(ok && myth===2 && exo===2)) return hideBtn();
+
+        // show / create button
+        let btn = document.getElementById('cryptoForgeBtn');
+        if(!btn){
+          btn = document.createElement('button');
+          btn.id = 'cryptoForgeBtn';
+          btn.textContent = 'FORGE CRYPTO';
+          btn.style.cssText = 'margin-top:6px;padding:10px 18px;border-radius:14px;background:linear-gradient(45deg,#ff62d5,#ffd84a);border:4px solid rgba(0,0,0,.35);color:#000;font-weight:900;box-shadow:0 8px 30px rgba(255,120,220,.35);cursor:pointer;';
+          btn.addEventListener('click', function(){
+            // consume the 4 inputs
+            (state.stands||[]).forEach(uid=>{ if(uid && (state.placed||{})[uid]) delete state.placed[uid]; });
+            state.stands = [null,null,null,null];
+            // create CRYPTO and place on stand 0
+            const c = _randomCrypto();
+            (state.placed||(state.placed={}))[c.uid] = c;
+            state.stands[0] = c.uid;
+            if(typeof recalcEPS==='function') recalcEPS();
+            if(typeof renderInventory==='function') renderInventory();
+            if(typeof renderStands==='function') renderStands();
+            if(typeof save==='function') save();
+          });
+          const host = document.querySelector('.game') || document.body;
+          const before = document.querySelector('.inventory-wrap') || null;
+          if(before) host.insertBefore(btn, before); else host.appendChild(btn);
+        }
+        btn.style.display = 'inline-block';
+        return;
+
+        function hideBtn(){ const b = document.getElementById('cryptoForgeBtn'); if(b) b.style.display='none'; }
+      }catch(e){ /* no-op */ }
+      function hideBtn(){ const b = document.getElementById('cryptoForgeBtn'); if(b) b.style.display='none'; }
+    }
+
+    // Hook renderStands: run our forge check and add glow to placed CRYPTO items
+    (function hookCrypto(){
+      const orig = window.renderStands;
+      window.renderStands = function(){
+        if(typeof orig === 'function') orig.apply(this, arguments);
+        try{ checkCryptoForge(); }catch(e){}
+        // apply glow if a placed element has a CRYPTO badge
+        try{
+          document.querySelectorAll('.placed').forEach(el=>{
+            const has = !!el.querySelector('.rar.t-crypto');
+            el.classList.toggle('crypto-glow', has);
+          });
+        }catch(e){}
+      };
+      // initial run
+      setTimeout(()=>{ try{ checkCryptoForge(); }catch(e){}; try{
+        document.querySelectorAll('.placed').forEach(el=>{
+          const has = !!el.querySelector('.rar.t-crypto');
+          el.classList.toggle('crypto-glow', has);
+        });
+      }catch(e){}; }, 0);
+    })();
+  }catch(e){}
 })();
 </script>
 
