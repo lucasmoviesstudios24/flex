@@ -1281,6 +1281,7 @@ function getPetSvg(petName, seed){
 
   const LS_KEY = 'flex-save-v1';
   const LOCAL_BACKUP_KEY = 'flex-main-save-v3';
+  const LOCAL_BACKUP_PREV = 'flex-main-save-v3-prev';
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
@@ -1301,8 +1302,9 @@ function getPetSvg(petName, seed){
     permanentPetMultiplier: 1,
     rebirthLevel: 0           // becomes 5 if Flex T-Rex hatched
   };
-
-  function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+  // Guard: only allow saving after a full load
+  let __loadComplete = false;
+function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
  const SERVER_BASE = (()=>{  const p=new URLSearchParams(location.search).get('api');  const s=localStorage.getItem('flex_api_base');  const d='https://flex-sdww.onrender.com/api/game';  return p||s||d;})();
 
 // Identify user (for demo, use a prompt and store in localStorage)
@@ -1327,7 +1329,15 @@ if (!USER_ID) {
 }
 document.getElementById("userDisplay").textContent = USER_ID ? `User: ${USER_ID}` : "No user";
 
-async function save() {
+let __saveTimer = null;
+async function save(){
+  // If we have not loaded a save yet, do not write anything (prevents reset if user spam-refreshes)
+  if(!__loadComplete){ return; }
+  if(__saveTimer){ clearTimeout(__saveTimer); }
+  // Batch saves occurring within 400ms
+  await new Promise(r=>{ __saveTimer = setTimeout(()=>{ __saveTimer=null; r(); }, 400); });
+
+
   // Write a fast local backup first so spam-refresh can't wipe state
   const __nowTs = Date.now();
 
@@ -1366,7 +1376,13 @@ async function save() {
   // add timestamp and local backup
   try {
     payload.__ts = __nowTs;
-    try { localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: payload.__ts, data: payload })); } catch (e) {}
+    try {
+      const cur = localStorage.getItem(LOCAL_BACKUP_KEY);
+      if (cur) { try { localStorage.setItem(LOCAL_BACKUP_PREV, cur); } catch(e){} }
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: payload.__ts, data: payload }));
+    } catch (e) {}
+    // If we haven't finished loading yet, don't touch the server to avoid wiping with defaults
+    if (!__loadComplete) { return; }
     await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent(USER_ID)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1393,6 +1409,8 @@ async function load() {
     } else {
       const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
       if (raw) { const obj = JSON.parse(raw); __localCandidate = obj && (obj.data || null); }
+      // Also check a previous backup for safety
+      let __localPrev = null; try{ const p = localStorage.getItem(LOCAL_BACKUP_PREV); if(p){ const pobj = JSON.parse(p); __localPrev = pobj && (pobj.data || null); } }catch(e){}
     }
   } catch (e) {}
 
@@ -1409,16 +1427,28 @@ async function load() {
 const isEmpty = !dat || (typeof dat === 'object' && Object.keys(dat).length === 0);
 if (isEmpty && __localCandidate) dat = __localCandidate;
     if (!dat) return;
-    // Prefer the fresher/richer of (server dat) vs local backup
+    // Prefer the best of: server, local current, local prev
     try {
       const ldat = __localCandidate;
+      const pdat = __localPrev;
       const lts = (ldat && ldat.__ts) ? ldat.__ts : 0;
+      const pts = (pdat && pdat.__ts) ? pdat.__ts : 0;
       const sts = (dat && dat.__ts) ? dat.__ts : 0;
       const richness = d => !d ? -1 : ((d.inventory||[]).length) + (Array.isArray(d.stands)? d.stands.filter(Boolean).length : 0) * 2 + (d.petStands ? Object.keys(d.petStands).length : 0);
-      if (ldat && ((lts > sts) || (lts === sts && richness(ldat) > richness(dat)))) { dat = ldat; }
+      let cand = dat; let cts = sts;
+      if (ldat && ((lts > cts) || (lts === cts && richness(ldat) > richness(cand)))) { cand = ldat; cts = lts; }
+      if (pdat && ((pts > cts) || (pts === cts && richness(pdat) > richness(cand)))) { cand = pdat; cts = pts; }
+      // Integrity check: if candidate looks empty while another has meaningful progress, choose the richer one
+      const looksEmpty = d => !d || (((d.inventory||[]).length===0) && (!d.money || d.money <= 1000000) && (!d.stands || d.stands.filter(Boolean).length===0));
+      if (looksEmpty(cand)){
+        const opts = [dat, ldat, pdat].filter(Boolean);
+        let best = cand;
+        for (const o of opts){ if (richness(o) > richness(best)) best = o; }
+        cand = best || cand;
+      }
+      dat = cand;
     } catch (e) {}
-
-                        // If this is the very first time we set a username this session and it's already in use on the server,
+// If this is the very first time we set a username this session and it's already in use on the server,
             // re-prompt until they choose a free, non-empty name (no "guest").
             try {
               const justSet = sessionStorage.getItem('flex-userid-just-set') === '1';
@@ -1522,6 +1552,9 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
   } catch (e) {
     console.warn("load failed", e);
   }
+    // Mark load complete so future saves can hit the server safely
+    __loadComplete = true;
+
 }
   function fmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
   function updateTop(){ $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money))); $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec';  updateMultiplierBadge(); }
