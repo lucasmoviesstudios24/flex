@@ -1303,7 +1303,7 @@ function getPetSvg(petName, seed){
   };
 
   function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
- const SERVER_BASE = `${location.origin}/api/game`;
+ const SERVER_BASE = (()=>{  const p=new URLSearchParams(location.search).get('api');  const s=localStorage.getItem('flex_api_base');  const d='https://flex-sdww.onrender.com/api/game';  return p||s||d;})();
 
 // Identify user (for demo, use a prompt and store in localStorage)
 // Username prompt (first run): Cancel or "guest" -> Guest
@@ -1956,7 +1956,7 @@ function weightedPick(){
   function priceFor(rarity){ const [a,b] = RARITY[rarity].price; return Math.floor(a + Math.random()*(b-a)); }
   function makeShopItems(){
     const items = [];
-    const pool = [...ITEM_NAMES];
+    const pool = ITEM_NAMES.slice();
     for(let i=0;i<SHOP_SLOTS;i++){
       const idx = Math.floor(Math.random()*pool.length);
       const name = pool.splice(idx,1)[0];
@@ -3800,9 +3800,9 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
     try{
       // Snapshot current last message timestamps so we won't replay older broadcasts or inbox messages
       const g0 = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__broadcast')}&t=${Date.now()}`) || {};
-      if (typeof g0.last === 'number') { lastG = g0.last; } else if (Array.isArray(g0.list) && g0.list.length){ lastG = Math.max(0, ...g0.list.map(m=>m && m.ts || 0)); }
+      if (typeof g0.last === 'number') { lastG = g0.last; } else if (Array.isArray(g0.list) && g0.list.length){ lastG = Math.max(0, g0.list.map(m=>m && m.ts || 0)); }
       const u0 = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__inbox_'+USER_ID)}&t=${Date.now()}`) || {};
-      if (typeof u0.last === 'number') { lastU = u0.last; } else if (Array.isArray(u0.list) && u0.list.length){ lastU = Math.max(0, ...u0.list.map(m=>m && m.ts || 0)); }
+      if (typeof u0.last === 'number') { lastU = u0.last; } else if (Array.isArray(u0.list) && u0.list.length){ lastU = Math.max(0, u0.list.map(m=>m && m.ts || 0)); }
       localStorage.setItem('flex_msg_lastG', String(lastG||0));
       localStorage.setItem('flex_msg_lastU', String(lastU||0));
       // Snapshot the latest force reload timestamp so new tabs opened later won't auto-refresh from old requests
@@ -4370,7 +4370,7 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
         if(Array.isArray(ks) && ks.length) return ks;
       }catch(e){}
       try{
-        return (window.ITEM_NAMES||[]).filter(n => window.ICON_PATHS && Object.prototype.hasOwnProperty.call(window.ICON_PATHS, n));
+        return (windowITEM_NAMES||[]).filter(n => window.ICON_PATHS && Object.prototype.hasOwnProperty.call(window.ICON_PATHS, n));
       }catch(e){}
       return [];
     }
