@@ -494,6 +494,7 @@ body.bg-legacy{background:linear-gradient(135deg,#ff7eb3,#ff2a68)!important;}
 body.bg-unique{background:linear-gradient(135deg,#0a1a4b,#123a8c)!important;}
 body.bg-exotic{background:linear-gradient(135deg,#cfefff,#a0a9b8)!important;}
 body.bg-mythic{background:linear-gradient(135deg,#FFD700,#B8860B)!important;}
+body.bg-crypto{background:linear-gradient(135deg,#ff62d5,#ffd84a)!important;}
 body.bg-rainbow{background:linear-gradient(135deg,#ff004c,#ff7a00,#ffd400,#18e300,#00e7ff,#3a31ff,#ff31ff);background-size:400% 400%;animation:rainbowFlow 14s linear infinite;}
 @keyframes rainbowFlow{0%{background-position:0% 50%}100%{background-position:100% 50%}}
 
@@ -847,7 +848,7 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
   background-clip: text;
   color: transparent;
   font-weight: 900;
-  animation: cryptoShift 2s linear infinite;
+  animation: cryptoShimmer 2.5s linear infinite;
 }
 @keyframes cryptoShift {
   0%   { background-position: 0% 50%;   letter-spacing: 1px; }
@@ -858,6 +859,44 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
 .crypto-glow{
   filter: drop-shadow(0 0 10px rgba(255,120,220,.85))
           drop-shadow(0 0 18px rgba(255,216,74,.6));
+}
+</style>
+
+
+<style>
+/* === Crypto Ring Animation (no letter movement) === */
+@keyframes cryptoShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes cryptoRingSpin {
+  to { transform: rotate(360deg); }
+}
+
+.img-wrap{
+  position: relative;
+  display: inline-block;
+  line-height: 0; /* eliminate inline gaps */
+}
+
+.img-wrap > img{
+  display: block;
+}
+
+.img-wrap .crypto-ring{
+  position: absolute;
+  inset: -6px;           /* ring slightly outside the image bounds */
+  border-radius: 50%;
+  pointer-events: none;
+  /* Create a donut ring using mask */
+  --ring: 4px;
+  background: conic-gradient(from 0deg, #ff62d5, #ffd84a, #ff62d5);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring)));
+  animation: cryptoRingSpin 2.4s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(255,98,213,.45)) drop-shadow(0 0 10px rgba(255,216,74,.35));
 }
 </style>
 
@@ -1667,6 +1706,23 @@ function rarityBadge(r){
       else badgeHtml = rarityBadge(it.rarity || 'common');
 
       el.innerHTML = `<img src='${it.svg}' alt='${escapeXml(displayName(it.name))}'/><div style="position:absolute;top:6px;left:8px;font-size:12px;color:#fff;font-weight:700;text-shadow:0 1px 0 #000">${escapeXml(displayName(it.name))}</div>${badgeHtml}`;
+      // Wrap the item image so we can overlay special effects (e.g., crypto ring)
+      (function(){
+        const img = el.querySelector('img');
+        if (img && !img.closest('.img-wrap')) {
+          const wrap = document.createElement('div');
+          wrap.className = 'img-wrap';
+          img.parentNode.insertBefore(wrap, img);
+          wrap.appendChild(img);
+          const rk = String(it.rarity||'').toLowerCase();
+          if (rk === 'crypto') {
+            const ring = document.createElement('span');
+            ring.className = 'crypto-ring';
+            wrap.appendChild(ring);
+          }
+        }
+      })();
+    
       el.style.setProperty('--rcolor', RARITY[it.rarity]?.color || 'var(--c-common)');
       const badge = el.querySelector('.rar');
       if(badge) {
@@ -1759,6 +1815,23 @@ function rarityBadge(r){
              <strong>${escapeXml(displayName(it.name))}</strong><br>
              <span class="rar t-${it.rarity}">${RARITY[it.rarity].label}</span>
            </div>`;
+        // Wrap the placed item image to overlay a crypto ring for CRYPTO rarity
+        (function(){
+          const img = p.querySelector('img');
+          if (img && !img.closest('.img-wrap')) {
+            const wrap = document.createElement('div');
+            wrap.className = 'img-wrap';
+            img.parentNode.insertBefore(wrap, img);
+            wrap.appendChild(img);
+            const rkey = String(it.rarity || '').toLowerCase();
+            if (rkey === 'crypto') {
+              const ring = document.createElement('span');
+              ring.className = 'crypto-ring';
+              wrap.appendChild(ring);
+            }
+          }
+        })();
+    
 
         p.style.border = '4px solid rgba(0,0,0,.45)';
         p.style.color = '#fff';
@@ -2721,6 +2794,7 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
         <div class="rail-btn" data-tab="unique"><span>UNIQUE</span><span class="badge-dot" id="dot-unique"></span></div>
         <div class="rail-btn" data-tab="exotic"><span>EXOTIC</span><span class="badge-dot" id="dot-exotic"></span></div>
         <div class="rail-btn" data-tab="mythic"><span>MYTHIC</span><span class="badge-dot" id="dot-mythic"></span></div>
+        <div class="rail-btn" data-tab="crypto"><span>CRYPTO</span><span class="badge-dot" id="dot-crypto"></span></div>
       </div>
       <div id="achContent"></div>
     </div>
@@ -2742,9 +2816,9 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
 
 <script>
 (function(){
-  const RLIST=['common','rare','epic','legendary','legacy','unique','exotic','mythic'];
-  const R2BG={common:'green',rare:'blue',epic:'purple',legendary:'orange',legacy:'legacy',unique:'unique',exotic:'exotic',mythic:'mythic'};
-  const BG={green:{c:'bg-green',l:'GREEN'},blue:{c:'bg-blue',l:'BLUE'},purple:{c:'bg-purple',l:'PURPLE'},orange:{c:'bg-orange',l:'ORANGE'},legacy:{c:'bg-legacy',l:'LEGACY'},unique:{c:'bg-unique',l:'UNIQUE'},exotic:{c:'bg-exotic',l:'EXOTIC'},mythic:{c:'bg-mythic',l:'MYTHIC'},redblue:{c:'redblue',l:'RED/BLUE'},rainbow:{c:'bg-rainbow',l:'RAINBOW'}};
+  const RLIST=['common','rare','epic','legendary','legacy','unique','exotic','mythic','crypto'];
+  const R2BG={common:'green',rare:'blue',epic:'purple',legendary:'orange',legacy:'legacy',unique:'unique',exotic:'exotic',mythic:'mythic',crypto:'crypto'};
+  const BG={green:{c:'bg-green',l:'GREEN'},blue:{c:'bg-blue',l:'BLUE'},purple:{c:'bg-purple',l:'PURPLE'},orange:{c:'bg-orange',l:'ORANGE'},legacy:{c:'bg-legacy',l:'LEGACY'},unique:{c:'bg-unique',l:'UNIQUE'},exotic:{c:'bg-exotic',l:'EXOTIC'},mythic:{c:'bg-mythic',l:'MYTHIC'},crypto:{c:'bg-crypto',l:'CRYPTO'},redblue:{c:'redblue',l:'RED/BLUE'},rainbow:{c:'bg-rainbow',l:'RAINBOW'}};
 
   window.state=window.state||{};
   state.ach=state.ach||{questsDone:{},petPedestalGranted:false};
@@ -2762,7 +2836,7 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
 
   function unlockBG(k){state.unlockedBackgrounds[k]=true;__renderBgGrid&&__renderBgGrid(); if(typeof save==='function') save();}
   function applyBG(k){
-    document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue');
+    document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue','bg-crypto');
     if(k==='default'){state.selectedBackground='default';return;}
     const d=BG[k]; if(!d) return;
     document.body.classList.add(d.c); state.selectedBackground=k;
@@ -2824,7 +2898,12 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
       {id:'m_place',label:'Place a Mythic',check:()=>hasPlaced('mythic')},
       {id:'m_own2',label:'Own 2 Mythic',check:()=>countR('mythic')>=2}
     ]
-  };
+  ,
+crypto:[
+  {id:'cr_own1',label:'Own 1 Crypto',check:()=>countR('crypto')>=1},
+  {id:'cr_place',label:'Place a Crypto',check:()=>hasPlaced('crypto')},
+  {id:'cr_own2',label:'Own 2 Crypto',check:()=>countR('crypto')>=2}
+]};
 
   // Persist completions for ANY quest that is currently true (runs even when overlay is closed)
   function persistAllCompletions(){
@@ -2957,6 +3036,7 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
       {k:'unique',l:'UNIQUE',css:'background:linear-gradient(135deg,#0a1a4b,#123a8c);'},
       {k:'exotic',l:'EXOTIC',css:'background:linear-gradient(135deg,#cfefff,#a0a9b8);'},
       {k:'mythic',l:'MYTHIC',css:'background:linear-gradient(135deg,#FFD700,#B8860B);'},
+      {k:'crypto',l:'CRYPTO',css:'background:linear-gradient(135deg,#ff62d5,#ffd84a);'},
       {k:'redblue',l:'RED/BLUE',css:'background:linear-gradient(#ff4b5c,#4b6aff);'},
       {k:'rainbow',l:'RAINBOW',css:'background:linear-gradient(135deg,#ff004c,#ff7a00,#ffd400,#18e300,#00e7ff,#3a31ff,#ff31ff);background-size:300% 300%;'}
     ];
@@ -3779,7 +3859,7 @@ btn.addEventListener('click', ()=>{
           el.innerHTML='<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">DODGER STADIUM STYLE</div><button class="buy bg-apply" '+(!(state.unlockedBackgrounds||{}).dodger?'disabled':'')+'>Apply</button>';
           el.querySelector('.bg-apply').onclick=()=>{
             if(!(state.unlockedBackgrounds||{}).dodger) return;
-            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue','bg-spaceview');
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue','bg-spaceview','bg-crypto');
             document.body.classList.add('bg-dodger');
             state.selectedBackground='dodger';
             if(typeof save==='function') save();
@@ -4295,7 +4375,7 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
           el.innerHTML = '<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">DODGER QUESTS</div><button class="buy bg-apply" '+(!((state.unlockedBackgrounds||{}).dodgerquests)?'disabled':'')+'>Apply</button>';
           el.querySelector('.bg-apply').onclick = function(){
             if(!((state.unlockedBackgrounds||{}).dodgerquests)) return;
-            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-spaceview','bg-dodger','redblue');
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-spaceview','bg-dodger','redblue','bg-crypto');
             document.body.classList.add('bg-dodgerquests');
             state.selectedBackground = 'dodgerquests';
             saveDQ();
@@ -4373,7 +4453,7 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
           el.innerHTML = '<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">SPACE VIEW</div>'
                        + '<button class="buy bg-apply">Apply</button>';
           el.querySelector('.bg-apply').onclick = function(){
-            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-dodger','bg-dodgerquests','redblue');
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-dodger','bg-dodgerquests','redblue','bg-crypto');
             document.body.classList.add('bg-spaceview');
             state.selectedBackground = 'spaceview';
             try{ if(typeof save==='function') save(); }catch(e){}
@@ -4397,21 +4477,32 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
       RARITY.crypto = { label:'CRYPTO', color:'#ff62d5', income: 50000, price:[0,0], prob: 0 };
     }
 
-    function _getRealItemNames(){
-      try{
-        const ks = Object.keys(window.ICON_PATHS || {});
-        if(Array.isArray(ks) && ks.length) return ks;
-      }catch(e){}
-      try{
-        return (windowITEM_NAMES||[]).filter(n => window.ICON_PATHS && Object.prototype.hasOwnProperty.call(window.ICON_PATHS, n));
-      }catch(e){}
-      return [];
+    
+function _getRealItemNames(){
+  try{
+    // Prefer the in-scope ICON_PATHS; fall back to window if exported
+    const map = (typeof ICON_PATHS !== 'undefined') ? ICON_PATHS : (window.ICON_PATHS || {});
+    const ks = Object.keys(map || {});
+    if (Array.isArray(ks) && ks.length) return ks;
+  }catch(e){}
+  try{
+    // Fall back to ITEM_NAMES and keep only those that have icons available
+    const list = (typeof ITEM_NAMES !== 'undefined') ? ITEM_NAMES : (window.ITEM_NAMES || []);
+    const map = (typeof ICON_PATHS !== 'undefined') ? ICON_PATHS : (window.ICON_PATHS || {});
+    if (Array.isArray(list) && list.length) {
+      return list.filter(n => Object.prototype.hasOwnProperty.call(map, n));
     }
-
-    function _randomCrypto(){
+  }catch(e){}
+  // Last resort: return whatever list is available (may still be empty)
+  try{
+    return (typeof ITEM_NAMES !== 'undefined') ? ITEM_NAMES.slice() : (window.ITEM_NAMES || []);
+  }catch(e){}
+  return [];
+}
+function _randomCrypto(){
       const real = _getRealItemNames();
-      const name = real.length ? real[Math.floor(Math.random()*real.length)] : '24 King Crown';
-      const baseIdx = Math.floor(Math.random()*20);
+      const name = real.length ? real[Math.floor(Math.random()*real.length)] : ( (typeof ITEM_NAMES!=='undefined' && ITEM_NAMES.length) ? ITEM_NAMES[Math.floor(Math.random()*ITEM_NAMES.length)] : real[Math.floor(Math.random()*real.length)] );
+      const baseIdx = Math.floor(Math.random()*((typeof ITEM_NAMES!=='undefined' && ITEM_NAMES.length)?ITEM_NAMES.length:real.length||20));
       const svg = (typeof window.getItemSvg==='function') ? getItemSvg(name, baseIdx, 'crypto') : '';
       return { uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity:'crypto', price:0, baseIdx, svg };
     }
