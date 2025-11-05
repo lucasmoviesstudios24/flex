@@ -631,6 +631,177 @@ body.money-red .cash{
 #adminMsgBanner.warn{ background: #ffd86a; }
 #adminMsgBanner.success{ background: #a7ff83; }
 
+
+/* === Quick Inventory Filters (mini-sheet) === */
+.inv-filter-toggle{
+  position:fixed;
+  right:16px;
+  bottom: 90px; /* sits just above the bottom inventory bar */
+  width:64px;height:64px;
+  border-radius:18px;
+  background:#2b2b31;
+  border:4px solid rgba(0,0,0,.45);
+  box-shadow: var(--shadow);
+  display:grid;place-items:center;
+  cursor:pointer;
+  z-index:10;
+}
+.inv-filter-toggle svg{width:60%;height:60%}
+.inv-filter-toggle:active{transform:translateY(1px)}
+
+.inv-filter-sheet{
+  position:fixed;
+  right:16px;
+  bottom: 146px; /* opens right above the toggle */
+  width:260px;
+  max-height:60vh;
+  background:#3e3e46;
+  color:#f1f1f5;
+  border-radius:20px;
+  border:3px solid rgba(0,0,0,.45);
+  box-shadow: var(--shadow);
+  transform: translateY(16px) scale(.98);
+  opacity:0; pointer-events:none;
+  transition: transform .18s ease, opacity .18s ease;
+  z-index: 20;
+}
+.inv-filter-sheet.show{ opacity:1; pointer-events:auto; transform:none; }
+.inv-filter-sheet header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; font-weight:800; letter-spacing:.25px;
+}
+.inv-filter-sheet header button{ 
+  background:#ff4b5c; color:#fff; border:none; border-radius:12px; 
+  padding:6px 10px; font-weight:800; cursor:pointer;
+}
+.inv-filter-sheet .opts{ padding:6px 12px 12px; display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; }
+.inv-filter-sheet .opt{ display:flex; align-items:center; gap:8px; background:#494952; padding:8px 10px; border-radius:12px; }
+.inv-filter-sheet .actions{ display:flex; gap:10px; padding:10px 12px 14px; }
+.inv-filter-sheet .actions button{
+  flex:1 1 auto; padding:10px 12px; border-radius:12px; border:none; font-weight:800; cursor:pointer;
+}
+.inv-filter-sheet .actions .all{ background:#1fb978; color:#fff; }
+.inv-filter-sheet .actions .clear{ background:#2b2b31; color:#fff; border:2px solid #565660; }
+@media (max-width: 900px){
+  .inv-filter-toggle{ right:12px; bottom: 90px; width:56px; height:56px; }
+  .inv-filter-sheet{ right:12px; bottom: 146px; width:238px; }
+}
+
+
+/* === Rarity-themed styles for filter options === */
+:root{
+  --c-common:#27c553;
+  --c-rare:#2ea0ff;
+  --c-epic:#b060ff;
+  --c-legendary:#ffa21a;
+  --c-legacy:#ffffff;
+  --c-unique:#00c0ff;
+  --c-exotic:#00d4a8;
+  --c-mythic:#ffd400;
+  --c-crypto:#ff7a5a;
+  --c-pets:#f7a8d8;
+  --c-eggs:#6cc24a;
+  --c-event:#ff3b30;
+}
+@keyframes opt-glow { 0%,100%{ box-shadow:0 0 0 0 rgba(255,255,255,.08);} 50%{ box-shadow:0 0 0 6px rgba(255,255,255,0);} }
+@keyframes opt-shine { 0%{ background-position:200% 0;} 100%{ background-position:-200% 0;} }
+@keyframes opt-gradmove { 0%{background-position:0% 50%;} 100%{background-position:100% 50%;} }
+@keyframes opt-rotate { to { transform: rotate(360deg);} }
+
+.inv-filter-sheet .opt{
+  position:relative;
+  overflow:hidden;
+}
+.inv-filter-sheet .opt input{ accent-color: var(--c, #9aa0a6); }
+
+/* Left color bar */
+.inv-filter-sheet .opt::before{
+  content:''; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--c,#888);
+}
+
+/* Common */
+.inv-filter-sheet .opt-common{ --c: var(--c-common); }
+.inv-filter-sheet .opt-common span{ color: var(--c-common); }
+
+/* Rare */
+.inv-filter-sheet .opt-rare{ --c: var(--c-rare); }
+.inv-filter-sheet .opt-rare span{ color: var(--c-rare); }
+.inv-filter-sheet .opt-rare{ box-shadow: inset 0 0 0 1px rgba(46,160,255,.25); }
+
+/* Epic */
+.inv-filter-sheet .opt-epic{ --c: var(--c-epic); }
+.inv-filter-sheet .opt-epic span{ color: var(--c-epic); }
+.inv-filter-sheet .opt-epic{ animation: opt-glow 2.2s ease-in-out infinite; }
+
+/* Legendary (gold flicker + shine) */
+.inv-filter-sheet .opt-legendary{ --c: var(--c-legendary);
+  background-image: linear-gradient(90deg, rgba(255,255,255,.09), rgba(255,255,255,0) 40%, rgba(255,255,255,.09));
+  background-size:200% 100%; animation: opt-shine 3.2s linear infinite;
+  box-shadow: inset 0 0 0 1px rgba(255,162,26,.28);
+}
+.inv-filter-sheet .opt-legendary span{ color: var(--c-legendary); }
+
+/* Legacy (rainbow text) */
+.inv-filter-sheet .opt-legacy{ --c: var(--c-legacy); }
+.inv-filter-sheet .opt-legacy span{
+  background: linear-gradient(45deg,#ff004c,#ffb600,#00ff95,#00a2ff,#b400ff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip:text; color: transparent;
+  animation: opt-gradmove 6s linear infinite;
+}
+
+/* Unique (cyan sparkle) */
+.inv-filter-sheet .opt-unique{ --c: var(--c-unique); }
+.inv-filter-sheet .opt-unique span{ color: var(--c-unique); }
+.inv-filter-sheet .opt-unique{ box-shadow: inset 0 0 0 1px rgba(0,192,255,.28); }
+
+/* Exotic (teal pulse) */
+.inv-filter-sheet .opt-exotic{ --c: var(--c-exotic); }
+.inv-filter-sheet .opt-exotic span{ color: var(--c-exotic); }
+.inv-filter-sheet .opt-exotic{ animation: opt-glow 2.8s ease-in-out infinite; }
+
+/* Mythic (golden shine) */
+.inv-filter-sheet .opt-mythic{ --c: var(--c-mythic);
+  background-image: linear-gradient(90deg, rgba(255,255,255,.1), rgba(255,255,255,0) 40%, rgba(255,255,255,.1));
+  background-size:200% 100%; animation: opt-shine 2.4s linear infinite;
+  box-shadow: inset 0 0 0 1px rgba(255,212,0,.3);
+}
+.inv-filter-sheet .opt-mythic span{ color: var(--c-mythic); }
+
+/* Crypto (animated border ring vibe) */
+.inv-filter-sheet .opt-crypto{ --c: var(--c-crypto); position:relative; }
+.inv-filter-sheet .opt-crypto span{
+  background: linear-gradient(45deg,#ff4bd1,#ffd54b,#ff4bd1);
+  background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation: opt-gradmove 4.5s linear infinite;
+}
+.inv-filter-sheet .opt-crypto::after{
+  content:''; position:absolute; inset:-2px; border-radius:12px;
+  padding:2px;
+  background: conic-gradient(from 0deg,#ff4bd1,#ffd54b,#ff4bd1);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: opt-rotate 6s linear infinite;
+}
+
+/* Pets */
+.inv-filter-sheet .opt-pets{ --c: var(--c-pets); }
+.inv-filter-sheet .opt-pets span{ color: var(--c-pets); }
+
+/* Eggs */
+.inv-filter-sheet .opt-eggs{ --c: var(--c-eggs); }
+.inv-filter-sheet .opt-eggs span{ color: var(--c-eggs); }
+
+/* Event (red pulse) */
+.inv-filter-sheet .opt-event{ --c: var(--c-event); }
+.inv-filter-sheet .opt-event span{ color: var(--c-event); }
+.inv-filter-sheet .opt-event{ animation: opt-glow 1.8s ease-in-out infinite; }
+
+
+/* === Remove Dodgers Event UI (button & overlay only) — keep items/data intact === */
+.event-row{ display:none !important; }
+#dodgerOverlay{ display:none !important; }
+
 </style>
 
 <style>
@@ -1465,7 +1636,45 @@ async function load() {
     // If the server returns nothing/empty, prefer the local backup
 const isEmpty = !dat || (typeof dat === 'object' && Object.keys(dat).length === 0);
 if (isEmpty && __localCandidate) dat = __localCandidate;
-    if (!dat) return;
+    if (!dat) {
+  // First-time player: create a brand new save on the server and locally
+  const fresh = {
+    money: (typeof state !== 'undefined' && typeof state.money === 'number') ? state.money : (typeof MONEY_START !== 'undefined' ? MONEY_START : 0),
+    eps: 0,
+    inventory: [],
+    stands: (typeof STAND_COUNT !== 'undefined' && Number(STAND_COUNT)) ? Array(STAND_COUNT).fill(null) : [null,null,null,null],
+    shop: { items: [], nextRefreshAt: 0 },
+    fastMode: false,
+    multiplierLevel: 1,
+    multiplierActiveUntil: 0,
+    multiplierCooldownUntil: 0,
+    backgroundPurchased: false,
+    backgroundEnabled: false,
+    redMoneyPurchased: false,
+    redMoneyEnabled: false,
+    placed: {},
+    petPedestalsPurchased: 0,
+    petStands: {},
+    petTimers: {},
+    permanentPetMultiplier: 1,
+    petDex: {},
+    rebirthLevel: 0,
+    __ts: Date.now()
+  };
+  dat = fresh;
+  try {
+    localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: fresh.__ts, data: fresh }));
+  } catch(e) {}
+  try {
+    await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent(USER_ID)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fresh)
+    });
+  } catch (e) {
+    console.warn('Initial save create failed', e);
+  }
+}
     // Prefer the best of: server, local current, local prev
     try {
       const ldat = __localCandidate;
@@ -1705,7 +1914,7 @@ function rarityBadge(r){
       if(it.isEgg) badgeHtml = `<div class="rar" style="right:8px;bottom:8px;background:rgba(255,255,255,.12);color:#fff;">EGG</div>`;
       else badgeHtml = rarityBadge(it.rarity || 'common');
 
-      el.innerHTML = `<img src='${it.svg}' alt='${escapeXml(displayName(it.name))}'/><div style="position:absolute;top:6px;left:8px;font-size:12px;color:#fff;font-weight:700;text-shadow:0 1px 0 #000">${escapeXml(displayName(it.name))}</div>${badgeHtml}`;
+      el.innerHTML = `<img src='${(it.svg || ((it.name||'').toLowerCase()==='dodger world series champions' ? 'la_dodgers_items/dodger_world_series_champions.png' : getItemSvg(it.name, it.baseIdx||0, it.rarity||'common')))}' alt='${escapeXml(displayName(it.name))}'/><div style="position:absolute;top:6px;left:8px;font-size:12px;color:#fff;font-weight:700;text-shadow:0 1px 0 #000">${escapeXml(displayName(it.name))}</div>${badgeHtml}`;
       // Wrap the item image so we can overlay special effects (e.g., crypto ring)
       (function(){
         const img = el.querySelector('img');
@@ -2772,7 +2981,14 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
     <line x1="10" y1="11" x2="10" y2="17"></line>
     <line x1="14" y1="11" x2="14" y2="17"></line>
   </svg>
+  
+  <!-- Inventory Filters (under Trash) -->
+  <button id="invFilterToggle" class="inv-filter-toggle" aria-controls="invFilterSheet" aria-expanded="false" title="Quick inventory filters">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
   </button>
+
 </div>
 
 
@@ -4719,186 +4935,198 @@ function _randomCrypto(){
 
 </script>
 
-<!-- === LA Dodgers LIVE EVENT (triggered-only, tab-open only) === -->
-<style id="laDodgerLiveEventStyle">
-  body.la-dodger-event-blur #app, body.la-dodger-event-blur .game, body.la-dodger-event-blur main, body.la-dodger-event-blur #container{ filter: blur(6px); }
-  #laDodgerLiveEvent{ position:fixed; inset:0; z-index:2147483000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:#fff; }
-  #laDodgerLiveEvent.show{ display:flex; }
-  #laDodgerLiveEvent .stage{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding:24px; }
-  #laDodgerLiveEvent .embedWrap{ width:min(1100px,94vw); height:min(700px,80vh); }
-  #laDodgerLiveEvent .fade-out{ animation: fadeout 3s ease forwards; }
-  @keyframes fadeout{ to{ opacity:0; } }
-</style>
-<div id="laDodgerLiveEvent" aria-hidden="true"><div class="stage" id="laStage"></div></div>
+
+<!-- Inventory Filter Mini Sheet -->
+<div id="invFilterSheet" class="inv-filter-sheet" aria-hidden="true" role="dialog" aria-labelledby="invFilterTitle">
+  <header>
+    <div id="invFilterTitle">Show in inventory</div>
+    <button id="invFilterClose" aria-label="Close inventory filters">Close</button>
+  </header>
+  <div class="opts" id="invFilterOptions">
+    <!-- checkboxes will be injected by script -->
+  </div>
+  <div class="actions">
+    <button class="all" id="invFilterAll">Select all</button>
+    <button class="clear" id="invFilterClear">Clear</button>
+  </div>
+</div>
+
 
 <script>
 (function(){
-  // Global event state for robust gating
-  const LA_EVENT = {
-    primed: false,           // we won't trigger until primed from server feed
-    floorTs: 0,              // max ts seen at prime time (or since)
-    baseUrl: null            // server base to call /rawsave
+  const CATS = [
+    {key:'common', label:'Common'},
+    {key:'rare', label:'Rare'},
+    {key:'epic', label:'Epic'},
+    {key:'legendary', label:'Legendary'},
+    {key:'legacy', label:'Legacy'},
+    {key:'unique', label:'Unique'},
+    {key:'exotic', label:'Exotic'},
+    {key:'mythic', label:'Mythic'},
+    {key:'crypto', label:'Crypto'},
+    {key:'pets', label:'Pets'},
+    {key:'eggs', label:'Eggs'},
+    {key:'event', label:'Event'}
+  ];
+  const STORAGE_KEY = 'invFilterPrefsV1';
+
+  function getPrefs(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch(e){ return {}; }
+  }
+  function setPrefs(p){ localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+  function activePrefs(){
+    const p = getPrefs();
+    const out = {};
+    CATS.forEach(c => out[c.key] = (p[c.key] !== false)); // default true
+    return out;
+  }
+
+  // UI creation
+  const host = document.getElementById('invFilterOptions');
+  if(host){
+    const p = activePrefs();
+    host.innerHTML = CATS.map(c => `
+      <label class="opt opt-${c.key}">
+        <input type="checkbox" data-key="${c.key}" ${p[c.key] ? 'checked' : ''}/>
+        <span>${c.label}</span>
+      </label>
+    `).join('');
+  }
+
+  const toggle = document.getElementById('invFilterToggle');
+  const sheet  = document.getElementById('invFilterSheet');
+  const close  = document.getElementById('invFilterClose');
+  const btnAll = document.getElementById('invFilterAll');
+  const btnClr = document.getElementById('invFilterClear');
+
+  function openSheet(){
+    sheet.classList.add('show');
+    sheet.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+  function closeSheet(){
+    sheet.classList.remove('show');
+    sheet.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if(toggle){
+    toggle.addEventListener('click', ()=>{
+      if(sheet.classList.contains('show')) closeSheet();
+      else openSheet();
+    });
+  }
+  if(close) close.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && sheet.classList.contains('show')) closeSheet();
+  });
+  document.addEventListener('click', (e)=>{
+    if(sheet.classList.contains('show')){
+      const within = e.target.closest('#invFilterSheet') || e.target.closest('#invFilterToggle');
+      if(!within) closeSheet();
+    }
+  });
+
+  // Preference changes
+  host?.addEventListener('change', (e)=>{
+    if(e.target && e.target.matches('input[type="checkbox"][data-key]')){
+      const p = getPrefs();
+      const k = e.target.getAttribute('data-key');
+      p[k] = e.target.checked;
+      setPrefs(p);
+      try { applyInventoryFilters(); } catch(err){ console.warn(err); }
+    }
+  });
+  btnAll?.addEventListener('click', ()=>{
+    const p = getPrefs();
+    CATS.forEach(c => p[c.key] = true);
+    setPrefs(p);
+    host.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    try { applyInventoryFilters(); } catch(err){ console.warn(err); }
+  });
+  btnClr?.addEventListener('click', ()=>{
+    const p = getPrefs();
+    CATS.forEach(c => p[c.key] = false);
+    setPrefs(p);
+    host.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    try { applyInventoryFilters(); } catch(err){ console.warn(err); }
+  });
+
+  function annotateInventorySlots(){
+    const inv = (window.state && state.inventory) ? state.inventory : [];
+    const slots = document.querySelectorAll('#inventory .slot');
+    slots.forEach((el, i)=>{
+      const it = inv[i];
+      if(it){
+        el.dataset.rarity = String(it.rarity||'').toLowerCase();
+        el.dataset.isEgg  = it.isEgg ? '1' : '';
+        el.dataset.isPet  = (it.petType && !it.isEgg) ? '1' : '';
+        const nm = String(it.name||'').toLowerCase();
+        el.dataset.isEvent = (it.event || /dodger|event|zite/.test(nm)) ? '1' : '';
+      }else{
+        const rarEl = el.querySelector('.rar');
+        if(rarEl){
+          const m = /t-([a-z]+)/i.exec(rarEl.className || '');
+          if(m) el.dataset.rarity = m[1].toLowerCase();
+        }
+      }
+    });
+  }
+
+  window.applyInventoryFilters = function applyInventoryFilters(){
+    annotateInventorySlots();
+    const prefs = activePrefs();
+    const slots = document.querySelectorAll('#inventory .slot');
+    slots.forEach(el => {
+      const rar = (el.dataset.rarity||'').toLowerCase();
+      const isEgg = el.dataset.isEgg === '1';
+      const isPet = el.dataset.isPet === '1';
+      const isEvent = el.dataset.isEvent === '1';
+      let show = true;
+      if(isEgg) show = prefs.eggs;
+      else if(isPet) show = prefs.pets;
+      else if(rar && rar in prefs) show = prefs[rar];
+      if(isEvent) show = show && prefs.event;
+      el.style.display = show ? '' : 'none';
+    });
   };
-  const PAGE_LOAD_TS = Date.now();
 
-  function $id(id){ return document.getElementById(id); }
-  function _set(html){ const s=$id('laStage'); if(s){ s.innerHTML = html; } }
-
-  // One-time reward helper
-  if(!window.grantDodgerWSChampionOnce){
-    window.grantDodgerWSChampionOnce = function(){
-      try{
-        window.state = window.state || {};
-        state.events = state.events || {};
-        const k = 'la_dodgers_ws_2025';
-        if(state.events[k]) return false;
-        const inv = {
-          uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
-          name: 'Dodger World Series Champions',
-          rarity:'dodger',
-          price:0,
-          baseIdx:0,
-          svg:'la_dodgers_items/dodger_world_series_champions.png'
-        };
-        try{
-          state.inventory = Array.isArray(state.inventory) ? state.inventory : [];
-          state.inventory.push(inv);
-          if(typeof window.updateTop==='function') updateTop();
-          if(typeof window.renderInventory==='function') renderInventory();
-          if(typeof window.save==='function') save();
-          if(typeof window.showDodgerReveal==='function') showDodgerReveal(inv.name, inv.rarity, inv.svg);
-        }catch(e){}
-        state.events[k] = true;
-        try{ localStorage.setItem('flex_event_'+k, '1'); }catch(e){}
-        return true;
-      }catch(e){ return false; }
+  // Patch renderInventory to auto-apply filters (while preserving any previous patches)
+  (function(){
+    const prev = window.renderInventory;
+    window.renderInventory = function(){
+      if(typeof prev === 'function') prev.apply(this, arguments);
+      try { window.applyInventoryFilters(); } catch(e){ console.warn('filter apply failed', e); }
     };
-  }
+  })();
 
-  // Event entry point (strictly gated)
-  window.startDodgerLiveEvent = function(payload){
-    try{
-      const op = payload && payload.op || '';
-      const ts = Number(payload && payload.ts || 0);
-      const allowedOp = (op==='LA_DODGER_EVENT' || op==='dodger_event');
-      const allowed = allowedOp && LA_EVENT.primed && Number.isFinite(ts) && ts > LA_EVENT.floorTs;
-      if(!allowed){ window.__laEventRunning = false; return; }
-
-      const ov = $id('laDodgerLiveEvent'); const stg=$id('laStage'); if(!ov||!stg) return;
-      if(ov.classList && ov.classList.contains('show')) return;
-
-      try{ if(window.playZiteMusic) window.playZiteMusic(); }catch(e){}
-      _set('<div class="embedWrap"><div style="width:100%;height:700px;" data-zite-id="9tmugjjroa" data-zite-embed-type="standard" data-zite-inherit-parameters></div></div>');
-      if(!document.getElementById('zite-embed-script')){
-        const s=document.createElement('script'); s.id='zite-embed-script'; s.src='https://server.fillout.com/embed/v2-zite/'; s.async=true; document.head.appendChild(s);
-      }
-      document.body.classList.add('la-dodger-event-blur');
-      ov.classList.add('show'); ov.setAttribute('aria-hidden','false');
-      window.__laEventRunning = true;
-
-      setTimeout(()=>{
-        ov.classList.add('fade-out');
-        setTimeout(()=>{
-          ov.classList.remove('show','fade-out'); ov.setAttribute('aria-hidden','true');
-          document.body.classList.remove('la-dodger-event-blur');
-          try{ grantDodgerWSChampionOnce(); }catch(e){}
-          window.__laEventRunning = false;
-        },3000);
-      },110000);
-
-      LA_EVENT.floorTs = Math.max(LA_EVENT.floorTs, ts);
-    }catch(e){ console.error(e); }
-  };
-
-  // Priming from first broadcast response; skip triggers on that response
-  function primeFromFirstResponse(list){
-    if(LA_EVENT.primed) return false;
-    try{
-      let maxTs = 0;
-      if(Array.isArray(list)){
-        for(const m of list){
-          const t = Number(m && m.ts || 0);
-          if(Number.isFinite(t) && t > maxTs) maxTs = t;
-        }
-      }
-      LA_EVENT.floorTs = maxTs;
-      LA_EVENT.primed = true;
-      return true; // skip triggers on this response
-    }catch(e){ LA_EVENT.primed = true; return true; }
-  }
-
-  function shouldTriggerFrom(msg){
-    try{
-      if(!LA_EVENT.primed) return false;
-      if(!msg) return false;
-      const op = msg.op || '';
-      if(op!=='LA_DODGER_EVENT' && op!=='dodger_event') return false;
-      const ts = Number(msg.ts||0);
-      if(!Number.isFinite(ts) || ts <= 0) return false;
-      return ts > LA_EVENT.floorTs;
-    }catch(e){ return false; }
-  }
-
-  function updateFloor(ts){
-    try{
-      if(Number.isFinite(ts) && ts > LA_EVENT.floorTs){ LA_EVENT.floorTs = ts; }
-    }catch(e){}
-  }
-
-  // Intercept fetch: learn API base, prime baseline, and gate triggers
-  const _fetch = window.fetch;
-  window.fetch = function(input, init){
-    const p = _fetch.apply(this, arguments);
-    try{
-      const url = (typeof input==='string') ? input : (input && input.url) || '';
-      const m = url.match(/^(.*)\/rawsave\?user=(.*)$/);
-      if(m){
-        if(!LA_EVENT.baseUrl){ LA_EVENT.baseUrl = m[1]; }
-
-        const isFeed = /\b__broadcast\b/.test(url) || /\b__inbox_/.test(url);
-        if(isFeed){
-          p.then(r=>r.clone().json().then(data=>{
-            const list = (data && Array.isArray(data.list)) ? data.list : [];
-            if(primeFromFirstResponse(list)) return;
-            for(const m of list){
-              if(shouldTriggerFrom(m)){
-                if(typeof window.startDodgerLiveEvent==='function'){ window.startDodgerLiveEvent(m); }
-                updateFloor(Number(m.ts||0));
-                break;
-              }
-            }
-          }).catch(()=>{})).catch(()=>{});
-        }
-
-        // proactive prime once we know base
-        if(LA_EVENT.baseUrl && !LA_EVENT.primed){
-          (async function(){
-            try{
-              const r = await _fetch(LA_EVENT.baseUrl + '/rawsave?user=' + encodeURIComponent('__broadcast') + '&t=' + Date.now());
-              const j = await r.json();
-              const list = (j && Array.isArray(j.list)) ? j.list : [];
-              primeFromFirstResponse(list);
-            }catch(e){}
-          })();
-        }
-      }
-    }catch(e){}
-    return p;
-  };
-
-  // Intercept admin banner queue
-  const _origEnqueue = window.enqueue;
-  window.enqueue = function(msg){
-    try{
-      if(shouldTriggerFrom(msg)){
-        if(typeof window.startDodgerLiveEvent==='function'){ window.startDodgerLiveEvent(msg); }
-        updateFloor(Number(msg.ts||0));
-        return;
-      }
-    }catch(e){}
-    if(typeof _origEnqueue==='function'){ return _origEnqueue.apply(this, arguments); }
-  };
+  // Apply once at start (after initial render)
+  document.addEventListener('DOMContentLoaded', ()=>{
+    setTimeout(()=>{ try { applyInventoryFilters(); } catch(e){} }, 0);
+  });
 })();
 </script>
+
+
+<script>
+// Remove Dodgers Event UI while preserving data/items
+(function(){
+  function nukeDodgerUI(){
+    try{
+      const row = document.querySelector('.event-row') || document.getElementById('eventRow');
+      if(row && row.parentNode) row.parentNode.removeChild(row);
+      const ov = document.getElementById('dodgerOverlay');
+      if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    }catch(e){}
+    // hard-disable any global open functions if present
+    try{ window.openDodger = function(){}; }catch(e){}
+    try{ window.showDodger = function(){}; }catch(e){}
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', nukeDodgerUI);
+  else nukeDodgerUI();
+})();
+</script>
+
 </body>
 </html>
