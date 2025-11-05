@@ -637,7 +637,7 @@ body.money-red .cash{
 /* === Cosmic Event (Limited Time) === */
 .icon-cosmic{ background: radial-gradient(circle at 30% 30%, #1a2a6c, #000428); position:relative; }
 .icon-cosmic::after{
-  content:""; position:absolute; inset:0; border-radius:20px; pointer-events:none;
+  content:""; position:absolute; inset:0; border-radius:20px; pointer-events:auto;
   background: radial-gradient(2px 2px at 25% 35%, #ffd84a 0 60%, transparent 60%),
               radial-gradient(2.5px 2.5px at 68% 22%, #8fd3ff 0 60%, transparent 60%),
               radial-gradient(1.6px 1.6px at 70% 64%, #ffd84a 0 60%, transparent 60%),
@@ -671,7 +671,7 @@ body.money-red .cash{
   position:relative; font-weight:900;
 }
 .t-cosmic::after{
-  content:""; position:absolute; left:-6px; top:-6px; right:-6px; bottom:-6px; pointer-events:none;
+  content:""; position:absolute; left:-6px; top:-6px; right:-6px; bottom:-6px; pointer-events:auto;
   background: radial-gradient(1.5px 1.5px at 12% 30%, #ffd84a 0 60%, transparent 61%),
               radial-gradient(1.2px 1.2px at 72% 20%, #ffd84a 0 60%, transparent 61%),
               radial-gradient(1.8px 1.8px at 30% 78%, #ffd84a 0 60%, transparent 61%),
@@ -759,7 +759,7 @@ body.bg-spaceview::before{
 /* Blue & white animated waves around the placed item when rarity=DODGER */
 .placed.dodger-waves::before,
 .placed.dodger-waves::after{
-  content:""; position:absolute; inset:-6px; border-radius:16px; pointer-events:none;
+  content:""; position:absolute; inset:-6px; border-radius:16px; pointer-events:auto;
   background: conic-gradient(from 0deg, rgba(255,255,255,0), rgba(255,255,255,.35) 15%, rgba(30,144,255,.55) 30%, rgba(255,255,255,.35) 45%, rgba(255,255,255,0) 60%);
   animation:dodgerSpin 3.2s linear infinite; mix-blend-mode: screen;
 }
@@ -4582,5 +4582,323 @@ function _randomCrypto(){
 })();
 </script>
 
+
+<script>
+/* LA_DODGER_FETCH_HOOK v2: gate on baseline so it only triggers after admin starts */
+(function(){
+  try{
+    const _fetch = window.fetch;
+    // Establish baseline at load: any messages at or before these are ignored
+    const baselineG = Number(localStorage.getItem('flex_msg_lastG')||0);
+    const baselineU = Number(localStorage.getItem('flex_msg_lastU')||0);
+    let lastSeen = Math.max(baselineG, baselineU);
+    try{ localStorage.setItem('la_dodgers_event_baseline', String(lastSeen)); }catch(e){}
+    window.fetch = function(input, init){
+      const p = _fetch.apply(this, arguments);
+      try{
+        const url = (typeof input === 'string') ? input : (input && input.url) || '';
+        if(/\/rawsave\?user=/.test(url) && (/__broadcast/.test(url) || /__inbox_/.test(url))){
+          p.then(r => r.clone().json().then(data => {
+            const list = (data && Array.isArray(data.list)) ? data.list : [];
+            for (const m of list){
+              const ts = (m && m.ts) || 0;
+              if((m && (m.op === 'dodger_event' || m.op === 'LA_DODGER_EVENT')) && ts > lastSeen){
+                lastSeen = ts;
+                try{ localStorage.setItem('la_dodgers_event_last_ts', String(lastSeen)); }catch(e){}
+                if(typeof window.startDodgerLiveEvent === 'function' && !window.__laEventRunning){
+                  window.__laEventRunning = true;
+                  try{ window.startDodgerLiveEvent(m); }catch(e){}
+                }
+              }
+            }
+          }).catch(()=>{})).catch(()=>{});
+        }
+      }catch(e){}
+      return p;
+    };
+  }catch(e){}
+})();
+</script>
+
+<script>
+// LA_DODGER_LATE_HOOK: ensure enqueue is hooked even if defined later
+(function(){
+  if(window.__laLateHookInstalled) return; window.__laLateHookInstalled = true;
+  let tries = 0, maxTries = 60; // ~60s
+  const install = () => {
+    if(typeof window.enqueue === 'function' && !window.__laEnqueueWrapped){
+      const orig = window.enqueue;
+      window.enqueue = function(msg){
+        try{
+          const gateG = Number(localStorage.getItem('flex_msg_lastG')||0);
+          const gateU = Number(localStorage.getItem('flex_msg_lastU')||0);
+          const gate = Math.max(gateG, gateU);
+          if(msg && (msg.op==='dodger_event' || msg.op==='LA_DODGER_EVENT' || /(la\s*dodger).*event/i.test(String(msg.text||'')))){
+            if((msg.ts||0) > gate && typeof window.startDodgerLiveEvent==='function' && !window.__laEventRunning){
+              window.__laEventRunning = true;
+              try{ window.startDodgerLiveEvent(msg); }catch(e){}
+            }
+          }
+        }catch(e){}
+        return orig.apply(this, arguments); // still show the banner
+      };
+      window.__laEnqueueWrapped = true;
+      return true;
+    }
+    return false;
+  };
+  if(!install()){
+    const t = setInterval(()=>{
+      tries++;
+      if(install() || tries>=maxTries) clearInterval(t);
+    }, 1000);
+  }
+})();
+</script>
+
+
+  <audio id="ziteMusic" src="flex_music/dodger_event_music.mp3" preload="auto" style="display:none"></audio>
+
+<script>
+
+// === Zite Event Music (autoplay with graceful fallback) ===
+(function(){
+  const audioEl = document.getElementById('ziteMusic');
+  let uiShown = false;
+  function showEnableButton(){
+    if(uiShown) return; uiShown = true;
+    const btn = document.createElement('button');
+    btn.id = 'enableSoundBtn';
+    btn.textContent = 'Enable sound';
+    btn.style.position = 'fixed';
+    btn.style.zIndex = '2147483647';
+    btn.style.bottom = '16px';
+    btn.style.right = '16px';
+    btn.style.padding = '10px 14px';
+    btn.style.borderRadius = '10px';
+    btn.style.border = 'none';
+    btn.style.background = 'white';
+    btn.style.boxShadow = '0 6px 18px rgba(0,0,0,.2)';
+    btn.style.fontWeight = '600';
+    btn.style.cursor = 'pointer';
+    btn.addEventListener('click', async ()=>{
+      try{
+        await audioEl.play();
+        btn.remove();
+        window.removeEventListener('pointerdown', tryUnlock, true);
+        window.removeEventListener('keydown', tryUnlock, true);
+      }catch(e){}
+    });
+    document.body.appendChild(btn);
+  }
+  async function tryUnlock(){
+    try{
+      await audioEl.play();
+      const btn = document.getElementById('enableSoundBtn');
+      if(btn) btn.remove();
+      window.removeEventListener('pointerdown', tryUnlock, true);
+      window.removeEventListener('keydown', tryUnlock, true);
+    }catch(e){}
+  }
+  window.playZiteMusic = async function(){
+    if(!audioEl) return;
+    audioEl.currentTime = 0;
+    audioEl.loop = false;
+    try{
+      await audioEl.play();
+    }catch(e){
+      // Autoplay likely blocked; ask for a gesture
+    }
+    if(audioEl.paused){
+      showEnableButton();
+      window.addEventListener('pointerdown', tryUnlock, true);
+      window.addEventListener('keydown', tryUnlock, true);
+    }
+  };
+})();
+
+</script>
+
+<!-- === LA Dodgers LIVE EVENT (triggered-only, tab-open only) === -->
+<style id="laDodgerLiveEventStyle">
+  body.la-dodger-event-blur #app, body.la-dodger-event-blur .game, body.la-dodger-event-blur main, body.la-dodger-event-blur #container{ filter: blur(6px); }
+  #laDodgerLiveEvent{ position:fixed; inset:0; z-index:2147483000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:#fff; }
+  #laDodgerLiveEvent.show{ display:flex; }
+  #laDodgerLiveEvent .stage{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding:24px; }
+  #laDodgerLiveEvent .embedWrap{ width:min(1100px,94vw); height:min(700px,80vh); }
+  #laDodgerLiveEvent .fade-out{ animation: fadeout 3s ease forwards; }
+  @keyframes fadeout{ to{ opacity:0; } }
+</style>
+<div id="laDodgerLiveEvent" aria-hidden="true"><div class="stage" id="laStage"></div></div>
+
+<script>
+(function(){
+  // Global event state for robust gating
+  const LA_EVENT = {
+    primed: false,           // we won't trigger until primed from server feed
+    floorTs: 0,              // max ts seen at prime time (or since)
+    baseUrl: null            // server base to call /rawsave
+  };
+  const PAGE_LOAD_TS = Date.now();
+
+  function $id(id){ return document.getElementById(id); }
+  function _set(html){ const s=$id('laStage'); if(s){ s.innerHTML = html; } }
+
+  // One-time reward helper
+  if(!window.grantDodgerWSChampionOnce){
+    window.grantDodgerWSChampionOnce = function(){
+      try{
+        window.state = window.state || {};
+        state.events = state.events || {};
+        const k = 'la_dodgers_ws_2025';
+        if(state.events[k]) return false;
+        const inv = {
+          uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
+          name: 'Dodger World Series Champions',
+          rarity:'dodger',
+          price:0,
+          baseIdx:0,
+          svg:'la_dodgers_items/dodger_world_series_champions.png'
+        };
+        try{
+          state.inventory = Array.isArray(state.inventory) ? state.inventory : [];
+          state.inventory.push(inv);
+          if(typeof window.updateTop==='function') updateTop();
+          if(typeof window.renderInventory==='function') renderInventory();
+          if(typeof window.save==='function') save();
+          if(typeof window.showDodgerReveal==='function') showDodgerReveal(inv.name, inv.rarity, inv.svg);
+        }catch(e){}
+        state.events[k] = true;
+        try{ localStorage.setItem('flex_event_'+k, '1'); }catch(e){}
+        return true;
+      }catch(e){ return false; }
+    };
+  }
+
+  // Event entry point (strictly gated)
+  window.startDodgerLiveEvent = function(payload){
+    try{
+      const op = payload && payload.op || '';
+      const ts = Number(payload && payload.ts || 0);
+      const allowedOp = (op==='LA_DODGER_EVENT' || op==='dodger_event');
+      const allowed = allowedOp && LA_EVENT.primed && Number.isFinite(ts) && ts > LA_EVENT.floorTs;
+      if(!allowed){ window.__laEventRunning = false; return; }
+
+      const ov = $id('laDodgerLiveEvent'); const stg=$id('laStage'); if(!ov||!stg) return;
+      if(ov.classList && ov.classList.contains('show')) return;
+
+      try{ if(window.playZiteMusic) window.playZiteMusic(); }catch(e){}
+      _set('<div class="embedWrap"><div style="width:100%;height:700px;" data-zite-id="9tmugjjroa" data-zite-embed-type="standard" data-zite-inherit-parameters></div></div>');
+      if(!document.getElementById('zite-embed-script')){
+        const s=document.createElement('script'); s.id='zite-embed-script'; s.src='https://server.fillout.com/embed/v2-zite/'; s.async=true; document.head.appendChild(s);
+      }
+      document.body.classList.add('la-dodger-event-blur');
+      ov.classList.add('show'); ov.setAttribute('aria-hidden','false');
+      window.__laEventRunning = true;
+
+      setTimeout(()=>{
+        ov.classList.add('fade-out');
+        setTimeout(()=>{
+          ov.classList.remove('show','fade-out'); ov.setAttribute('aria-hidden','true');
+          document.body.classList.remove('la-dodger-event-blur');
+          try{ grantDodgerWSChampionOnce(); }catch(e){}
+          window.__laEventRunning = false;
+        },3000);
+      },110000);
+
+      LA_EVENT.floorTs = Math.max(LA_EVENT.floorTs, ts);
+    }catch(e){ console.error(e); }
+  };
+
+  // Priming from first broadcast response; skip triggers on that response
+  function primeFromFirstResponse(list){
+    if(LA_EVENT.primed) return false;
+    try{
+      let maxTs = 0;
+      if(Array.isArray(list)){
+        for(const m of list){
+          const t = Number(m && m.ts || 0);
+          if(Number.isFinite(t) && t > maxTs) maxTs = t;
+        }
+      }
+      LA_EVENT.floorTs = maxTs;
+      LA_EVENT.primed = true;
+      return true; // skip triggers on this response
+    }catch(e){ LA_EVENT.primed = true; return true; }
+  }
+
+  function shouldTriggerFrom(msg){
+    try{
+      if(!LA_EVENT.primed) return false;
+      if(!msg) return false;
+      const op = msg.op || '';
+      if(op!=='LA_DODGER_EVENT' && op!=='dodger_event') return false;
+      const ts = Number(msg.ts||0);
+      if(!Number.isFinite(ts) || ts <= 0) return false;
+      return ts > LA_EVENT.floorTs;
+    }catch(e){ return false; }
+  }
+
+  function updateFloor(ts){
+    try{
+      if(Number.isFinite(ts) && ts > LA_EVENT.floorTs){ LA_EVENT.floorTs = ts; }
+    }catch(e){}
+  }
+
+  // Intercept fetch: learn API base, prime baseline, and gate triggers
+  const _fetch = window.fetch;
+  window.fetch = function(input, init){
+    const p = _fetch.apply(this, arguments);
+    try{
+      const url = (typeof input==='string') ? input : (input && input.url) || '';
+      const m = url.match(/^(.*)\/rawsave\?user=(.*)$/);
+      if(m){
+        if(!LA_EVENT.baseUrl){ LA_EVENT.baseUrl = m[1]; }
+
+        const isFeed = /\b__broadcast\b/.test(url) || /\b__inbox_/.test(url);
+        if(isFeed){
+          p.then(r=>r.clone().json().then(data=>{
+            const list = (data && Array.isArray(data.list)) ? data.list : [];
+            if(primeFromFirstResponse(list)) return;
+            for(const m of list){
+              if(shouldTriggerFrom(m)){
+                if(typeof window.startDodgerLiveEvent==='function'){ window.startDodgerLiveEvent(m); }
+                updateFloor(Number(m.ts||0));
+                break;
+              }
+            }
+          }).catch(()=>{})).catch(()=>{});
+        }
+
+        // proactive prime once we know base
+        if(LA_EVENT.baseUrl && !LA_EVENT.primed){
+          (async function(){
+            try{
+              const r = await _fetch(LA_EVENT.baseUrl + '/rawsave?user=' + encodeURIComponent('__broadcast') + '&t=' + Date.now());
+              const j = await r.json();
+              const list = (j && Array.isArray(j.list)) ? j.list : [];
+              primeFromFirstResponse(list);
+            }catch(e){}
+          })();
+        }
+      }
+    }catch(e){}
+    return p;
+  };
+
+  // Intercept admin banner queue
+  const _origEnqueue = window.enqueue;
+  window.enqueue = function(msg){
+    try{
+      if(shouldTriggerFrom(msg)){
+        if(typeof window.startDodgerLiveEvent==='function'){ window.startDodgerLiveEvent(msg); }
+        updateFloor(Number(msg.ts||0));
+        return;
+      }
+    }catch(e){}
+    if(typeof _origEnqueue==='function'){ return _origEnqueue.apply(this, arguments); }
+  };
+})();
+</script>
 </body>
 </html>
