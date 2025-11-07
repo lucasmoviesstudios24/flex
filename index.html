@@ -939,6 +939,11 @@ body.bg-spaceview::before{
 
 /* Background: Dodger Stadium Style */
 body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') center center / cover no-repeat fixed !important; }
+
+/* Background: Sunrise (redeemable) */
+body.bg-sunrise{
+  background: url('background_files/sunrise_style.png') center center / cover no-repeat fixed !important;
+}
 </style>
 
 
@@ -1207,12 +1212,36 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
       <div class="card" id="rebirthCard">
         <h3>Rebirth X <span id="rebirthLevelTag" style="font-size:18px;opacity:.8;">(Level 0)</span></h3>
         <div style="font-size:18px; opacity:0.85;">Resets money to $1,000,000, increases multiplier. Max level 10.</div>
-        <div id="rebirthStatus" style="margin-top:6px;font-weight:700;color:#6dff79;">Current Rebirth Multiplier: x1</div>
+<!-- Redeem Overlay (small white modal) -->
+<div class="overlay" id="redeemOverlay" aria-hidden="true">
+  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="redeemTitle" style="max-width:520px;background:#fff;color:#111">
+    <button class="closeX" id="closeRedeem" aria-label="Close" style="color:#111">✕</button>
+    <h2 id="redeemTitle" style="color:#111;text-align:center;">Redeem Code</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+      <input id="redeemInput" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="Enter 12‑digit code" style="padding:10px;border-radius:10px;border:1px solid #ccc;font-size:18px">
+      <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:6px">
+        <button class="upgrade" id="doRedeem" style="background:#111;color:#fff">Redeem</button>
+      </div>
+      <div id="redeemMsg" class="small" style="min-height:20px;color:#111;opacity:.9"></div>
+    </div>
+  </div>
+</div>
+
+              <div id="rebirthStatus" style="margin-top:6px;font-weight:700;color:#6dff79;">Current Rebirth Multiplier: x1</div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div class="price" id="rebirthPrice">$1,000,000,000</div>
           <button class="upgrade" id="rebirthUpgrade">Upgrade</button>
         </div>
       </div>
+<!-- Redeem Codes -->
+      <div class="card" id="redeemCard">
+        <h3>Redeem</h3>
+        <div style="font-size:18px; opacity:0.85;">Enter a 12‑digit redeem code to unlock an item or background.</div>
+        <div style="display:flex;justify-content:flex-end;align-items:center;">
+          <button class="buy" id="openRedeemOverlay">Enter redeem code</button>
+        </div>
+      </div>
+
 <!-- Background Tool -->
       <div class="card" id="backgroundCard">
         <h3>Background Red/Blue</h3>
@@ -1795,6 +1824,8 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     state.rebirthLevel = dat.rebirthLevel || 0;
     // PetDex (owned pets across eggs)
     state.petDex = dat.petDex || state.petDex || {};
+    state.unlockedBackgrounds = dat.unlockedBackgrounds || state.unlockedBackgrounds || { default:true };
+    state.selectedBackground = dat.selectedBackground || state.selectedBackground || 'default';
     // Update local backup with the chosen data so rapid refresh can't regress
     try { localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: dat.__ts || Date.now(), data: dat })); } catch (e) {}
   } catch (e) {
@@ -4654,7 +4685,31 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
   } catch(e){}
 
   // Keep Space View usable if previously unlocked; do not expose purchase.
-  (function extendBgGridForSpaceView(){
+  
+  (function extendBgGridForSunrise(){
+    const orig = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if (typeof orig === 'function') orig();
+      try{
+        const g = document.getElementById('bgGrid'); if(!g) return;
+        if ((state.unlockedBackgrounds||{}).sunrise && !g.querySelector('[data-sunrise]')){
+          const el = document.createElement('div');
+          el.setAttribute('data-sunrise','1');
+          el.className = 'bg-tile';
+          el.style.cssText = "background-image:url('background_files/sunrise_style.png');background-size:cover;background-position:center;border:4px solid rgba(255,255,255,.4)";
+          el.innerHTML = '<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">SUNRISE</div><button class=\"buy bg-apply\">Apply</button>';
+          el.querySelector('.bg-apply').onclick = function(){
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-legendary','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-crypto','bg-dodger','bg-spaceview','bg-dodgerquests','redblue');
+            document.body.classList.add('bg-sunrise');
+            state.selectedBackground = 'sunrise';
+            try{ if(typeof save==='function') save(); }catch(e){}
+          };
+          g.appendChild(el);
+        }
+      }catch(e){}
+    };
+  })();
+(function extendBgGridForSpaceView(){
     const orig = window.__renderBgGrid;
     window.__renderBgGrid = function(){
       if (typeof orig === 'function') orig();
@@ -5125,6 +5180,83 @@ function _randomCrypto(){
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', nukeDodgerUI);
   else nukeDodgerUI();
+})();
+
+/* ===== In-Game Redeem Codes ===== */
+(function(){
+  const BUCKET_USER = '__redeem_codes__';
+  function show(el){ el?.classList?.add('show'); el?.setAttribute('aria-hidden','false'); }
+  function hide(el){ el?.classList?.remove('show'); el?.setAttribute('aria-hidden','true'); }
+  function banner(msg){ try{ window.__queue && window.__queue({ t: msg, style:'success' }); }catch(e){} }
+
+  async function fetchJson(u){
+    try{ const r = await fetch(u, { cache:'no-store' }); if(!r.ok) return null; return await r.json(); }catch(e){ return null; }
+  }
+
+  function normalizeCode(s){
+    return String(s||'').replace(/[^0-9]/g,'').slice(0,12);
+  }
+
+  function applySunriseUnlock(){
+    try{
+      window.state = window.state || {};
+      state.unlockedBackgrounds = state.unlockedBackgrounds || { default:true };
+      state.unlockedBackgrounds.sunrise = true;
+      state.selectedBackground = state.selectedBackground || 'default';
+      try{ if(typeof window.__renderBgGrid === 'function') window.__renderBgGrid(); }catch(e){}
+      if(typeof save === 'function') save();
+    }catch(e){}
+  }
+
+  async function doRedeemNow(){
+    const inp = document.getElementById('redeemInput');
+    const msg = document.getElementById('redeemMsg');
+    const raw = normalizeCode(inp?.value||'');
+    if(raw.length !== 12){
+      msg.textContent = 'Please enter a 12‑digit code.';
+      return;
+    }
+    msg.textContent = 'Checking…';
+    const data = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}&t=${Date.now()}`) || {};
+    const codes = Array.isArray(data.codes) ? data.codes : [];
+    const hit = codes.find(c => (c && c.active !== false && String(c.code) === raw));
+    if(!hit){ msg.textContent = 'Invalid or inactive code.'; return; }
+
+    if(hit.type === 'item'){
+      try{
+        const name = String(hit.itemName||'').trim(); const rarity = String(hit.rarity||'common').toLowerCase();
+        if(!name){ msg.textContent = 'Code is missing item data.'; return; }
+        const baseIdx = Math.max(0, (Array.isArray(ITEM_NAMES)?ITEM_NAMES.indexOf(name):-1));
+        const svg = (typeof window.getItemSvg==='function') ? getItemSvg(name, baseIdx<0?0:baseIdx, rarity) : '';
+        const newItem = { uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity, price:0, baseIdx: baseIdx<0?0:baseIdx, svg };
+        window.state = window.state || {}; state.inventory = state.inventory || []; state.inventory.push(newItem);
+        if(typeof save === 'function') await save();
+        if (typeof renderInventory === 'function') try { renderInventory(); } catch(e){}
+        banner('Redeemed! Item added to inventory.');
+      }catch(e){
+        console.warn(e); msg.textContent = 'Could not add item.'; return;
+      }
+    } else if(hit.type === 'background' && (hit.backgroundKey||'') === 'sunrise'){
+      applySunriseUnlock();
+      banner('Redeemed! Sunrise background unlocked.');
+    } else {
+      msg.textContent = 'Unknown reward type.'; return;
+    }
+
+    hide(document.getElementById('redeemOverlay'));
+    msg.textContent = '';
+    if(inp) inp.value = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const openBtn = document.getElementById('openRedeemOverlay');
+    const closeBtn = document.getElementById('closeRedeem');
+    const overlay = document.getElementById('redeemOverlay');
+    const goBtn = document.getElementById('doRedeem');
+    if(openBtn){ openBtn.addEventListener('click', ()=> show(overlay)); }
+    if(closeBtn){ closeBtn.addEventListener('click', ()=> hide(overlay)); }
+    if(goBtn){ goBtn.addEventListener('click', doRedeemNow); }
+  });
 })();
 </script>
 
