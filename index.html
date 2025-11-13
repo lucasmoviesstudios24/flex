@@ -1194,6 +1194,15 @@ body.bg-sunrise{
           <button class="buy" id="buyUniversalEgg">Purchase</button>
         </div>
       </div>
+
+      <div class="card">
+        <h3>Magical Egg</h3>
+        <div style="font-size:18px; opacity:0.9;">Rainbow gradient + sparkles. Hatches: Frog / Tiger / Deer / Nella–Ozzy–Chloe / Flexicorn.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="price">$2,000,000,000</div>
+          <button class="buy" id="buyMagicalEgg">Purchase</button>
+        </div>
+      </div>
 </div>
     <div class="refresh-note" id="petNote">Pets hatch in 10 minutes</div>
   </div>
@@ -1495,7 +1504,15 @@ function getPetSvg(petName, seed){
     "Molly": "molly.png",
     "Flex Dragon": "flex_dragon.png",
     
-  };
+  
+"Frog": "frog.png",
+"Tiger": "tiger.png",
+"Deer": "deer.png",
+"Ozzy": "ozzy.png",
+"Nella": "nella.png",
+"Chloe": "chloe.png",
+"Flexicorn": "flexicorn.png",
+};
 
   const file = nameMap[petName] || null;
 
@@ -1863,7 +1880,7 @@ function recalcEPS(){
 
   // Combine and apply multipliers safely
   let combined = (Number(baseTotal) || 0) + (Number(petTotal) || 0);
-  combined = combined * (Number(multiplierLevel) || 1) * (Number(state.permanentPetMultiplier) || 1);
+  combined = combined * (Number(multiplierLevel) || 1) * (typeof getActivePedestalMultiplier==='function' ? getActivePedestalMultiplier() : 1);
 
   baseEPS = baseTotal; // keep base for reference
   state.eps = Math.floor(combined) || 0;
@@ -2499,7 +2516,7 @@ function doRebirthUpgrade(){
 function updateMultiplierBadge(){
   const badge = document.getElementById('multBadge');
   if(!badge) return;
-  const petMult = state.permanentPetMultiplier || 1;
+  const petMult = (typeof getActivePedestalMultiplier==='function' ? getActivePedestalMultiplier() : 1);
   const rebirthMult = getRebirthMultiplier();
   const hasAny = (petMult>1) || (rebirthMult>1);
   if(!hasAny){ badge.style.display='none'; badge.textContent=''; return; }
@@ -2723,7 +2740,7 @@ recalcEPS = function() {
   });
 
   let combined = baseEPS + petTotal;
-  combined = combined * getRebirthMultiplier() * (state.permanentPetMultiplier || 1);
+  combined = combined * getRebirthMultiplier() * (typeof getActivePedestalMultiplier==='function' ? getActivePedestalMultiplier() : 1);
   state.eps = Math.floor(combined);
 
   updateTop();
@@ -2737,7 +2754,7 @@ recalcEPS = function() {
    ----------------------- */
 
 const PET_PEDESTAL_COST = 15_000_000;
-const EGG_COSTS = {legendary: 10_000_000, mythical: 15_000_000, enchanted: 25_000_000, universal: 1_000_000_000 };
+const EGG_COSTS = {legendary: 10_000_000, mythical: 15_000_000, enchanted: 25_000_000, universal: 1_000_000_000, magical: 2_000_000_000};
 const HATCH_DURATION = 10 * 60 * 1000;
 const FOURTH_HATCH_DURATION = 2 * 60 * 1000; // 10 minutes (ms)
 
@@ -2780,6 +2797,13 @@ const PET_TABLES = { legendary: [
     { name: 'Flex Dragon', chance: 0.01, eps: 65_000 } // grants permanent 5x
   ]
 
+  , magical: [
+    { name: 'Frog', chance: 0.45, eps: 15_000 },
+    { name: 'Tiger', chance: 0.32, eps: 20_000 },
+    { name: 'Deer', chance: 0.19, eps: 25_000 },
+    { name: 'IRL', subset: ['Nella','Ozzy','Chloe'], chance: 0.03, eps: 45_000 },
+    { name: 'Flexicorn', chance: 0.005, eps: 80_000 } // x5 multiplier + Luck Boost (on pedestal)
+  ]
 };
 
 function weightedPetPick(eggType){
@@ -2883,8 +2907,8 @@ function checkPetHatches(){
           svg: getPetSvg(hatchName, Math.floor(Math.random()*99999))
         };
         // apply Flex T-Rex permanent multiplier if hatched
-        if(result.name === 'Flex T-Rex' || result.name === 'Flex Dragon'){
-          state.permanentPetMultiplier = 5;
+        if(result.name === 'Flex T-Rex' || result.name === 'Flex Dragon' || result.name === 'Flexicorn'){
+          /* pedestal-based now; legacy flag neutralized */ state.permanentPetMultiplier = 1;
         }
         state.petStands[idx] = petObj;
         delete state.petTimers[idx];
@@ -4421,7 +4445,7 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
         }
       });
     }catch(e){}
-    const mult = (window.multiplierLevel||1) * ((state.permanentPetMultiplier||1));
+    const mult = (window.multiplierLevel||1) * ((typeof getActivePedestalMultiplier==='function' ? getActivePedestalMultiplier() : 1));
     return base * mult;
   }
 
@@ -5260,5 +5284,147 @@ function _randomCrypto(){
 })();
 </script>
 
+<script>
+(function(){
+  try{
+    const __origGetEggSvg = window.getEggSvg;
+    window.getEggSvg = function(eggType, seed){
+      if(eggType !== 'magical'){ return __origGetEggSvg.apply(this, arguments); }
+      const size = 96;
+      const gradId = 'magGrad' + seed;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 96 96">
+        <defs>
+          <filter id="eg${seed}" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/>
+          </filter>
+          <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff004c"/>
+            <stop offset="20%" stop-color="#ff7a00"/>
+            <stop offset="40%" stop-color="#ffd400"/>
+            <stop offset="60%" stop-color="#18e300"/>
+            <stop offset="80%" stop-color="#00e7ff"/>
+            <stop offset="100%" stop-color="#3a31ff"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="88" height="88" rx="14" fill="#333" />
+        <g filter="url(#eg${seed})">
+          <ellipse cx="48" cy="52" rx="22" ry="28" fill="url(#${gradId})" />
+          <ellipse cx="40" cy="40" rx="6" ry="4" fill="#fff" opacity="0.65"/>
+          <g>
+            <circle cx="28" cy="30" r="1.6" fill="#fff">
+              <animate attributeName="opacity" values="0;1;0" dur="2.2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="68" cy="28" r="1.2" fill="#fff">
+              <animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="0.4s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="60" cy="68" r="1.4" fill="#fff">
+              <animate attributeName="opacity" values="0;1;0" dur="2.6s" begin="0.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="32" cy="66" r="1.3" fill="#fff">
+              <animate attributeName="opacity" values="0;1;0" dur="2.0s" begin="0.2s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+        </g>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    };
+  }catch(e){}
+})();
+</script>
+<script>
+(function(){
+  try{
+    function flexicornCountOnPedestals(){
+      try{
+        const stands = (window.state && Array.isArray(state.petStands)) ? state.petStands : [];
+        let n = 0;
+        for(const p of stands){
+          if(p && !p.isEgg && ((p.petType||p.name) === 'Flexicorn')) n++;
+        }
+        return n;
+      }catch(e){ return 0; }
+    }
+    function currentShopWeights(){
+      const base = { unique:0.3, legacy:0.5, legendary:1, epic:8, rare:10, common:100 - (0.3+0.5+1+8+10) };
+      const count = flexicornCountOnPedestals();
+      if(count <= 0) return base;
+      const w = { common:50, rare:12, epic:23, legendary:6, legacy:5, unique:4 };
+      for(let i=1;i<count;i++){
+        w.common = Math.max(0, w.common - 5);
+        w.rare += 1; w.epic += 1; w.legendary += 1; w.legacy += 1; w.unique += 1;
+      }
+      const sum = w.common + w.rare + w.epic + w.legendary + w.legacy + w.unique;
+      if(Math.abs(sum - 100) > 0.0001){
+        const k = 100/sum;
+        w.common*=k; w.rare*=k; w.epic*=k; w.legendary*=k; w.legacy*=k; w.unique*=k;
+      }
+      return w;
+    }
+    const __origWeightedPick = window.weightedPick;
+    window.weightedPick = function(){
+      try{
+        const w = currentShopWeights();
+        const r = Math.random()*100;
+        let acc = 0;
+        const order = ['unique','legacy','legendary','epic','rare','common'];
+        for(const k of order){
+          acc += (w[k]||0);
+          if(r < acc) return k;
+        }
+        return 'common';
+      }catch(e){
+        return typeof __origWeightedPick === 'function' ? __origWeightedPick() : 'common';
+      }
+    };
+  }catch(e){}
+})();
+</script>
+<script>
+// Single-binding for Magical Egg purchase to avoid double hatches
+(function(){
+  if (window.__bindMagicalEggOnce) return;
+  window.__bindMagicalEggOnce = true;
+  function bind(){
+    var btn = document.getElementById('buyMagicalEgg');
+    if(!btn) return;
+    // Replace node to drop any listeners added elsewhere
+    var newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    var busy = false;
+    newBtn.addEventListener('click', function(){
+      if (busy) return;
+      busy = true;
+      try { if (typeof buyEgg === 'function') buyEgg('magical'); }
+      finally {
+        setTimeout(function(){
+          busy = false;
+          if (typeof updatePetButtonsUI === 'function') updatePetButtonsUI();
+        }, 0);
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
+})();
+</script>
+<script>
+// Active pedestal multiplier: counts Flex T-Rex, Flex Dragon, Flexicorn on pedestals
+(function(){
+  try{
+    window.getActivePedestalMultiplier = function(){
+      try{
+        const stands = (window.state && Array.isArray(state.petStands)) ? state.petStands : [];
+        let count = 0;
+        for(const ps of stands){
+          if(!ps || ps.isEgg) continue;
+          const nm = String((ps.petType||ps.name)||'').toLowerCase();
+          if(nm === 'flex t-rex' || nm === 'flex dragon' || nm === 'flexicorn') count++;
+        }
+        return count > 0 ? (5 * count) : 1; // x5 per qualifying pet on pedestal
+      }catch(e){ return 1; }
+    };
+  }catch(e){ /* no-op */ }
+})();
+</script>
 </body>
 </html>
