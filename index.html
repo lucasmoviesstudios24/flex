@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Flex — Shop & Flex Game (Inventory at Bottom)</title>
-<link href="https://fonts.googleapis.com/css2?family=Bungee:wght@400&family=Russo+One&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Flex — Shop &amp; Flex Game (Inventory at Bottom)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee:wght@400&amp;family=Russo+One&amp;family=Rajdhani:wght@600;700&amp;display=swap" rel="stylesheet"/>
 <style>
 :root{
   --ui-blue:#59a7ff;
@@ -124,6 +125,7 @@ body.redblue::after {
 .icon-music{ background: linear-gradient(45deg,#ffd86a,#ff7ac7); }
 .icon-pets{ background: #ffb6e6; } /* paw button style */
 .icon-btn svg{ width:64%; height:64%; }
+.icon-btn img{ width:80%; height:80%; }
 
 /* stands / pedestals area (keeps visually centered above inventory) */
 .stands{
@@ -803,7 +805,6 @@ body.money-red .cash{
 #dodgerOverlay{ display:none !important; }
 
 </style>
-
 <style>
 /* === Cosmic Event (Limited Time) === */
 .icon-cosmic{ background: radial-gradient(circle at 30% 30%, #1a2a6c, #000428); position:relative; }
@@ -882,8 +883,6 @@ body.bg-spaceview::before{
 }
 @keyframes starDrift { 0%{ background-position: 0 0, 0 0, 0 0, 0 0; } 100%{ background-position: -500px 240px, -200px 160px, -600px 400px, -300px 260px; } }
 </style>
-
-
 <style>
 /* === LA Dodgers Event === */
 
@@ -945,8 +944,6 @@ body.bg-sunrise{
   background: url('background_files/sunrise_style.png') center center / cover no-repeat fixed !important;
 }
 </style>
-
-
 <style>
 /* === Backgrounds overlay: scrollable grid === */
 #bgOverlay .sheet{
@@ -973,14 +970,10 @@ body.bg-sunrise{
   #bgOverlay .sheet{ max-height: min(92vh, 720px); }
 }
 </style>
-
-
 <style id="no-scroll-patch">
   /* Lock the main page from scrolling; overlays handle their own internal scroll */
   html, body { overflow: hidden !important; height: 100%; }
 </style>
-
-
 <style id="event-row-style">
   .event-row{
     position: fixed;
@@ -1004,7 +997,6 @@ body.bg-sunrise{
     .event-row .icon-btn{ width: 64px; height: 64px; }
   }
 </style>
-
 <style id="no-scroll-patch">
   /* Restore scrolling for the whole page */
   html, body { 
@@ -1014,7 +1006,6 @@ body.bg-sunrise{
   }
   body { min-height: 100%; }
 </style>
-
 <style>
 /* === CRYPTO rarity === */
 .t-crypto{
@@ -1037,8 +1028,6 @@ body.bg-sunrise{
           drop-shadow(0 0 18px rgba(255,216,74,.6));
 }
 </style>
-
-
 <style>
 /* === Crypto Ring Animation (no letter movement) === */
 @keyframes cryptoShimmer {
@@ -1075,230 +1064,201 @@ body.bg-sunrise{
   filter: drop-shadow(0 0 8px rgba(255,98,213,.45)) drop-shadow(0 0 10px rgba(255,216,74,.35));
 }
 </style>
-
-</head>
+<style>
+/* Disable pedestal forge buttons entirely */
+#exoticForgeBtn, #cryptoForgeBtn, #mythicForgeBtn {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+</style></head>
 <body>
 <div class="event-row" id="eventRow"></div>
 <div class="game">
-  <div class="topbar">
-    <div class="cash" id="cash">$1,000,000</div>
-    <div class="eps" id="eps">+ $0 / sec</div>
-    <div id="multBadge" class="eps"></div>
-  </div>
-
-  <div class="left-rail">
-  <div id="userDisplay" style="margin-bottom:16px;text-align:center;font-weight:bold;font-size:1.2em;color:#222;background:#fff7e0;padding:8px 0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.10);">
-  <!-- Username will appear here -->
-  </div>
-    <button class="icon-btn icon-shop" id="openShop" aria-label="Open shop" title="Shop">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#e40000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="9" cy="21" r="1.8"></circle>
-        <circle cx="20" cy="21" r="1.8"></circle>
-        <path d="M1 2h3l3.6 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L23 6H6"></path>
-      </svg>
-    </button>
-    <button class="icon-btn icon-tools" id="toolsBtn" aria-label="Tools" title="Tools (toggle fast refresh)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22.7 19.3L13 9.6M16 3a5 5 0 0 0-6.2 6.2l-7.7 7.7a2.5 2.5 0 1 0 3.5 3.5l7.7-7.7A5 5 0 0 0 21 8"></path>
-      </svg>
-    </button>
-
-    <!-- NEW: Pet Shop button (paw) -->
-    <button class="icon-btn icon-pets" id="openPetShop" aria-label="Pet Shop" title="Pet Shop">  <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <!-- toes -->
-  <circle cx="7.5" cy="7.5" r="2"></circle>
-  <circle cx="12"  cy="6"   r="2"></circle>
-  <circle cx="16.5" cy="7.5" r="2"></circle>
-  <circle cx="10" cy="10.5" r="1.8" style="display:none"></circle> <!-- (optional hidden) -->
-  <!-- main pad outline -->
-  <path d="M12 13c-2.8 0-6 2.2-6 5 0 2.2 3 3.5 6 3.5s6-1.3 6-3.5c0-2.8-3.2-5-6-5z"></path>
+<div class="topbar">
+<div class="cash" id="cash">$1,000,000</div>
+<div class="eps" id="eps">+ $0 / sec</div>
+<div class="eps" id="multBadge"></div>
+</div>
+<div class="left-rail">
+<div id="userDisplay" style="margin-bottom:16px;text-align:center;font-weight:bold;font-size:1.2em;color:#222;background:#fff7e0;padding:8px 0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.10);">
+<!-- Username will appear here -->
+</div>
+<button aria-label="Open shop" class="icon-btn icon-shop" id="openShop" title="Shop">
+<svg fill="none" stroke="#e40000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="9" cy="21" r="1.8"></circle>
+<circle cx="20" cy="21" r="1.8"></circle>
+<path d="M1 2h3l3.6 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L23 6H6"></path>
 </svg>
 </button>
-
-    <button class="icon-btn icon-music" id="musicBtn" aria-label="Toggle music" title="Toggle music">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></svg>
-    </button>
-  </div>
-
-  <div class="stands" id="stands"></div>
-
-  <!-- Pet row will be rendered directly under stands inside renderStands -->
-
-  <!-- Forge button -->
-  <button id="forgeBtn" title="Forge 4 Legendaries into 1 Mythic">FORGE</button>
-
-  <!-- inventory is now fixed to bottom via CSS -->
-  <div class="inventory-wrap">
-    <div class="inventory" id="inventory"></div>
-  </div>
+<button aria-label="Tools" class="icon-btn icon-tools" id="toolsBtn" title="Tools (toggle fast refresh)">
+  <img src="icons/gear_shop_icon.png" alt="Gear Shop">
+</button>
+<!-- NEW: Pet Shop button (paw) -->
+<button aria-label="Pet Shop" class="icon-btn icon-pets" id="openPetShop" title="Pet Shop"> <svg aria-hidden="true" fill="none" stroke="#111" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<!-- toes -->
+<circle cx="7.5" cy="7.5" r="2"></circle>
+<circle cx="12" cy="6" r="2"></circle>
+<circle cx="16.5" cy="7.5" r="2"></circle>
+<circle cx="10" cy="10.5" r="1.8" style="display:none"></circle> <!-- (optional hidden) -->
+<!-- main pad outline -->
+<path d="M12 13c-2.8 0-6 2.2-6 5 0 2.2 3 3.5 6 3.5s6-1.3 6-3.5c0-2.8-3.2-5-6-5z"></path>
+</svg>
+</button>
+<button aria-label="Toggle music" class="icon-btn icon-music" id="musicBtn" title="Toggle music">
+<svg fill="none" stroke="#111" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><path d="M9 17V5l11-2v12"></path><circle cx="6" cy="18" r="2"></circle><circle cx="17" cy="16" r="2"></circle></svg>
+</button>
 </div>
-
-<div class="overlay" id="shopOverlay" aria-hidden="true">
-  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
-    <button class="closeX" id="closeShop" aria-label="Close">✕</button>
-    <h2 id="shopTitle">Shop</h2>
-    <div class="grid" id="shopGrid"></div>
-    <div class="refresh-note" id="refreshNote">Shop refreshes every 1:30</div>
-  </div>
+<div class="stands" id="stands"></div>
+<!-- Pet row will be rendered directly under stands inside renderStands -->
+<!-- Forge button -->
+<button id="forgeBtn" title="Forge 4 Legendaries into 1 Mythic">FORGE</button>
+<!-- inventory is now fixed to bottom via CSS -->
+<div class="inventory-wrap">
+<div class="inventory" id="inventory"></div>
 </div>
-
+</div>
+<div aria-hidden="true" class="overlay" id="shopOverlay">
+<div aria-labelledby="shopTitle" aria-modal="true" class="shop" role="dialog">
+<button aria-label="Close" class="closeX" id="closeShop">✕</button>
+<h2 id="shopTitle">Shop</h2>
+<div class="grid" id="shopGrid"></div>
+<div class="refresh-note" id="refreshNote">Shop refreshes every 1:30</div>
+</div>
+</div>
 <!-- Pet Shop Overlay -->
-<div class="overlay" id="petOverlay" aria-hidden="true">
-  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="petTitle">
-    <button class="closeX" id="closePetShop" aria-label="Close">✕</button>
-    <h2 id="petTitle">Pet Shop</h2>
-    <div class="grid">
-      <div class="card">
-        <h3>Pet Pedestal</h3>
-        <div style="font-size:18px; opacity:0.9;">Adds a pet pedestal below the pedestals. Max 2. Place eggs here to incubate.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$15,000,000</div>
-          <button class="buy" id="buyPetPedestal">Purchase</button>
-        </div>
-        <div id="petPedestalStatus" style="margin-top:6px;font-weight:700;color:#6dff79;"></div>
-      </div>
-
-      <div class="card">
-        <h3>Legendary Egg</h3>
-        <div style="font-size:18px; opacity:0.9;">Hatch into Dog / Cat / Gold Dog.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$10,000,000</div>
-          <button class="buy" id="buyLegendEgg">Purchase</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Mythical Egg</h3>
-        <div style="font-size:18px; opacity:0.9;">Hatch into Lion / Bear / Dino.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$15,000,000</div>
-          <button class="buy" id="buyMythEgg">Purchase</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Enchanted Egg</h3>
-        <div style="font-size:18px; opacity:0.9;">Hatch into Owl / Rainbow Panda / Flex T-Rex.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$25,000,000</div>
-          <button class="buy" id="buyEnchantedEgg">Purchase</button>
-        </div>
-      </div>
-
-    
-      <div class="card">
-        <h3>Universal Egg</h3>
-        <div style="font-size:18px; opacity:0.9;">Hatch into Lizard / Alien / Hudson–Drake–Molly / Flex Dragon.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$1,000,000,000</div>
-          <button class="buy" id="buyUniversalEgg">Purchase</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Magical Egg</h3>
-        <div style="font-size:18px; opacity:0.9;">Rainbow gradient + sparkles. Hatches: Frog / Tiger / Deer / Nella–Ozzy–Chloe / Flexicorn.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$2,000,000,000</div>
-          <button class="buy" id="buyMagicalEgg">Purchase</button>
-        </div>
-      </div>
+<div aria-hidden="true" class="overlay" id="petOverlay">
+<div aria-labelledby="petTitle" aria-modal="true" class="shop" role="dialog">
+<button aria-label="Close" class="closeX" id="closePetShop">✕</button>
+<h2 id="petTitle">Pet Shop</h2>
+<div class="grid">
+<div class="card">
+<h3>Pet Pedestal</h3>
+<div style="font-size:18px; opacity:0.9;">Adds a pet pedestal below the pedestals. Max 2. Place eggs here to incubate.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$15,000,000</div>
+<button class="buy" id="buyPetPedestal">Purchase</button>
 </div>
-    <div class="refresh-note" id="petNote">Pets hatch in 10 minutes</div>
-  </div>
+<div id="petPedestalStatus" style="margin-top:6px;font-weight:700;color:#6dff79;"></div>
 </div>
-
-
+<div class="card">
+<h3>Legendary Egg</h3>
+<div style="font-size:18px; opacity:0.9;">Hatch into Dog / Cat / Gold Dog.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$10,000,000</div>
+<button class="buy" id="buyLegendEgg">Purchase</button>
+</div>
+</div>
+<div class="card">
+<h3>Mythical Egg</h3>
+<div style="font-size:18px; opacity:0.9;">Hatch into Lion / Bear / Dino.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$15,000,000</div>
+<button class="buy" id="buyMythEgg">Purchase</button>
+</div>
+</div>
+<div class="card">
+<h3>Enchanted Egg</h3>
+<div style="font-size:18px; opacity:0.9;">Hatch into Owl / Rainbow Panda / Flex T-Rex.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$25,000,000</div>
+<button class="buy" id="buyEnchantedEgg">Purchase</button>
+</div>
+</div>
+<div class="card">
+<h3>Universal Egg</h3>
+<div style="font-size:18px; opacity:0.9;">Hatch into Lizard / Alien / Hudson–Drake–Molly / Flex Dragon.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$1,000,000,000</div>
+<button class="buy" id="buyUniversalEgg">Purchase</button>
+</div>
+</div>
+<div class="card">
+<h3>Magical Egg</h3>
+<div style="font-size:18px; opacity:0.9;">Rainbow gradient + sparkles. Hatches: Frog / Tiger / Deer / Nella–Ozzy–Chloe / Flexicorn.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$2,000,000,000</div>
+<button class="buy" id="buyMagicalEgg">Purchase</button>
+</div>
+</div>
+</div>
+<div class="refresh-note" id="petNote">Pets hatch in 10 minutes</div>
+</div>
+</div>
 <!-- Gear Overlay -->
-<div class="overlay" id="gearOverlay" aria-hidden="true">
-  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="gearTitle">
-    <button class="closeX" id="closeGear" aria-label="Close">✕</button>
-    <h2 id="gearTitle" style="color:#ff5050;text-align:center;">Gear</h2>
-    <div class="grid">
-
-      
-      <!-- Rebirth Multiplier -->
-      <div class="card" id="rebirthCard">
-        <h3>Rebirth X <span id="rebirthLevelTag" style="font-size:18px;opacity:.8;">(Level 0)</span></h3>
-        <div style="font-size:18px; opacity:0.85;">Resets money to $1,000,000, increases multiplier. Max level 10.</div>
+<div aria-hidden="true" class="overlay" id="gearOverlay">
+<div aria-labelledby="gearTitle" aria-modal="true" class="shop" role="dialog">
+<button aria-label="Close" class="closeX" id="closeGear">✕</button>
+<h2 id="gearTitle" style="color:#ff5050;text-align:center;">Gear</h2>
+<div class="grid">
+<!-- Rebirth Multiplier -->
+<div class="card" id="rebirthCard">
+<h3>Rebirth X <span id="rebirthLevelTag" style="font-size:18px;opacity:.8;">(Level 0)</span></h3>
+<div style="font-size:18px; opacity:0.85;">Resets money to $1,000,000, increases multiplier. Max level 10.</div>
 <!-- Redeem Overlay (small white modal) -->
-<div class="overlay" id="redeemOverlay" aria-hidden="true">
-  <div class="shop" role="dialog" aria-modal="true" aria-labelledby="redeemTitle" style="max-width:520px;background:#fff;color:#111">
-    <button class="closeX" id="closeRedeem" aria-label="Close" style="color:#111">✕</button>
-    <h2 id="redeemTitle" style="color:#111;text-align:center;">Redeem Code</h2>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
-      <input id="redeemInput" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="Enter 12‑digit code" style="padding:10px;border-radius:10px;border:1px solid #ccc;font-size:18px">
-      <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:6px">
-        <button class="upgrade" id="doRedeem" style="background:#111;color:#fff">Redeem</button>
-      </div>
-      <div id="redeemMsg" class="small" style="min-height:20px;color:#111;opacity:.9"></div>
-    </div>
-  </div>
+<div aria-hidden="true" class="overlay" id="redeemOverlay">
+<div aria-labelledby="redeemTitle" aria-modal="true" class="shop" role="dialog" style="max-width:520px;background:#fff;color:#111">
+<button aria-label="Close" class="closeX" id="closeRedeem" style="color:#111">✕</button>
+<h2 id="redeemTitle" style="color:#111;text-align:center;">Redeem Code</h2>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+<input id="redeemInput" inputmode="numeric" maxlength="12" pattern="[0-9]*" placeholder="Enter 12‑digit code" style="padding:10px;border-radius:10px;border:1px solid #ccc;font-size:18px"/>
+<div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:6px">
+<button class="upgrade" id="doRedeem" style="background:#111;color:#fff">Redeem</button>
 </div>
-
-              <div id="rebirthStatus" style="margin-top:6px;font-weight:700;color:#6dff79;">Current Rebirth Multiplier: x1</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price" id="rebirthPrice">$1,000,000,000</div>
-          <button class="upgrade" id="rebirthUpgrade">Upgrade</button>
-        </div>
-      </div>
+<div class="small" id="redeemMsg" style="min-height:20px;color:#111;opacity:.9"></div>
+</div>
+</div>
+</div>
+<div id="rebirthStatus" style="margin-top:6px;font-weight:700;color:#6dff79;">Current Rebirth Multiplier: x1</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price" id="rebirthPrice">$1,000,000,000</div>
+<button class="upgrade" id="rebirthUpgrade">Upgrade</button>
+</div>
+</div>
 <!-- Redeem Codes -->
-      <div class="card" id="redeemCard">
-        <h3>Redeem</h3>
-        <div style="font-size:18px; opacity:0.85;">Enter a 12‑digit redeem code to unlock an item or background.</div>
-        <div style="display:flex;justify-content:flex-end;align-items:center;">
-          <button class="buy" id="openRedeemOverlay">Enter redeem code</button>
-        </div>
-      </div>
-
-<!-- Background Tool -->
-      <div class="card" id="backgroundCard">
-        <h3>Background Red/Blue</h3>
-        <div style="font-size:18px; opacity:0.85;">Switch gradient to red/blue.<br>One-time purchase.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$4,000,000</div>
-          <button class="buy" id="buyBackground">Purchase</button>
-        </div>
-        <button id="toggleBackground" class="buy" style="display:none;background:linear-gradient(#ff7a7a,#6aaaff);">Disable</button>
-      </div>
-
-
-
-  
-      <!-- Red Money Tool -->
-      <div class="card" id="redMoneyCard">
-        <h3>Red Money</h3>
-        <div style="font-size:18px; opacity:0.85;">Changes the top money banner to red/dark red.<br>One-time purchase.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="price">$1,000,000,000,000</div>
-          <button class="buy" id="buyRedMoney">Purchase</button>
-        </div>
-        <button id="toggleRedMoney" class="buy" style="display:none;background:linear-gradient(#ff6b6b,#8b0000);">Disable</button>
-      </div>
-<div id="settingsOverlay" class="overlay hidden">
-    <h2>Settings</h2>
-
-    <div>
-      <button onclick="toggleBackground()">Toggle Background</button>
-    </div>
-
-    <div style="margin-top: 10px;">
-      <button onclick="downloadSave()">Download Save</button>
-    </div>
-
-    <div style="margin-top: 10px;">
-      <input type="file" id="uploadSaveInput" accept=".json" style="display:none"
-             onchange="handleSaveUpload(event)">
-      <button onclick="document.getElementById('uploadSaveInput').click()">Upload Save</button>
-    </div>
-  </div>
-
-
-    </div>
-  </div>
+<div class="card" id="redeemCard">
+<h3>Redeem</h3>
+<div style="font-size:18px; opacity:0.85;">Enter a 12‑digit redeem code to unlock an item or background.</div>
+<div style="display:flex;justify-content:flex-end;align-items:center;">
+<button class="buy" id="openRedeemOverlay">Enter redeem code</button>
 </div>
-
-
+</div>
+<!-- Background Tool -->
+<div class="card" id="backgroundCard">
+<h3>Background Red/Blue</h3>
+<div style="font-size:18px; opacity:0.85;">Switch gradient to red/blue.<br/>One-time purchase.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$4,000,000</div>
+<button class="buy" id="buyBackground">Purchase</button>
+</div>
+<button class="buy" id="toggleBackground" style="display:none;background:linear-gradient(#ff7a7a,#6aaaff);">Disable</button>
+</div>
+<!-- Red Money Tool -->
+<div class="card" id="redMoneyCard">
+<h3>Red Money</h3>
+<div style="font-size:18px; opacity:0.85;">Changes the top money banner to red/dark red.<br/>One-time purchase.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$1,000,000,000,000</div>
+<button class="buy" id="buyRedMoney">Purchase</button>
+</div>
+<button class="buy" id="toggleRedMoney" style="display:none;background:linear-gradient(#ff6b6b,#8b0000);">Disable</button>
+</div>
+<div class="overlay hidden" id="settingsOverlay">
+<h2>Settings</h2>
+<div>
+<button onclick="toggleBackground()">Toggle Background</button>
+</div>
+<div style="margin-top: 10px;">
+<button onclick="downloadSave()">Download Save</button>
+</div>
+<div style="margin-top: 10px;">
+<input accept=".json" id="uploadSaveInput" onchange="handleSaveUpload(event)" style="display:none" type="file"/>
+<button onclick="document.getElementById('uploadSaveInput').click()">Upload Save</button>
+</div>
+</div>
+</div>
+</div>
+</div>
 <!--
   NOTE:
   The JavaScript from your original file is compatible with these layout changes.
@@ -2016,15 +1976,13 @@ function rarityBadge(r){
   state.stands = [null, null, null, null];
 
   // create new exotic item and place it on stand 0
-  const name = ITEM_NAMES[Math.floor(Math.random() * ITEM_NAMES.length)];
-  const newItem = {
-    uid: uid(),
-    name,
-    rarity: 'exotic',
-    price: 0,
-    baseIdx: Math.floor(Math.random() * ITEM_NAMES.length),
-    svg: getItemSvg(name, Math.floor(Math.random() * 9999), 'exotic')
-  };
+  const newItem = (typeof _randomExotic==='function') ? _randomExotic() : (function(){ 
+    const real = (typeof _getRealItemNames==='function') ? _getRealItemNames() : (Array.isArray(window.ITEM_NAMES)?window.ITEM_NAMES.slice():[]);
+    const idx  = Math.floor(Math.random() * (real.length || 20));
+    const name = real[idx] || '24 King Crown';
+    const svg  = (typeof window.getItemSvg==='function') ? getItemSvg(name, idx, 'exotic') : '';
+    return { uid: uid(), name, rarity:'exotic', price:0, baseIdx:idx, svg };
+  })();
 
   state.placed[newItem.uid] = newItem;
   state.stands[0] = newItem.uid;  // place on first stand
@@ -3011,80 +2969,66 @@ document.getElementById("resetUserBtn").addEventListener("click", function() {
 })();
 
 </script>
-
 <!-- Right-side buttons -->
 <div class="right-rail">
-  <!-- Achievements -->
-  <button id="openAchievements" class="icon-achievements" title="Achievements" onclick="document.getElementById('achOverlay').classList.add('show'); window.__achRefresh && window.__achRefresh();">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="8" r="6"></circle><path d="M8 14v6l4-2 4 2v-6"></path>
-    </svg>
-  </button>
-
-  <!-- Background Changer (middle) -->
-  <button id="openBgSelector" class="bg-selector-btn" title="Backgrounds" onclick="document.getElementById('bgOverlay').classList.add('show'); window.__renderBgGrid && window.__renderBgGrid();">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 21H3V3h18zM7 17l3-4 2 3 3-5 2 6H7z"></path>
-    </svg>
-  </button>
-
-  <!-- Delete Mode (bottom) -->
-  <button id="deleteToggleBtn" class="delete-toggle-btn" aria-pressed="false" title="Toggle deletion mode">
-  <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e84545" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <polyline points="3 6 5 6 21 6"></polyline>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-    <line x1="10" y1="11" x2="10" y2="17"></line>
-    <line x1="14" y1="11" x2="14" y2="17"></line>
-  </svg>
-  
-  <!-- Inventory Filters (under Trash) -->
-  <button id="invFilterToggle" class="inv-filter-toggle" aria-controls="invFilterSheet" aria-expanded="false" title="Quick inventory filters">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <polyline points="6 9 12 15 18 9"></polyline>
-    </svg>
-  </button>
-
-</div>
-
-
-
+<!-- Achievements -->
+<button class="icon-achievements" id="openAchievements" onclick="document.getElementById('achOverlay').classList.add('show'); window.__achRefresh &amp;&amp; window.__achRefresh();" title="Achievements">
+<svg fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<circle cx="12" cy="8" r="6"></circle><path d="M8 14v6l4-2 4 2v-6"></path>
+</svg>
+</button>
+<!-- Background Changer (middle) -->
+<button class="bg-selector-btn" id="openBgSelector" onclick="document.getElementById('bgOverlay').classList.add('show'); window.__renderBgGrid &amp;&amp; window.__renderBgGrid();" title="Backgrounds">
+<svg fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" viewbox="0 0 24 24">
+<path d="M21 21H3V3h18zM7 17l3-4 2 3 3-5 2 6H7z"></path>
+</svg>
+</button>
+<!-- Delete Mode (bottom) -->
+<button aria-pressed="false" class="delete-toggle-btn" id="deleteToggleBtn" title="Toggle deletion mode">
+<svg aria-hidden="true" fill="none" height="40" stroke="#e84545" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24" width="40">
+<polyline points="3 6 5 6 21 6"></polyline>
+<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+<line x1="10" x2="10" y1="11" y2="17"></line>
+<line x1="14" x2="14" y1="11" y2="17"></line>
+</svg>
+<!-- Inventory Filters (under Trash) -->
+<button aria-controls="invFilterSheet" aria-expanded="false" class="inv-filter-toggle" id="invFilterToggle" title="Quick inventory filters">
+<svg aria-hidden="true" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<polyline points="6 9 12 15 18 9"></polyline>
+</svg>
+</button>
+</button></div>
 <!-- Achievements Overlay -->
-<div class="overlay" id="achOverlay" aria-hidden="true">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="achTitle">
-    <button class="closeX" id="closeAchievements" aria-label="Close" onclick="document.getElementById('achOverlay').classList.remove('show')">✕</button>
-    <h2 id="achTitle">Achievements</h2>
-    <div class="achv-wrap">
-      <div class="rarity-rail" id="rarityRail">
-        <div class="rail-btn" data-tab="quests"><span>QUESTS</span><span class="badge-dot" id="questsDot"></span></div>
+<div aria-hidden="true" class="overlay" id="achOverlay">
+<div aria-labelledby="achTitle" aria-modal="true" class="sheet" role="dialog">
+<button aria-label="Close" class="closeX" id="closeAchievements" onclick="document.getElementById('achOverlay').classList.remove('show')">✕</button>
+<h2 id="achTitle">Achievements</h2>
+<div class="achv-wrap">
+<div class="rarity-rail" id="rarityRail">
+<div class="rail-btn" data-tab="quests"><span>QUESTS</span><span class="badge-dot" id="questsDot"></span></div>
 <div class="rail-btn" data-tab="petquests"><span>PET QUESTS</span><span class="badge-dot" id="dot-petquests"></span></div>
-        <div class="rail-btn" data-tab="common"><span>COMMON</span><span class="badge-dot" id="dot-common"></span></div>
-        <div class="rail-btn" data-tab="rare"><span>RARE</span><span class="badge-dot" id="dot-rare"></span></div>
-        <div class="rail-btn" data-tab="epic"><span>EPIC</span><span class="badge-dot" id="dot-epic"></span></div>
-        <div class="rail-btn" data-tab="legendary"><span>LEGENDARY</span><span class="badge-dot" id="dot-legendary"></span></div>
-        <div class="rail-btn" data-tab="legacy"><span>LEGACY</span><span class="badge-dot" id="dot-legacy"></span></div>
-        <div class="rail-btn" data-tab="unique"><span>UNIQUE</span><span class="badge-dot" id="dot-unique"></span></div>
-        <div class="rail-btn" data-tab="exotic"><span>EXOTIC</span><span class="badge-dot" id="dot-exotic"></span></div>
-        <div class="rail-btn" data-tab="mythic"><span>MYTHIC</span><span class="badge-dot" id="dot-mythic"></span></div>
-        <div class="rail-btn" data-tab="crypto"><span>CRYPTO</span><span class="badge-dot" id="dot-crypto"></span></div>
-      </div>
-      <div id="achContent"></div>
-    </div>
-  </div>
+<div class="rail-btn" data-tab="common"><span>COMMON</span><span class="badge-dot" id="dot-common"></span></div>
+<div class="rail-btn" data-tab="rare"><span>RARE</span><span class="badge-dot" id="dot-rare"></span></div>
+<div class="rail-btn" data-tab="epic"><span>EPIC</span><span class="badge-dot" id="dot-epic"></span></div>
+<div class="rail-btn" data-tab="legendary"><span>LEGENDARY</span><span class="badge-dot" id="dot-legendary"></span></div>
+<div class="rail-btn" data-tab="legacy"><span>LEGACY</span><span class="badge-dot" id="dot-legacy"></span></div>
+<div class="rail-btn" data-tab="unique"><span>UNIQUE</span><span class="badge-dot" id="dot-unique"></span></div>
+<div class="rail-btn" data-tab="exotic"><span>EXOTIC</span><span class="badge-dot" id="dot-exotic"></span></div>
+<div class="rail-btn" data-tab="mythic"><span>MYTHIC</span><span class="badge-dot" id="dot-mythic"></span></div>
+<div class="rail-btn" data-tab="crypto"><span>CRYPTO</span><span class="badge-dot" id="dot-crypto"></span></div>
 </div>
-
-
-
-
+<div id="achContent"></div>
+</div>
+</div>
+</div>
 <!-- Background Selector Overlay -->
-<div class="overlay" id="bgOverlay" aria-hidden="true">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bgTitle">
-    <button class="closeX" id="closeBg" aria-label="Close" onclick="document.getElementById('bgOverlay').classList.remove('show')">✕</button>
-    <h2 id="bgTitle">Backgrounds</h2>
-    <div id="bgGrid" class="bg-grid"></div>
-  </div>
+<div aria-hidden="true" class="overlay" id="bgOverlay">
+<div aria-labelledby="bgTitle" aria-modal="true" class="sheet" role="dialog">
+<button aria-label="Close" class="closeX" id="closeBg" onclick="document.getElementById('bgOverlay').classList.remove('show')">✕</button>
+<h2 id="bgTitle">Backgrounds</h2>
+<div class="bg-grid" id="bgGrid"></div>
 </div>
-
-
+</div>
 <script>
 (function(){
   const RLIST=['common','rare','epic','legendary','legacy','unique','exotic','mythic','crypto'];
@@ -3342,8 +3286,6 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
 })();
 </script>
-
-
 <script>
 // --- Add-on: Third Pet Pedestal renderer (non-destructive) ---
 (function(){
@@ -3576,8 +3518,6 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
 })();
 </script>
-
-
 <script>
 // --- Add-on persistence for achievements + backgrounds ---
 (function(){
@@ -3624,8 +3564,6 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
 })();
 </script>
-
-
 <script>
 (function(){
   // toggle button -> deletion mode
@@ -3726,9 +3664,6 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
   // (Deletion mode does not add delete buttons to pedestals.)
 </script>
-
-
-
 <script>
 (function(){
   window.state = window.state || {};
@@ -3813,65 +3748,53 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 </script>
 
 
-
-
-  </div>
-</div>
-
 <!-- Quick reward reveal -->
-<img id="revealImg" alt="reward">
-    <div id="revealName" style="font-weight:900;margin-top:6px;"></div>
-    <div id="revealRarity" class="rar" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
-  </div>
-</div>
-
-
+<img alt="reward" id="revealImg"/>
+<div id="revealName" style="font-weight:900;margin-top:6px;"></div>
+<div class="rar" id="revealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
 
 
 <!-- LA Dodgers Event Overlay -->
-<div class="overlay" id="dodgerOverlay" aria-hidden="true">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dodgerTitle">
-    <button class="closeX" id="closeDodger" aria-label="Close">✕</button>
-    <h2 id="dodgerTitle">LA DODGERS EVENT</h2>
-    <div class="dodger-grid">
-      <div class="dodger-card" id="cardLAPack">
-        <h3>LA Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
-        <p class="dodger-desc">Open to receive a random LA item in EPIC/LEGENDARY/LEGACY/UNIQUE/MYTHIC/DODGER. Dodger is rarest and adds blue–white waves. Reward auto‑adds to inventory.</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="dodger-price">$2,000,000,000</div>
-          <button class="dodger-buy" id="buyLAPack">Purchase</button>
-        </div>
-      </div>
-      <div class="dodger-card" id="cardDodgerStyle">
-        <h3>Dodger Stadium Style</h3>
-        <p class="dodger-desc">A themed stadium background. After purchase, apply it from Backgrounds.</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="dodger-price">$10,000,000,000,000</div>
-          <button class="dodger-buy" id="buyDodgerStyle">Purchase</button>
-        </div>
-      </div>
-      <div class="dodger-card">
-        <h3>Dodger Info</h3>
-        <div class="dodger-desc">Event items are limited‑time. When the event ends the button goes away, but your rewards stay forever. Dodger rarity gives +40,000 EPS with animated waves.</div>
-      </div>
-      <div class="dodger-card" style="display:grid;place-items:center;">
-        <img id="dodgerShopLogo" alt="LA" style="height:120px;filter:drop-shadow(0 8px 30px rgba(30,144,255,.35));opacity:.95;">
-      </div>
-    </div>
-  </div>
+<div aria-hidden="true" class="overlay" id="dodgerOverlay">
+<div aria-labelledby="dodgerTitle" aria-modal="true" class="sheet" role="dialog">
+<button aria-label="Close" class="closeX" id="closeDodger">✕</button>
+<h2 id="dodgerTitle">LA DODGERS EVENT</h2>
+<div class="dodger-grid">
+<div class="dodger-card" id="cardLAPack">
+<h3>LA Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
+<p class="dodger-desc">Open to receive a random LA item in EPIC/LEGENDARY/LEGACY/UNIQUE/MYTHIC/DODGER. Dodger is rarest and adds blue–white waves. Reward auto‑adds to inventory.</p>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+<div class="dodger-price">$2,000,000,000</div>
+<button class="dodger-buy" id="buyLAPack">Purchase</button>
 </div>
-
+</div>
+<div class="dodger-card" id="cardDodgerStyle">
+<h3>Dodger Stadium Style</h3>
+<p class="dodger-desc">A themed stadium background. After purchase, apply it from Backgrounds.</p>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+<div class="dodger-price">$10,000,000,000,000</div>
+<button class="dodger-buy" id="buyDodgerStyle">Purchase</button>
+</div>
+</div>
+<div class="dodger-card">
+<h3>Dodger Info</h3>
+<div class="dodger-desc">Event items are limited‑time. When the event ends the button goes away, but your rewards stay forever. Dodger rarity gives +40,000 EPS with animated waves.</div>
+</div>
+<div class="dodger-card" style="display:grid;place-items:center;">
+<img alt="LA" id="dodgerShopLogo" style="height:120px;filter:drop-shadow(0 8px 30px rgba(30,144,255,.35));opacity:.95;"/>
+</div>
+</div>
+</div>
+</div>
 <!-- Dodgers Reward Reveal -->
 <div class="cosmic-reveal" id="dodgerReveal">
-  <div class="card" style="background:#0e1628;border-color:#0a0f1a;">
-    <div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
-    <img id="dodgerRevealImg" alt="reward">
-    <div id="dodgerRevealName" style="font-weight:900;margin-top:6px;"></div>
-    <div id="dodgerRevealRarity" class="rar" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
-  </div>
+<div class="card" style="background:#0e1628;border-color:#0a0f1a;">
+<div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
+<img alt="reward" id="dodgerRevealImg"/>
+<div id="dodgerRevealName" style="font-weight:900;margin-top:6px;"></div>
+<div class="rar" id="dodgerRevealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
 </div>
-
-
+</div>
 <script>
 
 // Helper to resolve assets by trying multiple extensions.
@@ -4149,8 +4072,6 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
 })();
 </script>
-
-
 <script>
 (function(){
   const btn = document.getElementById('openBgSelector');
@@ -4166,7 +4087,6 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
   }
 })();
 </script>
-
 <script>
 // ===== Admin broadcast listener + auto-update =====
 (function(){
@@ -4347,7 +4267,6 @@ setTimeout(pollOnce, 1500);
   });
 })();
 </script>
-
 <script>
 // --- Pet Quest: Unlock 4th Pet Pedestal when ALL pets owned (2-minute hatch slot) ---
 (function(){
@@ -4390,8 +4309,6 @@ setTimeout(pollOnce, 1500);
   };
 })();
 </script>
-
-
 <style>
 /* === Dodger Quests background === */
 body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_style.png') center center / cover no-repeat fixed !important; }
@@ -4401,7 +4318,6 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
 .dq-box .dq-sub{font-size:14px;opacity:.85;font-weight:800;margin-top:-6px;margin-left:38px;}
 .dq-claim{margin-top:8px;}
 </style>
-
 <script>
 // === Dodger Quests (LA Event) ===
 (function(){
@@ -4695,8 +4611,6 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
 
 })();
 </script>
-
-
 <script>
 // === Cosmic Event: turned off (UI/page removed). Preserve existing content. ===
 (function(){
@@ -4760,8 +4674,6 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
   })();
 })();
 </script>
-
-
 <script>
 // === CRYPTO rarity + forge (2 Mythic + 2 Exotic => 1 random CRYPTO, 50,000 EPS) ===
 (function(){
@@ -4795,12 +4707,67 @@ function _getRealItemNames(){
   return [];
 }
 function _randomCrypto(){
-      const real = _getRealItemNames();
-      const name = real.length ? real[Math.floor(Math.random()*real.length)] : ( (typeof ITEM_NAMES!=='undefined' && ITEM_NAMES.length) ? ITEM_NAMES[Math.floor(Math.random()*ITEM_NAMES.length)] : real[Math.floor(Math.random()*real.length)] );
-      const baseIdx = Math.floor(Math.random()*((typeof ITEM_NAMES!=='undefined' && ITEM_NAMES.length)?ITEM_NAMES.length:real.length||20));
-      const svg = (typeof window.getItemSvg==='function') ? getItemSvg(name, baseIdx, 'crypto') : '';
-      return { uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity:'crypto', price:0, baseIdx, svg };
-    }
+  // Build a loot pool strictly from icon-backed items
+  const names=(function(){
+    try{
+      if(typeof ICON_PATHS!=='undefined' && ICON_PATHS) return Object.keys(ICON_PATHS);
+      if(typeof window!=='undefined' && window.ICON_PATHS) return Object.keys(window.ICON_PATHS);
+    }catch(e){}
+    try{
+      const list=(typeof ITEM_NAMES!=='undefined')?ITEM_NAMES:(window.ITEM_NAMES||[]);
+      const map =(typeof ICON_PATHS!=='undefined')?ICON_PATHS:(window.ICON_PATHS||{});
+      if(Array.isArray(list) && list.length) return list.filter(n=>Object.prototype.hasOwnProperty.call(map,n));
+    }catch(e){}
+    return [];
+  })();
+  const n = names.length;
+  // Robust RNG independent of Math.random()
+  let t=0;
+  try{ t=(typeof performance!=='undefined' && performance.now)?performance.now():Date.now(); }catch(e){ t=Date.now(); }
+  try{ window.__rngCounter=(window.__rngCounter|0)+1; t+=window.__rngCounter; }catch(e){}
+  let x = Math.floor(t*1000003) ^ (Date.now()<<13);
+  x ^= (x<<13); x ^= (x>>>17); x ^= (x<<5);
+  const idx = n>0 ? Math.abs(x)%n : 0;
+  const name = n>0 ? names[idx] : '24 King Crown';
+
+  // Create the same kind of icon URL as other forges do
+  let svg = '';
+  if(typeof getItemSvg==='function'){
+    try{ svg = getItemSvg(name, idx, 'crypto') || ''; }catch(e){ svg=''; }
+  }
+  if(!svg){
+    // Fallback: build minimal SVG and encode as a data URI so <img src="..."> works
+    const map  = (typeof ICON_PATHS!=='undefined') ? ICON_PATHS : (window.ICON_PATHS || {});
+    const path = (map && map[name]) ? String(map[name]) : '';
+    const raw  = path ? (
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">'+
+      '<defs><linearGradient id="gCrypto" x1="0%" y1="0%" x2="100%" y2="0%">'+
+      '<stop offset="0%" stop-color="#ff62d5"/><stop offset="100%" stop-color="#ffd84a"/></linearGradient></defs>'+
+      '<rect x="4" y="4" width="88" height="88" rx="14" ry="14" fill="url(#gCrypto)" opacity="0.10"/>'+
+      '<g stroke="url(#gCrypto)" stroke-width="3.5" fill="none">'+ path +'</g>'+
+      '</svg>'
+    ) : (
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">'+
+      '<rect x="6" y="6" width="84" height="84" rx="12" fill="#1a1a1a"/>'+
+      '<text x="48" y="52" text-anchor="middle" fill="#ff62d5" font-size="10" font-weight="700">'+(name||'Item')+'</text>'+
+      '</svg>'
+    );
+    try{ svg = 'data:image/svg+xml;utf8,' + encodeURIComponent(raw); }catch(e){ svg=''; }
+  }
+  return { uid:(Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity:'crypto', price:0, baseIdx:idx, svg };
+})();
+const n = names.length;
+// Robust RNG even if Math.random is patched to a constant: use a mixed time-based seed
+let t = 0;
+try{ t = (typeof performance!=='undefined' && performance.now) ? performance.now() : Date.now(); }catch(e){ t = Date.now(); }
+try{ window.__rngCounter = (window.__rngCounter|0) + 1; t += window.__rngCounter; }catch(e){}
+let x = Math.floor(t*1000003) ^ (Date.now()<<13);
+x ^= (x << 13); x ^= (x >>> 17); x ^= (x << 5);
+const idx = n>0 ? Math.abs(x) % n : 0;
+const name = n>0 ? names[idx] : '24 King Crown';
+const svg  = (typeof getItemSvg==='function') ? getItemSvg(name, idx, 'crypto') : '';
+return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), name, rarity:'crypto', price:0, baseIdx:idx, svg };
+}
 
     function checkCryptoForge(){
       try{
@@ -4876,8 +4843,6 @@ function _randomCrypto(){
   }catch(e){}
 })();
 </script>
-
-
 <script>
 /* LA_DODGER_FETCH_HOOK v2: gate on baseline so it only triggers after admin starts */
 (function(){
@@ -4914,7 +4879,6 @@ function _randomCrypto(){
   }catch(e){}
 })();
 </script>
-
 <script>
 // LA_DODGER_LATE_HOOK: ensure enqueue is hooked even if defined later
 (function(){
@@ -4950,10 +4914,7 @@ function _randomCrypto(){
   }
 })();
 </script>
-
-
-  <audio id="ziteMusic" src="flex_music/dodger_event_music.mp3" preload="auto" style="display:none"></audio>
-
+<audio id="ziteMusic" preload="auto" src="flex_music/dodger_event_music.mp3" style="display:none"></audio>
 <script>
 
 // === Zite Event Music (autoplay with graceful fallback) ===
@@ -5013,24 +4974,20 @@ function _randomCrypto(){
 })();
 
 </script>
-
-
 <!-- Inventory Filter Mini Sheet -->
-<div id="invFilterSheet" class="inv-filter-sheet" aria-hidden="true" role="dialog" aria-labelledby="invFilterTitle">
-  <header>
-    <div id="invFilterTitle">Show in inventory</div>
-    <button id="invFilterClose" aria-label="Close inventory filters">Close</button>
-  </header>
-  <div class="opts" id="invFilterOptions">
-    <!-- checkboxes will be injected by script -->
-  </div>
-  <div class="actions">
-    <button class="all" id="invFilterAll">Select all</button>
-    <button class="clear" id="invFilterClear">Clear</button>
-  </div>
+<div aria-hidden="true" aria-labelledby="invFilterTitle" class="inv-filter-sheet" id="invFilterSheet" role="dialog">
+<header>
+<div id="invFilterTitle">Show in inventory</div>
+<button aria-label="Close inventory filters" id="invFilterClose">Close</button>
+</header>
+<div class="opts" id="invFilterOptions">
+<!-- checkboxes will be injected by script -->
 </div>
-
-
+<div class="actions">
+<button class="all" id="invFilterAll">Select all</button>
+<button class="clear" id="invFilterClear">Clear</button>
+</div>
+</div>
 <script>
 (function(){
   const CATS = [
@@ -5186,8 +5143,6 @@ function _randomCrypto(){
   });
 })();
 </script>
-
-
 <script>
 // Remove Dodgers Event UI while preserving data/items
 (function(){
@@ -5283,7 +5238,6 @@ function _randomCrypto(){
   });
 })();
 </script>
-
 <script>
 (function(){
   try{
@@ -5426,5 +5380,443 @@ function _randomCrypto(){
   }catch(e){ /* no-op */ }
 })();
 </script>
-</body>
+<!-- ===== Forge Page (overlay) – added by update v92 ===== -->
+<style>
+  /* Vertical tool bar anchored to inventory (will be positioned by JS) */
+  #toolBarArea{
+    position:fixed; z-index:12;
+    display:flex; flex-direction:column-reverse; gap:12px;
+    align-items:center; justify-content:flex-end;
+  }
+  #forgeOpenBtn{
+    width:64px; height:64px; border-radius:18px;
+    display:grid; place-items:center;
+    background:#ffd24a; border:4px solid rgba(0,0,0,.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    cursor:pointer;
+  }
+  #forgeOpenBtn img{ width:70%; height:70%; object-fit:contain; }
+
+  /* Forge overlay base */
+  #forgeOverlay{ display:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; pointer-events:none; }
+  #forgeOverlay.show{ display:flex !important; }
+  #forgeOverlay .sheet{ pointer-events:auto; }
+
+  #forgeOverlay .sheet{
+    width:min(1120px,96%);
+    background:linear-gradient(#f6b374,#f4946a);
+    border-radius:30px; border:6px solid #212127; color:#111;
+    position:relative; overflow:hidden;
+    margin-bottom:160px; /* keep clear of bottom inventory */
+  }
+  #forgeOverlay h2{
+    margin:0 0 6px; font-family:"Russo One"; font-size:52px;
+    text-align:center; color:#fff; text-shadow:0 2px 0 rgba(0,0,0,.45);
+    letter-spacing:1px;
+  }
+
+  .forge-wrap{ display:grid; grid-template-columns:260px 1fr; gap:18px; }
+  .forge-left{
+    background:#25252b; border:4px solid #111; border-radius:24px; padding:18px; color:#e8e8ee;
+  }
+  .forge-left h3{ margin:0 0 6px; color:#ffd24a; font-size:32px; font-family:"Russo One"; }
+  .forge-left .rule{ margin:16px 0; font-weight:900; }
+  .forge-left .rule span{ display:block; opacity:.85; font-weight:700; }
+
+  .forge-grid{
+    display:grid; grid-template-columns:1fr auto 1fr; gap:18px; align-items:center;
+  }
+  .grid-4{
+    display:grid; grid-template-columns:repeat(2, 200px); grid-template-rows:repeat(2, 180px); gap:18px;
+    background:rgba(255,255,255,.08); padding:16px; border-radius:24px; border:6px solid #f8c24a;
+  }
+  .forge-slot,.result-slot{
+    background:#4b4b52; border-radius:22px; border:6px solid #2b2b31;
+    display:grid; place-items:center; position:relative; color:#fff; font-weight:800;
+  }
+  .forge-slot::after{ content:attr(data-idx); position:absolute; bottom:10px; right:12px; font-weight:900; font-size:28px; color:#ffd24a; text-shadow:0 2px 0 rgba(0,0,0,.35); }
+  .forge-slot img, .result-slot img{ width:96px; height:96px; border-radius:14px; }
+  .result-wrap{ display:grid; grid-template-rows:180px auto; gap:14px; }
+  .result-slot{ width:220px; height:180px; border-color:#7c4cff; box-shadow:inset 0 0 0 6px rgba(124,76,255,.35); }
+  #forgeGo{
+    padding:16px 24px; font-weight:900; border-radius:16px;
+    background:linear-gradient(45deg,#ffd86a,#ffb200); border:4px solid rgba(0,0,0,.35); cursor:pointer;
+  }
+  #forgeGo:disabled{ filter:grayscale(1) brightness(.7); cursor:not-allowed; }
+  .closeForge{ position:absolute; right:12px; top:8px; font-size:28px; background:#222; color:#fff; border:none; border-radius:14px; width:44px; height:44px; cursor:pointer; }
+  @media (max-width: 860px){
+    .grid-4{ grid-template-columns:repeat(2, min(46vw,200px)); grid-template-rows:repeat(2, 42vw); }
+    .result-slot{ width:min(50vw,240px); height:min(40vw,180px); }
+  }
+</style>
+<!-- Tool Bar rail (positioned by JS to kiss the inventory edge) -->
+<div id="toolBarArea">
+<button id="forgeOpenBtn" title="Forge">
+<img alt="Forge" src="icons/forge_icon.png">
+</img></button>
+</div>
+<!-- Forge Overlay -->
+<div aria-hidden="true" class="overlay" id="forgeOverlay">
+<div aria-labelledby="forgeTitle" aria-modal="true" class="sheet" role="dialog">
+<button aria-label="Close Forge" class="closeX closeForge">✕</button>
+<h2 id="forgeTitle">FORGE</h2>
+<div class="forge-wrap">
+<div class="forge-left">
+<h3>MYTHIC</h3>
+<div class="rule">4 LEGENDARY = <span>1 RANDOM MYTHIC</span></div>
+<h3 style="color:#7fefff">EXOTIC</h3>
+<div class="rule">4 LEGACY = <span>1 RANDOM EXOTIC</span></div>
+<h3 style="color:#ff62d5">CRYPTO</h3>
+<div class="rule">2 MYTHIC + 2 EXOTIC = <span>1 RANDOM CRYPTO</span></div>
+<div style="opacity:.7;margin-top:10px">Tip: click an inventory item, then click a slot to place it.</div>
+</div>
+<div class="forge-grid">
+<div class="grid-4">
+<div class="forge-slot" data-idx="1"></div>
+<div class="forge-slot" data-idx="2"></div>
+<div class="forge-slot" data-idx="3"></div>
+<div class="forge-slot" data-idx="4"></div>
+</div>
+<div>
+<button disabled="" id="forgeGo">FORGE</button>
+</div>
+<div class="result-wrap">
+<div class="result-slot" id="forgeResult"></div>
+<div style="text-align:center;font-weight:900;opacity:.85">RESULT</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  const $ = (s)=>document.querySelector(s);
+  const $$ = (s)=>Array.from(document.querySelectorAll(s));
+
+  // Has to be *hidden* until opened
+  function openForge(){ const o = $('#forgeOverlay'); o.classList.add('show'); o.setAttribute('aria-hidden','false'); }
+  function closeForge(){ const o = $('#forgeOverlay'); o.classList.remove('show'); o.setAttribute('aria-hidden','true'); }
+  window.openForgePage = openForge; window.closeForgePage = closeForge;
+
+  // Slots
+  const forgeSlots = [null,null,null,null];
+
+  function renderForgeSlots(){
+    $$('.forge-slot').forEach((el, i)=>{
+      const it = forgeSlots[i];
+      el.innerHTML = it ? `<img src="${it.svg}" alt="${(it.name||'Item')}"/>` : '';
+    });
+    (function(){var r=document.getElementById('forgeResult'); if(r && !r.dataset.hold){ r.innerHTML=''; }})();
+    updateForgeButton();
+  }
+
+  function canForge(){
+    const items = forgeSlots.filter(Boolean);
+    if(items.length !== 4) return false;
+    const rar = items.map(i => String(i.rarity||'').toLowerCase());
+    rar.sort();
+    const rarKey = rar.join(',');
+    if(rarKey === 'legendary,legendary,legendary,legendary') return 'mythic';
+    if(rarKey === 'legacy,legacy,legacy,legacy') return 'exotic';
+    const counts = items.reduce((m,i)=>{const r=String(i.rarity||'').toLowerCase(); m[r]=(m[r]||0)+1; return m;},{});
+    if(counts.mythic===2 && counts.exotic===2) return 'crypto';
+    return false;
+  }
+
+  function updateForgeButton(){
+    const r = canForge();
+    const btn = $('#forgeGo');
+    btn.disabled = !r;
+    btn.title = r ? ('Create ' + r.toUpperCase()) : 'Select a valid recipe';
+  }
+
+  function takeFromInventoryByUid(uid){
+    try{
+      const idx = (state.inventory||[]).findIndex(x=>x && x.uid===uid);
+      if(idx>=0) return (state.inventory.splice(idx,1)[0]);
+    }catch(e){}
+    return null;
+  }
+
+  function getRealNames(){
+    try{ if(typeof getRealItemNames==='function') return getRealItemNames(); }catch(e){}
+    try{ if(typeof _getRealItemNames==='function') return _getRealItemNames(); }catch(e){}
+    return Array.isArray(window.ITEM_NAMES)? window.ITEM_NAMES.slice() : [];
+  }
+
+  function makeRandomMythic(){
+    try{ if(typeof createMythicItem==='function'){ const r=createMythicItem(); if(r && r.svg) return r; } }catch(e){}
+    const real = getRealNames();
+    const idx = Math.floor(Math.random()*(real.length||20));
+    const name = real[idx] || 'Mythic Item';
+    const svg  = (typeof getItemSvg==='function') ? getItemSvg(name, idx, 'mythic') : '';
+    return { uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity:'mythic', price:0, baseIdx:idx, svg };
+  }
+  function makeRandomExotic(){
+  try{ if(typeof createRandomNormalExotic==='function'){ const r=createRandomNormalExotic(); if(r && r.svg) return r; } }catch(e){}
+  if(typeof _randomExotic==='function') return _randomExotic();
+    const real = (typeof _getRealItemNames==='function') ? _getRealItemNames() : (Array.isArray(window.ITEM_NAMES)?window.ITEM_NAMES.slice():[]);
+  const idx  = Math.floor(Math.random() * (real.length || 20));
+  const name = real[idx] || '24 King Crown';
+  const svg  = (typeof window.getItemSvg==='function') ? getItemSvg(name, idx, 'exotic') : '';
+  return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), name, rarity:'exotic', price:0, baseIdx:idx, svg };
+}
+  function makeRandomCrypto(){
+  try{
+    if(typeof _randomCrypto==='function'){
+      const r=_randomCrypto();
+      if(r && r.svg) return r;
+    }
+  }catch(e){}
+  // Absolute fallback (should rarely run)
+  const names=(function(){
+    try{
+      if(typeof ICON_PATHS!=='undefined' && ICON_PATHS) return Object.keys(ICON_PATHS);
+      if(typeof window!=='undefined' && window.ICON_PATHS) return Object.keys(window.ICON_PATHS);
+    }catch(e){}
+    try{
+      const list=(typeof ITEM_NAMES!=='undefined')?ITEM_NAMES:(window.ITEM_NAMES||[]);
+      const map =(typeof ICON_PATHS!=='undefined')?ICON_PATHS:(window.ICON_PATHS||{});
+      if(Array.isArray(list) && list.length) return list.filter(n=>Object.prototype.hasOwnProperty.call(map,n));
+    }catch(e){}
+    return [];
+  })();
+  const n = names.length;
+  let t=0; try{ t=(typeof performance!=='undefined' && performance.now)?performance.now():Date.now(); }catch(e){ t=Date.now(); }
+  try{ window.__rngCounter=(window.__rngCounter|0)+1; t+=window.__rngCounter; }catch(e){}
+  let x = Math.floor(t*1000003) ^ (Date.now()<<13); x ^= (x<<13); x ^= (x>>>17); x ^= (x<<5);
+  const idx = n>0 ? Math.abs(x)%n : 0;
+  const name = n>0 ? names[idx] : '24 King Crown';
+
+  let svg='';
+  if(typeof getItemSvg==='function'){
+    try{ svg = getItemSvg(name, idx, 'crypto') || ''; }catch(e){ svg=''; }
+  }
+  if(!svg){
+    const map  = (typeof ICON_PATHS!=='undefined') ? ICON_PATHS : (window.ICON_PATHS || {});
+    const path = (map && map[name]) ? String(map[name]) : '';
+    const raw  = path ? (
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">'+
+      '<defs><linearGradient id="gCrypto" x1="0%" y1="0%" x2="100%" y2="0%">'+
+      '<stop offset="0%" stop-color="#ff62d5"/><stop offset="100%" stop-color="#ffd84a"/></linearGradient></defs>'+
+      '<rect x="4" y="4" width="88" height="88" rx="14" ry="14" fill="url(#gCrypto)" opacity="0.10"/>'+
+      '<g stroke="url(#gCrypto)" stroke-width="3.5" fill="none">'+ path +'</g>'+
+      '</svg>'
+    ) : (
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">'+
+      '<rect x="6" y="6" width="84" height="84" rx="12" fill="#1a1a1a"/>'+
+      '<text x="48" y="52" text-anchor="middle" fill="#ff62d5" font-size="10" font-weight="700">'+(name||'Item')+'</text>'+
+      '</svg>'
+    );
+    try{ svg = 'data:image/svg+xml;utf8,' + encodeURIComponent(raw); }catch(e){ svg=''; }
+  }
+  return { uid:(Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity:'crypto', price:0, baseIdx:idx, svg };
+}
+
+  function _randomExotic(){
+// Build a loot pool strictly from icon-backed items
+const names = (function(){
+  try{
+    if (typeof ICON_PATHS !== 'undefined' && ICON_PATHS) return Object.keys(ICON_PATHS);
+    if (typeof window !== 'undefined' && window.ICON_PATHS) return Object.keys(window.ICON_PATHS);
+  }catch(e){}
+  try{
+    const list = (typeof ITEM_NAMES!=='undefined') ? ITEM_NAMES : (window.ITEM_NAMES || []);
+    const map  = (typeof ICON_PATHS!=='undefined') ? ICON_PATHS : (window.ICON_PATHS || {});
+    if (Array.isArray(list) && list.length) return list.filter(n => Object.prototype.hasOwnProperty.call(map, n));
+  }catch(e){}
+  return [];
+})();
+const n = names.length;
+const idx = n>0 ? Math.floor(Math.random()*n) : 0;
+const name = n>0 ? names[idx] : '24 King Crown';const svg  = (typeof getItemSvg==='function') ? getItemSvg(name, idx, 'exotic') : '';
+return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), name, rarity:'exotic', price:0, baseIdx:idx, svg };
+}
+
+function doForge(){
+    const outType = canForge();
+    if(!outType) return;
+    // consume inputs
+    forgeSlots.forEach((it, i)=> forgeSlots[i]=null);
+    // create result
+    let res=null;
+    if(outType==='mythic') res = makeRandomMythic();
+    else if(outType==='exotic') res = makeRandomExotic();
+    else if(outType==='crypto') res = makeRandomCrypto();
+
+    if(res){
+      const slot = document.getElementById('forgeResult');
+      if(slot){
+        try{ slot.dataset.hold = '1'; }catch(e){}
+        // Show the icon + name for 3 seconds
+        slot.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;">'
+          + '<img src=\"' + (res.svg||'') + '\" alt=\"' + (res.name||'Item') + '\" style=\"width:96px;height:96px;border-radius:14px;\"/>'
+          + '<div style=\"font-weight:800;font-size:14px;opacity:.9;\">' + String(res.name||'ITEM').toUpperCase() + '</div>'
+          + '</div>';
+      }
+
+      // Add to inventory and persist
+      window.state = window.state || {};
+      state.inventory = state.inventory || [];
+      state.inventory.push(res);
+      if(typeof recalcEPS==='function') try{ recalcEPS(); }catch(e){}
+      if(typeof renderInventory==='function') try{ renderInventory(); }catch(e){}
+      if(typeof save==='function') try{ save(); }catch(e){}
+
+      // Clear the preview after 3 seconds, keep item in inventory
+      try{
+        if(window.__forgeResultTimer) clearTimeout(window.__forgeResultTimer);
+        window.__forgeResultTimer = setTimeout(function(){
+          var s = document.getElementById('forgeResult');
+          if(s){ s.innerHTML = ''; try{ delete s.dataset.hold; }catch(e){} }
+        }, 3000);
+      }catch(e){}
+    }
+    renderForgeSlots();
+}
+
+  function attachSlotHandlers(){
+    $$('.forge-slot').forEach((el, i)=>{
+      el.addEventListener('click', ()=>{
+        const sel = window.state && state.selectedItemUid;
+        if(sel){
+          const obj = (state.inventory||[]).find(x=>x && x.uid===sel);
+          if(!obj) return;
+          if(forgeSlots[i]) state.inventory.push(forgeSlots[i]); // return to inv
+          forgeSlots[i] = takeFromInventoryByUid(sel) || obj;
+          state.selectedItemUid = null;
+          if(typeof renderInventory==='function') try{ renderInventory(); }catch(e){}
+          renderForgeSlots();
+          return;
+        }
+        if(forgeSlots[i]){ // no selection: remove from slot
+          state.inventory.push(forgeSlots[i]); forgeSlots[i]=null;
+          if(typeof renderInventory==='function') try{ renderInventory(); }catch(e){}
+          renderForgeSlots();
+        }
+      });
+    });
+  }
+
+  // Position the tool rail so it kisses the inventory's right edge
+  function getInventoryEl(){
+    return document.querySelector('.inventory') ||
+           document.querySelector('#inventory') ||
+           document.querySelector('.inventory-wrap');
+  }
+  function positionToolbar(){
+    const rail = document.getElementById('toolBarArea');
+    const inv  = getInventoryEl();
+    if(!rail || !inv) return;
+    const r = inv.getBoundingClientRect();
+    const gap = -2; // negative so it visually touches even with shadows
+    rail.style.left   = (r.right + gap) + 'px';
+    rail.style.right  = '';
+    rail.style.top    = '';
+    rail.style.bottom = (window.innerHeight - r.bottom) + 'px';
+    rail.style.maxHeight = Math.max(0, r.top - 8) + 'px';
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    // open/close wiring
+    document.getElementById('forgeOpenBtn')?.addEventListener('click', ()=>{
+      if(typeof openPage==='function'){ try{ openPage('forge'); }catch(e){} }
+      openForge();
+    });
+    document.querySelector('#forgeOverlay .closeForge')?.addEventListener('click', closeForge);
+    document.getElementById('forgeGo')?.addEventListener('click', doForge);
+    attachSlotHandlers();
+    renderForgeSlots();
+    // Place toolbar correctly
+    positionToolbar();
+    window.addEventListener('resize', positionToolbar);
+    if(typeof window.renderInventory === 'function'){
+      const orig = window.renderInventory;
+      window.renderInventory = function(){
+        try{ return orig.apply(this, arguments); }
+        finally{ try{ positionToolbar(); }catch(e){} }
+      }
+    }
+    const obs = new MutationObserver(positionToolbar);
+    obs.observe(document.body, { childList:true, subtree:true });
+  });
+})();
+</script>
+<!-- ===== end Forge Page addition v92 ===== -->
+<script>
+(function(){
+  // Never show these specific forge buttons
+  var BLOCK_IDS = ['exoticForgeBtn','cryptoForgeBtn','mythicForgeBtn'];
+  function nuke(root){
+    root = root || document;
+    // Remove by ID
+    BLOCK_IDS.forEach(function(id){
+      var el = root.getElementById ? root.getElementById(id) : document.getElementById(id);
+      if(el){ try{ el.remove(); }catch(e){ el.style.display='none'; } }
+      // also querySelectorAll in case of duplicates
+      try{
+        root.querySelectorAll('#'+id).forEach(function(n){ try{ n.remove(); }catch(e){ n.style.display='none'; } });
+      }catch(e){}
+    });
+    // Remove by text content: "FORGE", "FORGE MYTHIC", "FORGE EXOTIC", "FORGE CRYPTO"
+    var rx = /^(forge(\s+(mythic|exotic|crypto))?)$/i;
+    try{
+      root.querySelectorAll('button').forEach(function(b){
+        var t = (b.innerText||'').trim();
+        // avoid removing "Forge Page" or the main overlay action buttons inside the Forge Page
+        if (/forge\s*page/i.test(t)) return;
+        if (rx.test(t) || /forge\s+mythic|forge\s+exotic|forge\s+crypto/i.test(t)) {
+          // If this button lives inside the Forge overlay, keep it
+          var keep = false;
+          var p = b.parentElement;
+          while(p){
+            if (p.id === 'forgeOverlay') { keep = true; break; }
+            p = p.parentElement;
+          }
+          if(!keep){
+            try{ b.remove(); }catch(e){ b.style.display='none'; }
+          }
+        }
+      });
+    }catch(e){}
+  }
+
+  function neutralizeFns(){
+    // Neutralize pedestal-related forge checks only (do NOT touch forge page functions)
+    ['checkExoticForge','checkCryptoForge','checkForge'].forEach(function(name){
+      try{
+        if (typeof window[name] === 'function'){
+          window[name] = function(){ /* disabled to enforce forge via Forge Page only */ };
+        }
+      }catch(e){}
+    });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){
+      neutralizeFns();
+      nuke(document);
+    });
+  } else {
+    neutralizeFns();
+    nuke(document);
+  }
+
+  // Keep future dynamic insertions removed
+  try{
+    var mo = new MutationObserver(function(muts){
+      for (var i=0;i<muts.length;i++){
+        var m = muts[i];
+        if (m.addedNodes && m.addedNodes.length){
+          for (var j=0;j<m.addedNodes.length;j++){
+            var n = m.addedNodes[j];
+            if (n.nodeType === 1){ nuke(n); }
+          }
+        }
+      }
+    });
+    mo.observe(document.documentElement, {childList:true, subtree:true});
+  }catch(e){}
+})();
+</script></body>
 </html>
