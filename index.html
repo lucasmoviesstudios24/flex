@@ -2,8 +2,6 @@
 
 <html lang="en">
 <head>
-<script>window.__flexSessionStart=window.__flexSessionStart||(typeof performance!=='undefined'&&performance.timeOrigin?Math.floor(performance.timeOrigin):Date.now());</script>
-
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Flex — Shop &amp; Flex Game (Inventory at Bottom)</title>
@@ -1073,7 +1071,91 @@ body.bg-sunrise{
   visibility: hidden !important;
   pointer-events: none !important;
 }
-</style></head>
+</style>
+<!-- Stranger Things Event styles -->
+<style>
+.icon-stranger{
+  position:relative;
+  width:64px;height:64px;
+  border-radius:18px;
+  background:#0b0b0b;
+  box-shadow:0 6px 16px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.06);
+  overflow:hidden;
+}
+.icon-stranger::after{
+  content:"";
+  position:absolute; inset:14%;
+  background: var(--stranger-icon) center/contain no-repeat;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.35));
+  border-radius:14px;
+}
+.icon-stranger .fallback-text{
+  position:absolute; inset:0; display:grid; place-items:center;
+  font-family:'Bungee', system-ui, sans-serif; font-weight:900;
+  color:#d21d1d; letter-spacing:1px;
+}
+#strangerOverlay .sheet{
+  width:min(980px, 92vw);
+  background: radial-gradient(1200px 600px at 50% -10%, #5b0f12 0%, #2b0a0b 46%, #160507 100%);
+  border:4px solid #111; border-radius:22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  color:#fff;
+}
+#strangerTitle{
+  font-family:'Bungee', system-ui, sans-serif;
+  text-align:center;
+  color:#ffd200;
+  text-shadow:0 4px 0 #5c0d0d, 0 10px 35px rgba(255,215,0,.25);
+  letter-spacing:2px;
+}
+.stranger-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; padding:6px 16px 16px; }
+@media (max-width:860px){ .stranger-grid{ grid-template-columns:1fr; } }
+.stranger-card{
+  display:flex; flex-direction:column; gap:8px; padding:16px;
+  background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.35));
+  border:2px solid rgba(255,255,255,.06); border-radius:16px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.stranger-desc{ font-weight:800; opacity:.9; line-height:1.2; }
+.stranger-price{ font-weight:900; color:#ffd84a; text-shadow:0 2px 0 rgba(0,0,0,.35); }
+.stranger-buy{ padding:9px 14px; font-weight:900; border-radius:12px; border:none; cursor:pointer;
+  background:linear-gradient(180deg,#ffa600,#ff6a00); color:#111; box-shadow:0 6px 18px rgba(255,165,0,.25);
+}
+#strangerShopLogo{ height:120px; filter: drop-shadow(0 8px 30px rgba(255,216,74,.35)); opacity:.96; }
+.rar.t-demon{
+  background:linear-gradient(45deg,#ff2b2b,#ff7a7a);
+  color:#300; border:2px solid rgba(255,255,255,.25); box-shadow:0 3px 10px rgba(255,0,0,.25);
+}
+.demonized{ animation: demonBeat 1.25s infinite; }
+@keyframes demonBeat{
+  0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(255,0,0,.35); }
+  50%{ transform:scale(1.045); box-shadow:0 0 24px 12px rgba(255,0,0,.20); }
+  100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(255,0,0,.35); }
+}
+.cosmic-reveal#strangerReveal .card{ background:#1a0a0c; border-color:#0f0405; }
+
+/* Toolbar behind-overlay blur fix: drop below overlay so it dims/blur like the others */
+#toolBarArea{ z-index: 8 !important; }
+</style>
+
+
+<!-- override: enlarge Stranger Things icon on button -->
+<style>
+  .icon-stranger::after{ inset:6% !important; }
+</style>
+
+
+<!-- override: max-size Stranger Things icon and hide fallback text -->
+<style>
+  /* Fill the button with the icon artwork */
+  .icon-stranger::after{ inset:0% !important; }
+  /* Remove the 'ST' letters behind the icon */
+  .icon-stranger .fallback-text{ display:none !important; }
+</style>
+
+
+<!-- v112 demon-persist patch: include `demon` in save() for inventory and placed items -->
+</head>
 <body>
 <div class="event-row" id="eventRow"></div>
 <div class="game">
@@ -1562,7 +1644,7 @@ async function save(){
   const payload = {
     money: state.money,
     eps: state.eps,
-    inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx,isEgg:it.isEgg,eggType:it.eggType,petType:it.petType,petEps:it.petEps,svg:it.svg})),
+    inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx,isEgg:it.isEgg,eggType:it.eggType,petType:it.petType,petEps:it.petEps,})),
     stands: state.stands,
     shop: state.shop,
     fastMode: state.fastMode,
@@ -1584,7 +1666,7 @@ async function save(){
   };
   for(const k in state.placed){
     const it = state.placed[k];
-    if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx, svg: it.svg };
+    if(it) payload.placed[k] = { uid: it.uid, name: it.name, rarity: it.rarity, price: it.price, baseIdx: it.baseIdx, demon: !!it.demon, svg: it.svg };
   }
   // serialize pet stands
   state.petStands.forEach((ps, idx) => {
@@ -4864,7 +4946,7 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
             const list = (data && Array.isArray(data.list)) ? data.list : [];
             for (const m of list){
               const ts = (m && m.ts) || 0;
-              if((m && (m.op === 'dodger_event' || m.op === 'LA_DODGER_EVENT')) && ts > lastSeen && ts >= (window.__flexSessionStart||0)){
+              if((m && (m.op === 'dodger_event' || m.op === 'LA_DODGER_EVENT')) && ts > lastSeen){
                 lastSeen = ts;
                 try{ localStorage.setItem('la_dodgers_event_last_ts', String(lastSeen)); }catch(e){}
                 if(typeof window.startDodgerLiveEvent === 'function' && !window.__laEventRunning){
@@ -4895,7 +4977,7 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
           const gateU = Number(localStorage.getItem('flex_msg_lastU')||0);
           const gate = Math.max(gateG, gateU);
           if(msg && (msg.op==='dodger_event' || msg.op==='LA_DODGER_EVENT' || /(la\s*dodger).*event/i.test(String(msg.text||'')))){
-            if(((msg.ts||0) > gate) && ((msg.ts||0) >= (window.__flexSessionStart||0)) && typeof window.startDodgerLiveEvent==='function' && !window.__laEventRunning){
+            if((msg.ts||0) > gate && typeof window.startDodgerLiveEvent==='function' && !window.__laEventRunning){
               window.__laEventRunning = true;
               try{ window.startDodgerLiveEvent(msg); }catch(e){}
             }
@@ -5821,106 +5903,630 @@ function doForge(){
   }catch(e){}
 })();
 </script>
-<style>
+<!-- Stranger Things Event Overlay -->
+<div aria-hidden="true" class="overlay" id="strangerOverlay">
+  <div aria-labelledby="strangerTitle" aria-modal="true" class="sheet" role="dialog">
+    <button aria-label="Close" class="closeX" id="closeStranger">✕</button>
+    <h2 id="strangerTitle">STRANGER THINGS</h2>
+    <div class="stranger-grid">
+      <div class="stranger-card" id="cardHawkinsPack">
+        <h3>Hawkins Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
+        <div class="stranger-desc">Open the pack to receive a random item in EPIC/LEGENDARY/UNIQUE/MYTHIC from the Hawkins set.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="stranger-price">$2,000,000,000</div>
+          <button class="stranger-buy" id="buyHawkinsPack">Purchase</button>
+        </div>
+      </div>
+      <div class="stranger-card" id="cardHawkinsBG">
+        <h3>Welcome to Hawkins</h3>
+        <div class="stranger-desc">Themed background; appears in Backgrounds after purchase.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="stranger-price">$10,000,000,000,000</div>
+          <button class="stranger-buy" id="buyHawkinsStyle">Purchase</button>
+        </div>
+      </div>
+      <div class="stranger-card">
+        <h3>Demoegg</h3>
+        <div class="stranger-desc">Hatches: Dart (68% / 25,000 EPS), Demobat (30% / 45,000 EPS), Demodog (2% / 65,000 EPS). Demodog every 20 minutes 50% morph of a placed item adds DEMON badge + red pulse +15,000 EPS to that item.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+          <div class="stranger-price">$3,000,000,000</div>
+          <button class="stranger-buy" id="buyDemoEgg">Purchase</button>
+        </div>
+      </div>
+      <div class="stranger-card" style="display:grid;place-items:center;">
+        <img alt="Stranger Things" id="strangerShopLogo"/>
+      </div>
+    </div>
+  </div>
+</div>
 
-/* === Stranger Things Live Event (video tab overlay) === */
-#stEventBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2147483600; display: none; }
-#stEventBackdrop.show { display:block; }
-#stEventTab { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(96vw, 1200px); height: min(96vh, 720px);
-  background: #0b0b0b; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); overflow: hidden; border: 2px solid #ef4444; }
-#stEventHeader { position:absolute; top:0; left:0; right:0; height:56px; display:flex; align-items:center; justify-content:space-between;
-  padding: 0 14px; background: linear-gradient(180deg, rgba(239,68,68,.15), rgba(0,0,0,0)); color:#fff; font-weight:800; letter-spacing:.5px; z-index:2; }
-#stEventHeader .title { display:flex; align-items:center; gap:10px; font-size:18px; }
-#stEventHeader .title img { width:28px; height:28px; object-fit:contain; }
-#stEventVideo { position:absolute; top:0; left:0; right:0; bottom:0; width: 100%; height: 100%; object-fit: contain; background: #000; }
-#stEnableSound { position:absolute; right:14px; top:10px; padding: 8px 12px; border: none; border-radius: 10px; background: #fff; color:#111;
-  font-weight: 800; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
-#stCountdown { position:absolute; bottom:10px; right:14px; font-size:12px; color:#fff; opacity:.8; background: rgba(0,0,0,.35);
-  padding:6px 10px; border-radius:10px; }
+<div class="cosmic-reveal" id="strangerReveal">
+  <div class="card">
+    <div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
+    <img alt="reward" id="strangerRevealImg"/>
+    <div id="strangerRevealName" style="font-weight:900;margin-top:6px;"></div>
+    <div class="rar" id="strangerRevealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
+  </div>
+</div>
 
-</style>
+
 <script>
-
 (function(){
-  if(window.__stEventInstalled) return; window.__stEventInstalled = true;
-  function banner(msg){ try{ window.__queue && window.__queue({ t: msg, style:'success' }); }catch(e){ try{ alert(msg); }catch(_){ } } }
-  function show(el){ if(el&&el.classList){ el.classList.add('show'); el.setAttribute('aria-hidden','false'); } }
-  function hide(el){ if(el&&el.classList){ el.classList.remove('show'); el.setAttribute('aria-hidden','true'); } }
-
-  async function awardMindFlayer(){
-    try{
-      const KEY = 'st_event_mindflayer_awarded';
-      if(localStorage.getItem(KEY)==='1') return;
-      window.state = window.state || {};
-      state.inventory = state.inventory || [];
-      if(state.inventory.some(it => it && it.name === 'Mind Flayer')){ localStorage.setItem(KEY,'1'); return; }
-      const newItem = { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)),
-        name: 'Mind Flayer', rarity: 'crypto', price: 0, baseIdx: 0, svg: 'stranger_things_items/mind_flayer.png' };
-      state.inventory.push(newItem);
-      if(typeof save === 'function') await save();
-      if(typeof renderInventory === 'function') try{ renderInventory(); }catch(e){}
-      localStorage.setItem(KEY,'1');
-      banner('Mind Flayer added to your inventory!');
-    }catch(e){ console.warn('Award failed', e); }
+  function setStrangerEventIcon(btnEl){
+    const candidate = 'icons/stranger_things_icon.png';
+    const img = new Image();
+    img.onload = function(){
+      try{
+        const btn = btnEl || document.getElementById('openStranger');
+        if(btn) btn.style.setProperty('--stranger-icon', "url('"+candidate+"')");
+        const shop = document.getElementById('strangerShopLogo'); if(shop){ shop.src = candidate; }
+      }catch(e){}
+    };
+    img.onerror = function(){};
+    img.src = candidate;
   }
 
-  window.startDodgerLiveEvent = function(){
-    try { banner('Live Event Starting Now'); }catch(e){}
-    var back = document.getElementById('stEventBackdrop');
-    if(!back){
-      var wrap = document.createElement('div');
-      wrap.innerHTML = "\n<!-- Stranger Things Live Event overlay -->\n<div id=\"stEventBackdrop\" aria-hidden=\"true\">\n  <div id=\"stEventTab\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"stEventTitle\">\n    <div id=\"stEventHeader\">\n      <div class=\"title\">\n        \n        <span id=\"stEventTitle\">Live Event</span>\n      </div>\n      <button id=\"stEnableSound\" type=\"button\" style=\"display:none\">Enable sound</button>\n      <div id=\"stCountdown\"></div>\n    </div>\n    <video id=\"stEventVideo\" playsinline preload=\"auto\"></video>\n  </div>\n</div>\n";
-      document.body.appendChild(wrap.firstElementChild);
-      back = document.getElementById('stEventBackdrop');
+  var __hawkinsBgURL = null;
+  function ensureHawkinsBgURL(cb){
+    if(__hawkinsBgURL){ cb(__hawkinsBgURL); return; }
+    const url = 'background_files/hawkins_style.png';
+    const test = new Image();
+    test.onload = function(){ __hawkinsBgURL = url; writeCss(); cb(url); };
+    test.onerror = function(){ __hawkinsBgURL = url; writeCss(); cb(url); };
+    test.src = url;
+    function writeCss(){
+      try{
+        let st = document.getElementById('hawkinsBgStyle');
+        if(!st){ st = document.createElement('style'); st.id = 'hawkinsBgStyle'; document.head.appendChild(st); }
+        st.textContent = "body.bg-hawkins{background:url('"+url+"') center/cover no-repeat fixed !important;}";
+      }catch(e){}
     }
-    var vid = document.getElementById('stEventVideo');
-    var enBtn = document.getElementById('stEnableSound');
-    var countdown = document.getElementById('stCountdown');
+  }
 
-    const SRC = 'live_event/stranger_things_live.mp4';
-    vid.src = SRC; vid.currentTime = 0; vid.loop = false; vid.controls = false; vid.muted = true; vid.playbackRate = 1;
-    show(back);
-
-    function tryPlay(){
-      vid.play().then(()=>{ if(enBtn) enBtn.style.display = 'inline-block'; })
-                 .catch(()=>{ if(enBtn) enBtn.style.display = 'inline-block'; });
+  function ensureEventButton(){
+    if(document.getElementById('openStranger')) return;
+    const row = document.querySelector('.event-row') || document.getElementById('eventRow');
+    if(row){
+      const btn = document.createElement('button');
+      btn.className = 'icon-btn icon-stranger';
+      btn.id = 'openStranger';
+      btn.title = 'Stranger Things Event';
+      btn.innerHTML = '<span class="fallback-text">ST</span>';
+      row.appendChild(btn);
+      btn.addEventListener('click', openOverlay);
+      setStrangerEventIcon(btn);
+    } else {
+      const b = document.createElement('button');
+      b.className = 'icon-btn icon-stranger';
+      b.id = 'openStranger';
+      b.title = 'Stranger Things Event';
+      b.style.position = 'fixed';
+      b.style.left = '16px';
+      b.style.top = '28px';
+      b.style.width = '72px';
+      b.style.height = '72px';
+      b.style.borderRadius = '18px';
+      b.style.zIndex = '20';
+      b.innerHTML = '<span class="fallback-text">ST</span>';
+      document.body.appendChild(b);
+      b.addEventListener('click', openOverlay);
+      setStrangerEventIcon(b);
     }
-    tryPlay();
+  }
 
-    if(enBtn){
-      enBtn.onclick = function(){
-        try{ vid.muted = false; vid.play().catch(()=>{}); enBtn.style.display = 'none'; }catch(e){}
-      };
-    }
+  function openOverlay(){
+    document.getElementById('strangerOverlay').classList.add('show');
+    document.getElementById('strangerOverlay').setAttribute('aria-hidden','false');
+    setStrangerEventIcon();
+    updateHawkinsStyleUI();
+  }
 
-    const total = 233; // 3:53
-    let last = performance.now();
-    let elapsed = 0;
-    function step(now){
-      const dt = (now - last)/1000; last = now;
-      if(!isNaN(vid.duration) && isFinite(vid.currentTime)){ elapsed = Math.max(elapsed, vid.currentTime); }
-      else { elapsed += dt; }
-      const remain = Math.max(0, Math.ceil(total - elapsed));
-      const mm = String(Math.floor(remain/60)).padStart(1,'0');
-      const ss = String(remain%60).padStart(2,'0');
-      if(countdown){ countdown.textContent = mm+':'+ss; }
-      if(remain <= 0) return; requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
+  document.getElementById('closeStranger')?.addEventListener('click', ()=>{
+    document.getElementById('strangerOverlay').classList.remove('show');
+    document.getElementById('strangerOverlay').setAttribute('aria-hidden','true');
+  });
 
-    function finish(){
-      hide(back);
-      awardMindFlayer();
-      try{ vid.pause(); }catch(e){}
-      vid.removeAttribute('src');
-      window.__laEventRunning = false;
+  const HAWKINS_PACK_COST = 2_000_000_000;
+  const hawkinsItems = [
+    {name:'Bat', file:'bat.png'},
+    {name:'Bike', file:'bike.png'},
+    {name:'Code Red', file:'code_red.png'},
+    {name:'Demogorgon', file:'demogorgon.png'},
+    {name:'Dustin Henderson', file:'dustin_henderson.png'},
+    {name:'Hawkins Lab', file:'hawkins_lab.png'},
+    {name:'Jane 11', file:'jane_11.png'},
+    {name:'Jim Hopper', file:'jim_hopper.png'},
+    {name:'Lucas Sinclair', file:'lucas_sinclair.png'},
+    {name:'Max Mayfield', file:'max_mayfield.png'},
+    {name:'Mike Wheeler', file:'mike_wheeler.png'},
+    {name:'Nancy Wheeler', file:'nancy_wheeler.png'},
+    {name:'Scoops Ahoy', file:'scoops_ahoy.png'},
+    {name:'Steve Harrington', file:'steve_harrington.png'},
+    {name:'Vecna', file:'vecna.png'},
+    {name:'Will Byers', file:'will_byers.png'}
+  ];
+  function pickHawkinsRarity(){
+    const table = [['epic',25],['legendary',10],['unique',4],['mythic',1]];
+    const total = table.reduce((s,t)=>s+t[1],0);
+    let r = Math.random()*total;
+    for(const t of table){ if((r -= t[1]) <= 0) return t[0]; }
+    return 'rare';
+  }
+  function revealStrangerReward(obj){
+    try{
+      const ov = document.getElementById('strangerReveal');
+      if(!ov) return;
+      document.getElementById('strangerRevealImg').src = obj.svg;
+      document.getElementById('strangerRevealName').textContent = obj.name;
+      const rr = document.getElementById('strangerRevealRarity');
+      rr.className = 'rar t-'+(String(obj.rarity||'common').toLowerCase());
+      rr.textContent = (window.RARITY && RARITY[String(obj.rarity).toLowerCase()] ? RARITY[String(obj.rarity).toLowerCase()].label : String(obj.rarity||'COMMON').toUpperCase());
+      ov.classList.add('show');
+      setTimeout(()=>{ ov.classList.remove('show'); }, 2400);
+    }catch(e){}
+  }
+  function buyHawkinsPack(){
+    try{
+      if(state.money < HAWKINS_PACK_COST){ alert('Not enough money.'); return; }
+      state.money -= HAWKINS_PACK_COST;
+      const it = hawkinsItems[Math.floor(Math.random()*hawkinsItems.length)];
+      const rar = pickHawkinsRarity();
+      const obj = { uid: uid(), name: it.name, rarity: rar, price:[0,0], baseIdx: Math.floor(Math.random()*9999), svg: 'stranger_things_items/'+it.file };
+      state.inventory.push(obj);
+      revealStrangerReward(obj);
+      if(typeof renderInventory==='function') renderInventory();
+      if(typeof recalcEPS==='function') recalcEPS();
+      if(typeof save==='function') save();
+    }catch(e){ console.error(e); }
+  }
+  document.getElementById('buyHawkinsPack')?.addEventListener('click', buyHawkinsPack);
+
+  const HAWKINS_BG_COST = 10_000_000_000_000;
+  function updateHawkinsStyleUI(){
+    try{
+      const btn = document.getElementById('buyHawkinsStyle');
+      if(!btn) return;
+      const owned = !!((state.unlockedBackgrounds||{}).hawkins);
+      btn.disabled = owned;
+      btn.textContent = owned ? 'Owned' : 'Purchase';
+    }catch(e){}
+  }
+  function buyHawkinsStyle(){
+    try{
+      if((state.unlockedBackgrounds||{}).hawkins) return;
+      if(state.money < HAWKINS_BG_COST){ alert('Not enough money.'); return; }
+      state.money -= HAWKINS_BG_COST;
+      state.unlockedBackgrounds = state.unlockedBackgrounds || {};
+      state.unlockedBackgrounds.hawkins = true;
+      ensureHawkinsBgURL(function(){ 
+        try{ if(typeof window.__renderBgGrid === 'function') window.__renderBgGrid(); }catch(e){}
+        updateHawkinsStyleUI();
+        alert('Hawkins background unlocked! Apply it from Backgrounds.');
+        if(typeof save==='function') save();
+      });
+    }catch(e){}
+  }
+  document.getElementById('buyHawkinsStyle')?.addEventListener('click', buyHawkinsStyle);
+
+  (function extendBgGridForHawkins(){
+    const orig = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if(typeof orig === 'function') orig();
+      try{
+        const g = document.getElementById('bgGrid'); if(!g) return;
+        if(!g.querySelector('[data-hawkinsbg]')){
+          const el = document.createElement('div');
+          el.setAttribute('data-hawkinsbg','1');
+          el.className = 'bg-tile' + (!((state.unlockedBackgrounds||{}).hawkins)?' locked':'');
+          ensureHawkinsBgURL(function(url){ el.style.cssText = "background:url('"+url+"') center/cover no-repeat;border-color:#5b0f12;"; });
+          el.innerHTML = '<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">HAWKINS</div><button class="buy bg-apply" '+(!((state.unlockedBackgrounds||{}).hawkins)?'disabled':'')+'>Apply</button>';
+          el.querySelector('.bg-apply').onclick = function(){
+            if(!((state.unlockedBackgrounds||{}).hawkins)) return;
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-spaceview','bg-dodger','redblue','bg-crypto','bg-dodgerquests');
+            document.body.classList.add('bg-hawkins');
+            state.selectedBackground = 'hawkins';
+            if(typeof save==='function') save();
+          };
+          g.appendChild(el);
+        }else{
+          const el = g.querySelector('[data-hawkinsbg]');
+          el.classList.toggle('locked', !((state.unlockedBackgrounds||{}).hawkins));
+          const btn = el.querySelector('.bg-apply'); if(btn) btn.disabled = !((state.unlockedBackgrounds||{}).hawkins);
+        }
+      }catch(e){}
+    };
+  })();
+
+  // Demoegg chances
+  try{ window.EGG_COSTS = window.EGG_COSTS || {}; EGG_COSTS.demoegg = 3_000_000_000; }catch(e){}
+  try{
+    window.PET_TABLES = window.PET_TABLES || {};
+    PET_TABLES.demoegg = [
+      { name:'Dart',    chance:0.68, eps:25000 },
+      { name:'Demobat', chance:0.30, eps:45000 },
+      { name:'Demodog', chance:0.02, eps:65000 }
+    ];
+  }catch(e){}
+
+  (function extendPetArt(){
+    const g = window.getPetSvg;
+    window.getPetSvg = function(petName, seed){
+      const map = { "Dart":"dart.png", "Demobat":"demobat.png", "Demodog":"demodog.png" };
+      if(map[petName]) return 'pets/'+map[petName];
+      return typeof g === 'function' ? g(petName, seed) : ('pets/unknown.png');
+    };
+  })();
+
+  document.getElementById('buyDemoEgg')?.addEventListener('click', function(){
+    try{ if(typeof buyEgg === 'function') buyEgg('demoegg'); else alert('Egg shop not available here.'); }catch(e){}
+  });
+
+  (function demodogMorphLoop(){
+    window.state = window.state || {};
+    state.demonTimers = state.demonTimers || {};
+    function step(){
+      try{
+        (state.petStands||[]).forEach((ps, idx)=>{
+          if(!ps || (ps.petType!=='Demodog')){ delete state.demonTimers[idx]; return; }
+          const now = Date.now();
+          if(!state.demonTimers[idx]){
+            state.demonTimers[idx] = now + 20*60*1000;
+          }else if(now >= state.demonTimers[idx]){
+            state.demonTimers[idx] = now + 20*60*1000;
+            if(Math.random() < 0.50){
+              const placedIds = (state.stands||[]).filter(Boolean);
+              if(placedIds.length){
+                const uidPick = placedIds[Math.floor(Math.random()*placedIds.length)];
+                const it = state.placed[uidPick];
+                if(it){
+                  it.demon = true;
+                  if(typeof renderStands==='function') renderStands();
+                  if(typeof recalcEPS==='function') recalcEPS();
+                  if(typeof save==='function') save();
+                }
+              }
+            }
+          }
+        });
+      }catch(e){}
+      setTimeout(step, 1000);
     }
-    vid.addEventListener('ended', finish, { once:true });
-    setTimeout(finish, (total+2)*1000); // safety
-  };
+    setTimeout(step, 1500);
+  })();
+
+  (function hookDemonUI(){
+    const orig = window.renderStands;
+    window.renderStands = function(){
+      if(typeof orig === 'function') orig.apply(this, arguments);
+      try{
+        const standEls = Array.from(document.querySelectorAll('.stands .stand'));
+        (state.stands||[]).forEach((uid, i)=>{
+          if(!uid) return;
+          const it = state.placed[uid]; if(!it) return;
+          const host = standEls[i]; if(!host) return;
+          const p = host.querySelector('.placed'); if(!p) return;
+          if(it.demon){
+            p.classList.add('demonized');
+            if(!p.querySelector('.rar.t-demon')){
+              const s = document.createElement('span');
+              s.className='rar t-demon';
+              s.textContent='DEMON';
+              const container = p.querySelector('div') || p;
+              container.appendChild(s);
+            }
+          }else{
+            p.classList.remove('demonized');
+            const b = p.querySelector('.rar.t-demon'); if(b) b.remove();
+          }
+        });
+      }catch(e){}
+    };
+    setTimeout(()=>{ try{ renderStands(); }catch(e){} }, 0);
+  })();
+
+  (function patchEPS(){
+    const orig = window.recalcEPS;
+    window.recalcEPS = function(){
+      if(typeof orig === 'function') orig.apply(this, arguments);
+      try{
+        const extra = Object.values(state.placed||{}).reduce((s,it)=> s + (it&&it.demon ? 15000 : 0), 0);
+        state.eps = Math.floor((state.eps||0) + extra);
+        const el=document.getElementById('eps'); if(el){ el.textContent = '+ $' + ((state.eps||0).toLocaleString(undefined,{maximumFractionDigits:0})) + ' / sec'; }
+      }catch(e){}
+    };
+  })();
+
+  document.addEventListener('DOMContentLoaded', ()=> { ensureEventButton(); setStrangerEventIcon(); });
+  new MutationObserver(()=> ensureEventButton()).observe(document.body, {childList:true, subtree:true});
 })();
-
 </script>
+
+
+<!-- ===== Stranger Things: Hawkins Pack + Demon Potion update (v109) ===== -->
+<style>
+  /* More complex demon morph animation */
+  .demonized{
+    position: relative;
+    animation: demonBeat 1.1s infinite ease-in-out, demonShake 3s infinite ease-in-out;
+    filter: drop-shadow(0 0 6px rgba(255,0,0,.35)) drop-shadow(0 0 16px rgba(255,0,0,.22));
+  }
+  .demonized::before, .demonized::after{
+    content:"";
+    position:absolute;
+    inset:-6px;
+    border-radius:16px;
+    pointer-events:none;
+  }
+  /* swirling red mist */
+  .demonized::before{
+    background: radial-gradient(60% 60% at 50% 45%, rgba(255,0,0,.28), transparent 60%);
+    mix-blend-mode: screen;
+    animation: demonMist 2.6s infinite ease-in-out;
+  }
+  /* crawling runes */
+  .demonized::after{
+    background: conic-gradient(from 0deg, rgba(255,80,80,.22), transparent 35%, rgba(255,0,0,.18), transparent 60%);
+    -webkit-mask: radial-gradient(70% 70% at 50% 50%, transparent 58%, #000 60%);
+    mask: radial-gradient(70% 70% at 50% 50%, transparent 58%, #000 60%);
+    animation: demonRunes 4s linear infinite;
+    filter: blur(1px);
+  }
+  @keyframes demonBeat{
+    0%{ transform:translateY(0) scale(1); box-shadow:0 0 0 0 rgba(255,0,0,.35); }
+    50%{ transform:translateY(-2px) scale(1.06); box-shadow:0 0 28px 14px rgba(255,0,0,.18); }
+    100%{ transform:translateY(0) scale(1); box-shadow:0 0 0 0 rgba(255,0,0,.35); }
+  }
+  @keyframes demonShake{
+    0%{ transform: translateX(0) rotate(0); }
+    25%{ transform: translateX(0.6px) rotate(-0.2deg); }
+    50%{ transform: translateX(0) rotate(0); }
+    75%{ transform: translateX(-0.6px) rotate(0.2deg); }
+    100%{ transform: translateX(0) rotate(0); }
+  }
+  @keyframes demonMist{
+    0%{ opacity:.15; transform: scale(1); }
+    50%{ opacity:.38; transform: scale(1.06); }
+    100%{ opacity:.15; transform: scale(1); }
+  }
+  @keyframes demonRunes{
+    to{ transform: rotate(360deg); }
+  }
+
+  /* Potion targeting mode: blur everything except pedestals and placed items */
+  body.potion-targeting *:not(.stands):not(.stands *):not(#potionUseBtn){
+    filter: blur(4px) brightness(.8);
+    pointer-events: none !important;
+    user-select: none !important;
+  }
+  body.potion-targeting .stands, 
+  body.potion-targeting .stands *{
+    filter: none !important;
+    pointer-events: auto;
+  }
+  #potionUseBtn{
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 180px; /* just above the bottom inventory bar */
+    z-index: 99;
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 900;
+    cursor: pointer;
+    background: linear-gradient(180deg,#ff3b3b,#ff9a9a);
+    color:#200;
+    box-shadow: 0 8px 24px rgba(255,0,0,.35);
+    display:none;
+  }
+  #potionCancel{
+    position: fixed;
+    left: calc(50% + 120px);
+    transform: translateX(-50%);
+    bottom: 180px;
+    z-index: 99;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background:#333; color:#fff; border:none; font-weight:800; display:none;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  }
+</style>
+<script>
+(function(){
+  window.state = window.state || {};
+
+  // ==== Override Hawkins pack probabilities and add Demon Potion outcome ====
+  function __pickHawkinsOutcome(){
+    // base weights (keep existing epic/legendary), change unique/mythic, add crypto and potion
+    const table = [
+      {type:'rarity', key:'epic',      w:25},
+      {type:'rarity', key:'legendary', w:10},
+      {type:'rarity', key:'unique',    w:6},
+      {type:'rarity', key:'mythic',    w:3},
+      {type:'rarity', key:'crypto',    w:1},
+      {type:'potion', key:'demon',     w:0.5}
+    ];
+    const total = table.reduce((s,t)=>s+t.w,0);
+    let r = Math.random()*total;
+    for(const t of table){ r -= t.w; if(r <= 0) return t; }
+    return table[0];
+  }
+
+  // Replace buyHawkinsPack to honor the new table + potion drop
+  (function overrideBuy(){
+    const orig = window.buyHawkinsPack;
+    const items = (function(){
+      // try to access defined list
+      try{ return (window.hawkinsItems || []).slice(); }catch(e){ return []; }
+    })();
+    window.buyHawkinsPack = function(){
+      try{
+        const cost = (typeof HAWKINS_PACK_COST!=='undefined' ? HAWKINS_PACK_COST : 2000000000);
+        if(state.money < cost){ alert('Not enough money.'); return; }
+        state.money -= cost;
+
+        const outcome = __pickHawkinsOutcome();
+        if(outcome.type === 'potion'){
+          const obj = {
+            uid: uid(),
+            name: 'Demon Potion',
+            // no rarity per request
+            potionType: 'demon',
+            isDemonPotion: true,
+            price:[0,0],
+            baseIdx: Math.floor(Math.random()*9999),
+            svg: 'icons/demon_potion.png'
+          };
+          state.inventory.push(obj);
+          // Reveal: show name + custom label
+          try{
+            const rr = { name: obj.name, svg: obj.svg, rarity: 'common' };
+            if(typeof revealStrangerReward==='function') revealStrangerReward(rr);
+          }catch(e){}
+        }else{
+          // normal item roll with requested rarity
+          const list = items.length ? items : [
+            {name:'Bat', file:'bat.png'},
+            {name:'Bike', file:'bike.png'}
+          ];
+          const it = list[Math.floor(Math.random()*list.length)];
+          const rar = outcome.key; // epic/legendary/unique/mythic/crypto
+          const obj = { uid: uid(), name: it.name, rarity: rar, price:[0,0], baseIdx: Math.floor(Math.random()*9999), svg: 'stranger_things_items/'+it.file };
+          state.inventory.push(obj);
+          try{ if(typeof revealStrangerReward==='function') revealStrangerReward(obj); }catch(e){}
+        }
+
+        if(typeof renderInventory==='function') renderInventory();
+        if(typeof recalcEPS==='function') recalcEPS();
+        if(typeof save==='function') save();
+      }catch(e){ console.error(e); }
+    };
+  })();
+
+  // ==== "Use Potion" flow ====
+  function getInventoryEl(){
+    return document.querySelector('.inventory') ||
+           document.querySelector('#inventory') ||
+           document.querySelector('.inventory-wrap');
+  }
+
+  function currentSelection(){
+    const uidSel = state.selectedItemUid;
+    if(!uidSel) return null;
+    return (state.inventory||[]).find(x=>x && x.uid===uidSel) || null;
+  }
+
+  function ensurePotionButtons(){
+    let use = document.getElementById('potionUseBtn');
+    if(!use){
+      use = document.createElement('button');
+      use.id = 'potionUseBtn';
+      use.textContent = 'Use Potion';
+      document.body.appendChild(use);
+      use.addEventListener('click', beginTargeting);
+    }
+    let cancel = document.getElementById('potionCancel');
+    if(!cancel){
+      cancel = document.createElement('button');
+      cancel.id = 'potionCancel';
+      cancel.textContent = 'Cancel';
+      document.body.appendChild(cancel);
+      cancel.addEventListener('click', endTargeting);
+    }
+
+    // toggle visibility based on selection
+    const sel = currentSelection();
+    const show = !!(sel && sel.isDemonPotion);
+    use.style.display = show ? 'inline-block' : 'none';
+    cancel.style.display = (show && document.body.classList.contains('potion-targeting')) ? 'inline-block' : 'none';
+    try{
+      // place just above inventory
+      const inv = getInventoryEl();
+      if(inv){
+        const r = inv.getBoundingClientRect();
+        use.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+        cancel.style.bottom = use.style.bottom;
+      }
+    }catch(e){}
+  }
+
+  function beginTargeting(){
+    if(document.body.classList.contains('potion-targeting')) return;
+    const sel = currentSelection();
+    if(!sel || !sel.isDemonPotion) return;
+    document.body.classList.add('potion-targeting');
+    ensurePotionButtons(); // show Cancel
+
+    // one-shot handler: click a placed item to apply
+    const handler = function(ev){
+      const placed = ev.target.closest && ev.target.closest('.stands .placed');
+      if(!placed) return;
+      // find which stand index
+      const all = Array.from(document.querySelectorAll('.stands .stand .placed'));
+      const idx = all.indexOf(placed);
+      if(idx === -1) return;
+      // resolve the corresponding UID from state.stands by matching element order
+      const standBoxes = Array.from(document.querySelectorAll('.stands .stand'));
+      const standIndex = standBoxes.findIndex(b => b.querySelector('.placed') === placed);
+      const uid = (state.stands||[])[standIndex];
+      const it = (state.placed||{})[uid];
+      if(!it){ endTargeting(); return; }
+
+      // consume potion
+      const invIdx = (state.inventory||[]).findIndex(x=>x && x.uid === state.selectedItemUid);
+      if(invIdx !== -1){ state.inventory.splice(invIdx,1); }
+
+      // apply demon morph
+      it.demon = true;
+
+      // visuals: quick burst
+      try{
+        placed.classList.add('demonized');
+        const burst = document.createElement('div');
+        burst.style.cssText = 'position:absolute;inset:-8px;border-radius:18px;pointer-events:none;background:radial-gradient(40% 40% at 50% 50%, rgba(255,0,0,.35), transparent 60%);animation:demonMist .9s ease-out;';
+        placed.appendChild(burst);
+        setTimeout(()=> burst.remove(), 900);
+      }catch(e){}
+
+      // clear selection and finish
+      state.selectedItemUid = null;
+      if(typeof renderInventory==='function') try{ renderInventory(); }catch(e){}
+      if(typeof renderStands==='function') try{ renderStands(); }catch(e){}
+      if(typeof recalcEPS==='function') try{ recalcEPS(); }catch(e){}
+      if(typeof save==='function') try{ save(); }catch(e){}
+
+      endTargeting();
+    };
+
+    // register temporary listeners on the stands container
+    document.addEventListener('click', handler, true);
+    // store for cleanup
+    window.__potionHandler = handler;
+  }
+
+  function endTargeting(){
+    document.body.classList.remove('potion-targeting');
+    if(window.__potionHandler){
+      document.removeEventListener('click', window.__potionHandler, true);
+      window.__potionHandler = null;
+    }
+    ensurePotionButtons();
+  }
+
+  // keep the Use Potion visibility in sync with inventory renders
+  const __ri = window.renderInventory;
+  if(typeof __ri === 'function'){
+    window.renderInventory = function(){
+      try{ __ri.apply(this, arguments); }finally{ ensurePotionButtons(); }
+    };
+  } else {
+    document.addEventListener('DOMContentLoaded', ensurePotionButtons);
+  }
+  // also reflow button positions on resize
+  window.addEventListener('resize', ensurePotionButtons);
+})();
+</script>
+<!-- ===== end v109 update ===== -->
 
 </body>
 </html>
