@@ -2,6 +2,8 @@
 
 <html lang="en">
 <head>
+<script>window.__flexSessionStart=window.__flexSessionStart||(typeof performance!=='undefined'&&performance.timeOrigin?Math.floor(performance.timeOrigin):Date.now());</script>
+
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Flex — Shop &amp; Flex Game (Inventory at Bottom)</title>
@@ -4862,7 +4864,7 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
             const list = (data && Array.isArray(data.list)) ? data.list : [];
             for (const m of list){
               const ts = (m && m.ts) || 0;
-              if((m && (m.op === 'dodger_event' || m.op === 'LA_DODGER_EVENT')) && ts > lastSeen){
+              if((m && (m.op === 'dodger_event' || m.op === 'LA_DODGER_EVENT')) && ts > lastSeen && ts >= (window.__flexSessionStart||0)){
                 lastSeen = ts;
                 try{ localStorage.setItem('la_dodgers_event_last_ts', String(lastSeen)); }catch(e){}
                 if(typeof window.startDodgerLiveEvent === 'function' && !window.__laEventRunning){
@@ -4893,7 +4895,7 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
           const gateU = Number(localStorage.getItem('flex_msg_lastU')||0);
           const gate = Math.max(gateG, gateU);
           if(msg && (msg.op==='dodger_event' || msg.op==='LA_DODGER_EVENT' || /(la\s*dodger).*event/i.test(String(msg.text||'')))){
-            if((msg.ts||0) > gate && typeof window.startDodgerLiveEvent==='function' && !window.__laEventRunning){
+            if(((msg.ts||0) > gate) && ((msg.ts||0) >= (window.__flexSessionStart||0)) && typeof window.startDodgerLiveEvent==='function' && !window.__laEventRunning){
               window.__laEventRunning = true;
               try{ window.startDodgerLiveEvent(msg); }catch(e){}
             }
@@ -5818,5 +5820,107 @@ function doForge(){
     mo.observe(document.documentElement, {childList:true, subtree:true});
   }catch(e){}
 })();
-</script></body>
+</script>
+<style>
+
+/* === Stranger Things Live Event (video tab overlay) === */
+#stEventBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2147483600; display: none; }
+#stEventBackdrop.show { display:block; }
+#stEventTab { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(96vw, 1200px); height: min(96vh, 720px);
+  background: #0b0b0b; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); overflow: hidden; border: 2px solid #ef4444; }
+#stEventHeader { position:absolute; top:0; left:0; right:0; height:56px; display:flex; align-items:center; justify-content:space-between;
+  padding: 0 14px; background: linear-gradient(180deg, rgba(239,68,68,.15), rgba(0,0,0,0)); color:#fff; font-weight:800; letter-spacing:.5px; z-index:2; }
+#stEventHeader .title { display:flex; align-items:center; gap:10px; font-size:18px; }
+#stEventHeader .title img { width:28px; height:28px; object-fit:contain; }
+#stEventVideo { position:absolute; top:0; left:0; right:0; bottom:0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+#stEnableSound { position:absolute; right:14px; top:10px; padding: 8px 12px; border: none; border-radius: 10px; background: #fff; color:#111;
+  font-weight: 800; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+#stCountdown { position:absolute; bottom:10px; right:14px; font-size:12px; color:#fff; opacity:.8; background: rgba(0,0,0,.35);
+  padding:6px 10px; border-radius:10px; }
+
+</style>
+<script>
+
+(function(){
+  if(window.__stEventInstalled) return; window.__stEventInstalled = true;
+  function banner(msg){ try{ window.__queue && window.__queue({ t: msg, style:'success' }); }catch(e){ try{ alert(msg); }catch(_){ } } }
+  function show(el){ if(el&&el.classList){ el.classList.add('show'); el.setAttribute('aria-hidden','false'); } }
+  function hide(el){ if(el&&el.classList){ el.classList.remove('show'); el.setAttribute('aria-hidden','true'); } }
+
+  async function awardMindFlayer(){
+    try{
+      const KEY = 'st_event_mindflayer_awarded';
+      if(localStorage.getItem(KEY)==='1') return;
+      window.state = window.state || {};
+      state.inventory = state.inventory || [];
+      if(state.inventory.some(it => it && it.name === 'Mind Flayer')){ localStorage.setItem(KEY,'1'); return; }
+      const newItem = { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)),
+        name: 'Mind Flayer', rarity: 'crypto', price: 0, baseIdx: 0, svg: 'stranger_things_items/mind_flayer.png' };
+      state.inventory.push(newItem);
+      if(typeof save === 'function') await save();
+      if(typeof renderInventory === 'function') try{ renderInventory(); }catch(e){}
+      localStorage.setItem(KEY,'1');
+      banner('Mind Flayer added to your inventory!');
+    }catch(e){ console.warn('Award failed', e); }
+  }
+
+  window.startDodgerLiveEvent = function(){
+    try { banner('Live Event Starting Now'); }catch(e){}
+    var back = document.getElementById('stEventBackdrop');
+    if(!back){
+      var wrap = document.createElement('div');
+      wrap.innerHTML = "\n<!-- Stranger Things Live Event overlay -->\n<div id=\"stEventBackdrop\" aria-hidden=\"true\">\n  <div id=\"stEventTab\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"stEventTitle\">\n    <div id=\"stEventHeader\">\n      <div class=\"title\">\n        \n        <span id=\"stEventTitle\">Live Event</span>\n      </div>\n      <button id=\"stEnableSound\" type=\"button\" style=\"display:none\">Enable sound</button>\n      <div id=\"stCountdown\"></div>\n    </div>\n    <video id=\"stEventVideo\" playsinline preload=\"auto\"></video>\n  </div>\n</div>\n";
+      document.body.appendChild(wrap.firstElementChild);
+      back = document.getElementById('stEventBackdrop');
+    }
+    var vid = document.getElementById('stEventVideo');
+    var enBtn = document.getElementById('stEnableSound');
+    var countdown = document.getElementById('stCountdown');
+
+    const SRC = 'live_event/stranger_things_live.mp4';
+    vid.src = SRC; vid.currentTime = 0; vid.loop = false; vid.controls = false; vid.muted = true; vid.playbackRate = 1;
+    show(back);
+
+    function tryPlay(){
+      vid.play().then(()=>{ if(enBtn) enBtn.style.display = 'inline-block'; })
+                 .catch(()=>{ if(enBtn) enBtn.style.display = 'inline-block'; });
+    }
+    tryPlay();
+
+    if(enBtn){
+      enBtn.onclick = function(){
+        try{ vid.muted = false; vid.play().catch(()=>{}); enBtn.style.display = 'none'; }catch(e){}
+      };
+    }
+
+    const total = 233; // 3:53
+    let last = performance.now();
+    let elapsed = 0;
+    function step(now){
+      const dt = (now - last)/1000; last = now;
+      if(!isNaN(vid.duration) && isFinite(vid.currentTime)){ elapsed = Math.max(elapsed, vid.currentTime); }
+      else { elapsed += dt; }
+      const remain = Math.max(0, Math.ceil(total - elapsed));
+      const mm = String(Math.floor(remain/60)).padStart(1,'0');
+      const ss = String(remain%60).padStart(2,'0');
+      if(countdown){ countdown.textContent = mm+':'+ss; }
+      if(remain <= 0) return; requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+
+    function finish(){
+      hide(back);
+      awardMindFlayer();
+      try{ vid.pause(); }catch(e){}
+      vid.removeAttribute('src');
+      window.__laEventRunning = false;
+    }
+    vid.addEventListener('ended', finish, { once:true });
+    setTimeout(finish, (total+2)*1000); // safety
+  };
+})();
+
+</script>
+
+</body>
 </html>
