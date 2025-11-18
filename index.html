@@ -1644,7 +1644,7 @@ async function save(){
   const payload = {
     money: state.money,
     eps: state.eps,
-    inventory: state.inventory.map(it=>({uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx,isEgg:it.isEgg,eggType:it.eggType,petType:it.petType,petEps:it.petEps,})),
+    inventory: state.inventory.map(it=>({svg: it.svg, uid:it.uid,name:it.name,rarity:it.rarity,price:it.price,baseIdx:it.baseIdx,isEgg:it.isEgg,eggType:it.eggType,petType:it.petType,petEps:it.petEps,})),
     stands: state.stands,
     shop: state.shop,
     fastMode: state.fastMode,
