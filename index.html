@@ -460,6 +460,87 @@ body.redblue::after {
 
 
 
+
+// === Universal PNG resolver for any item name ===
+window.ITEM_FILE_MAP = window.ITEM_FILE_MAP || {};
+window.ITEM_FILENAME_MAP = window.ITEM_FILENAME_MAP || {};
+
+function __normalizeFileNameFromName(n){
+  return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') + '.png';
+}
+
+// Folders we will try in order for file-backed items
+window.__ICON_FOLDERS = [
+  'icons/',
+  'stranger_things_items/',
+  'hawkins_items/',
+  'cosmic_items/',
+  'dodger_items/',
+  'pets/'
+];
+
+// Build NAME -> filename map dynamically from any global arrays that look like [{name, file}]
+(function buildDynamicItemFileMap(){
+  try{
+    for (const key in window){
+      const val = window[key];
+      if (Array.isArray(val) && val.length && typeof val[0]==='object'){
+        val.forEach(x=>{
+          if (x && typeof x.name==='string' && typeof x.file==='string' && /\.png$/i.test(x.file)){
+            // try to infer folder from any code that sets obj.svg = 'folder/'+it.file
+            // we can't parse code at runtime, so store filename; folder will be resolved below
+            ITEM_FILENAME_MAP[x.name] = x.file;
+          }
+        });
+      }
+    }
+  }catch(e){}
+})();
+
+function __tryResolvePathSync(name){
+  // Highest priority: explicit map with full path
+  if (ITEM_FILE_MAP[name]) return ITEM_FILE_MAP[name];
+  const file = ITEM_FILENAME_MAP[name] || __normalizeFileNameFromName(name);
+  for (const folder of __ICON_FOLDERS){
+    // naive return; we'll verify with onerror/onload later
+    return folder + file;
+  }
+  return null;
+}
+
+// Attach lazy fix-up on <img> elements for items that might need probing
+function __attachImageFixups(img, it){
+  if (!img) return;
+  let tried = 0;
+  const file = ITEM_FILENAME_MAP[it.name] || __normalizeFileNameFromName(it.name);
+  const candidates = [];
+  for (const folder of __ICON_FOLDERS){ candidates.push(folder + file); }
+
+  function tryNext(){
+    if (tried >= candidates.length){ return; }
+    const next = candidates[tried++];
+    img.src = next;
+  }
+
+  img.addEventListener('error', ()=>{
+    tryNext();
+  });
+
+  img.addEventListener('load', ()=>{
+    try{
+      // if we loaded a PNG path, persist it
+      const src = img.getAttribute('src')||'';
+      if (src.endsWith('.png')){
+        it.svg = src;
+        if (typeof save === 'function'){ save(); }
+      }
+    }catch(e){}
+  });
+
+  // If current src is not a .png, start probing
+  const cur = img.getAttribute('src')||'';
+  if (!/\.png($|\?)/i.test(cur)){ tryNext(); }
+}
 /* === Add-on: Achievements + Background Selector === */
 .right-rail{position:fixed;right:16px;top:180px;display:flex;flex-direction:column;gap:16px;z-index:8;}
 .icon-achievements,.bg-selector-btn{width:76px;height:76px;border-radius:20px;display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow);border:4px solid rgba(0,0,0,.4);}
@@ -1468,6 +1549,11 @@ document.getElementById("resetGame").addEventListener("click", function() {
   };
 
   function getItemSvg(name, idx, rarity){
+    // Prefer file-based icon if we have one for this name
+    try {
+      if (ITEM_FILE_MAP && ITEM_FILE_MAP[name]) { return ITEM_FILE_MAP[name]; }
+    } catch (e) {}
+    
     const size = 96;
     const accentByRarity = {
         common:'#8ee78e',
@@ -1829,9 +1915,52 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
               // ignore
             }state.money = dat.money ?? state.money;
     state.eps = dat.eps ?? state.eps;
-    state.inventory = (dat.inventory||[]).map(it=>({
-      ...it, uid:it.uid, svg: it.svg || (it.isEgg ? getEggSvg(it.eggType || 'legendary', Math.floor(Math.random()*9999)) : getItemSvg(it.name, it.baseIdx||0, it.rarity)), baseIdx: it.baseIdx||0
-    }));
+    // Rebuild the inventory array from the loaded data.  If an item lacks
+    // a proper PNG path in its `svg` field (either missing, an inline
+    // `<svg>` string from an older save, or a non‑PNG), override it using
+    // our ITEM_FILE_MAP or the appropriate helper (egg/pet/item).  This
+    // ensures legacy saves and unobtainable items show the correct icon
+    // immediately on load.
+    state.inventory = (dat.inventory || []).map(it => {
+      const name = it.name;
+      let icon = it.svg;
+      // Normalize the saved svg: ignore inline SVG strings or non‑PNG
+      const isPng = (typeof icon === 'string' && /\.png($|\?)/i.test(icon));
+      const looksInlineSvg = (typeof icon === 'string' && icon.trim().startsWith('<'));
+      // Use a normalized key for lookup (trim + lowercase) so we catch names
+      // with different casing or stray whitespace.
+      const nameKey = name ? name.trim().toLowerCase() : '';
+      if (!icon || looksInlineSvg || !isPng) {
+        // If we have an explicit file path mapping (case sensitive or lowercase), use it
+        if (ITEM_FILE_MAP && (ITEM_FILE_MAP[name] || ITEM_FILE_MAP[nameKey])) {
+          icon = ITEM_FILE_MAP[name] || ITEM_FILE_MAP[nameKey];
+        } else if (it.isEgg) {
+          // Eggs use the special egg SVG generator
+          icon = getEggSvg(it.eggType || 'legendary', Math.floor(Math.random() * 9999));
+        } else if (it.petType) {
+          // Pets should be resolved via getPetSvg.  Only call getPetSvg
+          // for true pet items; non-pet items without a mapping should
+          // fall back to the generated item SVG instead of a random pet
+          // background.  See https://github.com/lucasmoviesstudios24/flex
+          // for details on petType usage.
+          try {
+            icon = getPetSvg(it.petType || it.name, Math.floor(Math.random() * 9999));
+          } catch (e) {
+            // As a fallback, generate a standard item SVG rather than using a pet icon
+            icon = getItemSvg(name, it.baseIdx || 0, it.rarity);
+          }
+        } else {
+          // Fallback to generated SVG
+          icon = getItemSvg(name, it.baseIdx || 0, it.rarity);
+        }
+      }
+      return {
+        ...it,
+        uid: it.uid,
+        svg: icon,
+        baseIdx: it.baseIdx || 0
+      };
+    });
     state.stands = dat.stands ?? state.stands;
     state.shop = dat.shop ?? state.shop;
     state.fastMode = dat.fastMode ?? state.fastMode;
@@ -1859,7 +1988,29 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     if(dat.placed){
       for(const k in dat.placed){
         const it = dat.placed[k];
-        state.placed[k] = { ...it, uid:it.uid, svg: it.svg || getItemSvg(it.name, it.baseIdx||0, it.rarity), baseIdx: it.baseIdx||0 };
+        {
+          const name = it.name;
+          let icon = it.svg;
+          const isPng = (typeof icon === 'string' && /\.png($|\?)/i.test(icon));
+          const looksInlineSvg = (typeof icon === 'string' && icon.trim().startsWith('<'));
+          const nameKey = name ? name.trim().toLowerCase() : '';
+          if (!icon || looksInlineSvg || !isPng) {
+            if (window.ITEM_FILE_MAP && (ITEM_FILE_MAP[name] || ITEM_FILE_MAP[nameKey])) {
+              icon = ITEM_FILE_MAP[name] || ITEM_FILE_MAP[nameKey];
+            } else if (it.isEgg) {
+              icon = getEggSvg(it.eggType || 'legendary', Math.floor(Math.random() * 9999));
+            } else if (it.petType) {
+              try {
+                icon = getPetSvg(it.petType || name, Math.floor(Math.random() * 9999));
+              } catch (e) {
+                icon = getItemSvg(name, it.baseIdx || 0, it.rarity);
+              }
+            } else {
+              icon = getItemSvg(name, it.baseIdx || 0, it.rarity);
+            }
+          }
+          state.placed[k] = { ...it, uid: it.uid, svg: icon, baseIdx: it.baseIdx || 0 };
+        }
       }
     }
 
@@ -6027,7 +6178,91 @@ function doForge(){
   });
 
   const HAWKINS_PACK_COST = 2_000_000_000;
-  const hawkinsItems = [
+  
+// --- MIGRATION HELPERS ---
+function __isInlineSvgString(v){
+  return typeof v === 'string' && v.trim().startsWith('<svg');
+}
+function __hawkinsFileForName(n){
+  try{
+    const hit = (typeof hawkinsItems!=='undefined' ? hawkinsItems : []).find(x=>x.name===n);
+    return hit ? ('stranger_things_items/'+hit.file) : null;
+  }catch(e){ return null; }
+}
+function __petPngFor(it, seed){
+  try{
+    return getPetSvg(it.petType || it.name, seed);
+  }catch(e){ return null; }
+}
+
+// === FILE-BASED ICON LOOKUP ===
+// Maintain a single object mapping item names to the PNG file path that should be used for its icon.
+// Hawkins (Stranger Things) pack items are registered here.  Each entry maps
+// the human‑friendly item name to the corresponding file in the
+// `stranger_things_items/` folder.  This list should stay in sync with
+// the files under that directory.  If you add or remove items from the
+// Build a static mapping from item names to their PNG file paths.  Do not rely
+// on dynamically defined arrays (hawkinsItems, LA_ITEMS) because they may not
+// yet exist when this code runs.  Instead, explicitly define the mapping here
+// so legacy saves and unobtainable event items always pick up their proper
+// icons.  If you add more items or folders in the future, extend this map.
+window.ITEM_FILE_MAP = window.ITEM_FILE_MAP || {};
+Object.assign(ITEM_FILE_MAP, {
+  // Stranger Things items
+  'Bat': 'stranger_things_items/bat.png',
+  'Bike': 'stranger_things_items/bike.png',
+  'Code Red': 'stranger_things_items/code_red.png',
+  'Demogorgon': 'stranger_things_items/demogorgon.png',
+  'Dustin Henderson': 'stranger_things_items/dustin_henderson.png',
+  'Hawkins Lab': 'stranger_things_items/hawkins_lab.png',
+  'Jane 11': 'stranger_things_items/jane_11.png',
+  'Jim Hopper': 'stranger_things_items/jim_hopper.png',
+  'Lucas Sinclair': 'stranger_things_items/lucas_sinclair.png',
+  'Max Mayfield': 'stranger_things_items/max_mayfield.png',
+  'Mike Wheeler': 'stranger_things_items/mike_wheeler.png',
+  'Nancy Wheeler': 'stranger_things_items/nancy_wheeler.png',
+  'Scoops Ahoy': 'stranger_things_items/scoops_ahoy.png',
+  'Steve Harrington': 'stranger_things_items/steve_harrington.png',
+  'Vecna': 'stranger_things_items/vecna.png',
+  'Will Byers': 'stranger_things_items/will_byers.png',
+  // LA Dodgers items
+  'Dodger Hat': 'la_dodgers_items/dodger_hat.png',
+  'Dodger Stadium': 'la_dodgers_items/dodger_stadium.png',
+  'World Series': 'la_dodgers_items/world_series.png',
+  'Shohei Ohtani': 'la_dodgers_items/shohei_ohtani.png',
+  'Will Smith': 'la_dodgers_items/will_smith.png',
+  'Freddie Freeman': 'la_dodgers_items/freddie_freeman.png',
+  'Mookie Betts': 'la_dodgers_items/mookie_betts.png',
+  'Dodger Baseball': 'la_dodgers_items/dodger_baseball.png',
+  'Dodger Welcome': 'la_dodgers_items/dodger_welcome.png',
+  // Space Pack items
+  'Asteroid': 'space_pack_items/asteroid.png',
+  'Black Hole': 'space_pack_items/black_hole.png',
+  'Earth': 'space_pack_items/earth.png',
+  'Mars': 'space_pack_items/mars.png',
+  'Moon': 'space_pack_items/moon.png',
+  'Space Ship': 'space_pack_items/space_ship.png',
+  'Space Suit': 'space_pack_items/space_suit.png',
+  'Sun': 'space_pack_items/sun.png'
+});
+
+// Also register lowercase/trimmed variants of each key so lookups with
+// inconsistent casing or stray whitespace will still resolve to the correct
+// PNG.  We loop over the current keys and add a lower‑cased entry if it
+// doesn't already exist.  This is wrapped in a try/catch to avoid
+// interfering with other parts of the page in case of errors.
+try {
+  (function() {
+    const map = ITEM_FILE_MAP;
+    Object.keys(map).forEach(function(key) {
+      const lower = key.trim().toLowerCase();
+      if (!map[lower]) {
+        map[lower] = map[key];
+      }
+    });
+  })();
+} catch (_e) {}
+const hawkinsItems = [
     {name:'Bat', file:'bat.png'},
     {name:'Bike', file:'bike.png'},
     {name:'Code Red', file:'code_red.png'},
