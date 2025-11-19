@@ -1383,7 +1383,7 @@ body.bg-sunrise{
 <!-- Redeem Codes -->
 <div class="card" id="redeemCard">
 <h3>Redeem</h3>
-<div style="font-size:18px; opacity:0.85;">Enter a 12‑digit redeem code to unlock an item or background.</div>
+<div style="font-size:18px; opacity:0.85;">Enter a 12‑digit redeem code to unlock an item, background, or pet.</div>
 <div style="display:flex;justify-content:flex-end;align-items:center;">
 <button class="buy" id="openRedeemOverlay">Enter redeem code</button>
 </div>
@@ -1431,18 +1431,12 @@ body.bg-sunrise{
   inventory bar sits fixed at the bottom like your concept art, pedestals/placed items are raised above it,
   and slots have larger sizes and a thick outlined container matching the visual.
 -->
-<button id="resetGame" style="margin-left:20px;background:#e74c3c;color:#fff;padding:8px 16px;border-radius:12px;border:none;font-weight:bold;cursor:pointer;">Reset Game</button>
+<!-- Log Out button replaces the old reset game button. It remains fixed in the same location -->
+<!-- Log Out button will appear here (replaces old reset/delete user button).  Hidden by default; the script will
+     toggle display when a user is logged in. -->
+<button id="resetUserBtn" style="margin-left:20px;background:#e74c3c;color:#fff;padding:6px 8px;border-radius:12px;border:none;font-weight:bold;cursor:pointer;font-size:14px;white-space:nowrap;">Log Out</button>
 <script>
-document.getElementById("resetGame").addEventListener("click", function() {
-  if (confirm("Are you sure you want to reset your game? This cannot be undone.")) {
-    localStorage.removeItem("flexSave");
-    try { localStorage.removeItem(LOCAL_BACKUP_KEY); localStorage.removeItem(LS_KEY); } catch (e) {}
-
-    // Set a flag so boot knows NOT to load from localStorage
-    sessionStorage.setItem("doGameReset", "1");
-    location.reload();
-  }
-});
+// Removed the reset game handler.  The button in this position now logs the user out via separate logic.
 /* ---------------------------
    Paste your entire original JavaScript here (unchanged).
    For brevity in this example I am keeping the JS unchanged from your provided code.
@@ -1457,6 +1451,34 @@ document.getElementById("resetGame").addEventListener("click", function() {
   const MONEY_START = 1_000_000;
   const STAND_COUNT = 4;
   const SHOP_SLOTS = 4;
+
+  // --------------------------------------------------------------------------
+  // Helper: ensure the main stands array always has the correct length.
+  // Occasionally other scripts or corrupted saves can accidentally shrink or
+  // expand the `state.stands` array.  Losing a pedestal entirely breaks
+  // earnings, so this guard keeps the array at `STAND_COUNT` length.  It
+  // preserves existing entries and pads with `null` as needed.  If the array
+  // somehow grows too long, extra entries are trimmed off the end.
+  function ensureStandsLength(){
+    try{
+      // If state or stands is missing, initialize a fresh array
+      if(!state || !Array.isArray(state.stands)){
+        state.stands = Array(STAND_COUNT).fill(null);
+      } else {
+        // Pad with nulls if too short
+        while(state.stands.length < STAND_COUNT){
+          state.stands.push(null);
+        }
+        // Trim extra entries if too long
+        if(state.stands.length > STAND_COUNT){
+          state.stands = state.stands.slice(0, STAND_COUNT);
+        }
+      }
+    } catch(e){
+      // On any unexpected error, reset to a clean slate
+      state.stands = Array(STAND_COUNT).fill(null);
+    }
+  }
 
   const RARITY = {
     common: { label:'COMMON', color:'var(--c-common)', income: 50, price:[8_000, 40_000], prob: 0.60 },
@@ -1637,6 +1659,8 @@ function getPetSvg(petName, seed){
   
 "Frog": "frog.png",
 "Tiger": "tiger.png",
+    // Added special redeem-only pet Weston
+"Weston": "weston.png",
 "Deer": "deer.png",
 "Ozzy": "ozzy.png",
 "Nella": "nella.png",
@@ -1694,25 +1718,277 @@ function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(3
  const SERVER_BASE = (()=>{  const p=new URLSearchParams(location.search).get('api');  const s=localStorage.getItem('flex_api_base');  const d='https://flex-sdww.onrender.com/api/game';  return p||s||d;})();
 
 // Identify user (for demo, use a prompt and store in localStorage)
-// Username prompt (first run): Cancel or "guest" -> Guest
+// Enhanced username prompt: allow players to request logging into an existing account.
 let USER_ID = localStorage.getItem('flex-userid');
+
+  // Flag to track whether we've shown the login choice overlay.  If this is
+  // true and no user/pending is set, initLoginAndBoot() will early return
+  // until the player makes a selection.
+  window.__loginChoiceShown = false;
+
+  /**
+   * Display a modal overlay prompting the player to either log in to an
+   * existing account or create a new one.  The provided callback will be
+   * invoked with either the string `'login'` or `'create'` depending on
+   * which button the player clicks.  This helper also marks the
+   * `__loginChoiceShown` flag so the boot routine knows to wait.
+   *
+   * @param {Function} onChoice callback invoked with `'login'` or `'create'`
+   */
+  function showLoginOptionDialog(onChoice) {
+    window.__loginChoiceShown = true;
+    const overlay = document.createElement('div');
+    overlay.id = 'loginOptionOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;color:#222;padding:20px 30px;border-radius:8px;max-width:90%;text-align:center;font-family:Russo One, sans-serif;box-shadow:0 4px 10px rgba(0,0,0,0.3)';
+    box.innerHTML = '<h2 style="margin-top:0">Welcome to Flex!</h2>' +
+      '<p style="margin:10px 0 20px;font-family:Rajdhani, sans-serif;font-size:16px;">Do you already have an existing account?</p>';
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = 'display:flex;justify-content:center;gap:20px;';
+    const loginBtn = document.createElement('button');
+    loginBtn.textContent = 'Log In';
+    loginBtn.style.cssText = 'padding:10px 20px;font-size:16px;border-radius:5px;border:none;cursor:pointer;background:#4CAF50;color:#fff;font-family:Russo One, sans-serif;';
+    const createBtn = document.createElement('button');
+    createBtn.textContent = 'New Account';
+    createBtn.style.cssText = 'padding:10px 20px;font-size:16px;border-radius:5px;border:none;cursor:pointer;background:#2196F3;color:#fff;font-family:Russo One, sans-serif;';
+    loginBtn.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      window.__loginChoiceShown = false;
+      if (typeof onChoice === 'function') onChoice('login');
+    });
+    createBtn.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      window.__loginChoiceShown = false;
+      if (typeof onChoice === 'function') onChoice('create');
+    });
+    btnContainer.appendChild(loginBtn);
+    btnContainer.appendChild(createBtn);
+    box.appendChild(btnContainer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+
+  // Track whether a pending-login overlay is active. When true, initLoginAndBoot()
+  // will not re-run its pending-check alert.
+  window.__pendingOverlayShown = false;
+
+  /* ====== Remote login-request helpers ======
+   * These helpers use the same game API used for save/load to store login requests
+   * and approvals on the server.  This avoids relying on localStorage across
+   * different HTML files (file:/// origins), which can prevent admin pages from
+   * seeing requests created by the game.  Requests are stored under the
+   * pseudo‑user "__login_requests__" as an array of usernames.  Individual
+   * approvals are stored under "__login_approved_<username>" as an object
+   * like { approved:true }.  When a request is approved or cancelled it is
+   * removed from the list.
+   */
+  async function fetchLoginRequests() {
+    try {
+      const res = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent('__login_requests__')}`, { cache:'no-store' });
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        return Array.isArray(data) ? data : [];
+      }
+    } catch (e) {}
+    return [];
+  }
+  async function addLoginRequest(name) {
+    try {
+      const list = await fetchLoginRequests();
+      if (!list.includes(name)) list.push(name);
+      await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent('__login_requests__')}`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(list)
+      });
+    } catch (e) {}
+  }
+  async function removeLoginRequest(name) {
+    try {
+      let list = await fetchLoginRequests();
+      list = list.filter(u => u !== name);
+      await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent('__login_requests__')}`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(list)
+      });
+    } catch (e) {}
+  }
+  async function checkApproval(name) {
+    try {
+      const res = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent('__login_approved_' + name)}`, { cache:'no-store' });
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        return data && data.approved;
+      }
+    } catch (e) {}
+    return false;
+  }
+  async function setApproval(name) {
+    try {
+      await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent('__login_approved_' + name)}`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ approved:true })
+      });
+    } catch (e) {}
+  }
+  async function clearApproval(name) {
+    try {
+      await fetch(`${SERVER_BASE}/save?user=${encodeURIComponent('__login_approved_' + name)}`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: '{}' // mark as empty object
+      });
+    } catch (e) {}
+  }
+
+  /**
+   * Display an overlay informing the player that their login request has been
+   * submitted.  Provides a Cancel button that removes the request from the
+   * server and local storage, then re-displays the login/new-account menu.  A
+   * manual refresh is still needed once the owner has approved.  The overlay
+   * sets __pendingOverlayShown to true so the boot routine doesn’t show an
+   * additional alert.
+   *
+   * @param {string} username the pending username
+   */
+  function showPendingLoginOverlay(username) {
+    window.__pendingOverlayShown = true;
+    const overlay = document.createElement('div');
+    overlay.id = 'loginPendingOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;color:#222;padding:20px 30px;border-radius:8px;max-width:90%;text-align:center;font-family:Russo One, sans-serif;box-shadow:0 4px 10px rgba(0,0,0,0.3)';
+    box.innerHTML = '<h2 style="margin-top:0">Login Request Sent</h2>' +
+      '<p style="margin:10px 0 20px;font-family:Rajdhani, sans-serif;font-size:16px;">Your request to log into <strong>' + username.replace(/</g,'&lt;') + '</strong> has been sent.\nAsk the owner to approve it.\n\nOnce approved, refresh this page.\n\nYou can also cancel the request below.</p>';
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = 'display:flex;justify-content:center;gap:20px;';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel Request';
+    cancelBtn.style.cssText = 'padding:10px 20px;font-size:16px;border-radius:5px;border:none;cursor:pointer;background:#f44336;color:#fff;font-family:Russo One, sans-serif;';
+    cancelBtn.addEventListener('click', async () => {
+      document.body.removeChild(overlay);
+      window.__pendingOverlayShown = false;
+      // remove from server and local state
+      try { await removeLoginRequest(username); } catch(e){}
+      localStorage.removeItem('flex_login_pending');
+      // show login/new-account menu again
+      showLoginOptionDialog(async (choice) => {
+        if (choice === 'login') {
+          // re-run login flow
+          while (true) {
+            let input = prompt('Enter your exact username to request login:');
+            if (input === null) { alert('You must enter your username to request login.'); continue; }
+            input = String(input).trim();
+            if (!input) { alert('Please enter a non-empty username.'); continue; }
+            localStorage.setItem('flex_login_pending', input);
+            try { await addLoginRequest(input); } catch(e){}
+            // show this overlay again
+            USER_ID = null;
+            const ud = document.getElementById("userDisplay");
+            if (ud) ud.textContent = 'No user';
+            showPendingLoginOverlay(input);
+            break;
+          }
+        } else {
+          // handle new account creation on cancel
+          while (true) {
+            let input = prompt('Enter a username to play (required).');
+            if (input === null) { alert('A username is required.'); continue; }
+            input = String(input).trim();
+            if (!input || input.toLowerCase() === 'guest') { alert('Please enter a non-empty username. "guest" is not allowed.'); continue; }
+            USER_ID = input;
+            localStorage.setItem('flex-userid', USER_ID);
+            try { sessionStorage.setItem('flex-userid-just-set','1'); } catch(e){}
+            const ud = document.getElementById("userDisplay");
+            if (ud) ud.textContent = USER_ID ? `User: ${USER_ID}` : 'No user';
+            // boot game normally
+            if (typeof initLoginAndBoot === 'function') initLoginAndBoot();
+            break;
+          }
+        }
+      });
+    });
+    btnContainer.appendChild(cancelBtn);
+    box.appendChild(btnContainer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+/*
+ * We support two flows when a user first visits the game:
+ *  1. Create a brand new account by picking a unique username.
+ *  2. Request to log into an existing account (for example, if the player reset their computer or browser).
+ *
+ * Login requests are stored in localStorage under "flex_login_requests" as a JSON array. The owner/Admin
+ * uses a separate admin page to approve these requests. Once approved, the admin page writes a key of the
+ * form "flex_login_approved_<username>" with value "1" back into localStorage. This page periodically
+ * checks for approval and, once granted, assigns USER_ID and continues loading the player's data.
+ *
+ * If a login request has been submitted by this browser (key: "flex_login_pending"), we hold off on prompting
+ * again and instead wait for approval.
+ */
 if (!USER_ID) {
-  // Require a real username (no guest, no empty, no cancel)
-  while (true) {
-    let input = prompt('Enter a username to play (required).');
-    if (input === null) { alert('A username is required.'); continue; }
-    input = String(input).trim();
-    if (!input || input.toLowerCase() === 'guest') {
-      alert('Please enter a non-empty username. "guest" is not allowed.');
-      continue;
-    }
-    USER_ID = input;
-    localStorage.setItem('flex-userid', USER_ID);
-    // Mark that we just set a username this session so load() can check uniqueness once.
-    try { sessionStorage.setItem('flex-userid-just-set', '1'); } catch (e) {}
-    break;
+  const pendingLogin = localStorage.getItem('flex_login_pending');
+  if (!pendingLogin) {
+    // Present a friendly overlay with buttons for login or account creation instead of using confirm().
+    showLoginOptionDialog(async function(choice) {
+      if (choice === 'login') {
+        // Prompt for the exact username and register a login request via the server.
+        while (true) {
+          let input = prompt('Enter your exact username to request login:');
+          if (input === null) {
+            alert('You must enter your username to request login.');
+            continue;
+          }
+          input = String(input).trim();
+          if (!input) {
+            alert('Please enter a non-empty username.');
+            continue;
+          }
+          // Save the pending request for this browser and push the request to the remote list.
+          localStorage.setItem('flex_login_pending', input);
+          try { await addLoginRequest(input); } catch (e) {}
+          // Clear current user and update display
+          USER_ID = null;
+          const ud = document.getElementById("userDisplay");
+          if (ud) ud.textContent = 'No user';
+          // Show a pending overlay with a cancel option; do not immediately boot.
+          showPendingLoginOverlay(input);
+          break;
+        }
+      } else {
+        // Create a new username (no empty values or "guest").
+        while (true) {
+          let input = prompt('Enter a username to play (required).');
+          if (input === null) {
+            alert('A username is required.');
+            continue;
+          }
+          input = String(input).trim();
+          if (!input || input.toLowerCase() === 'guest') {
+            alert('Please enter a non-empty username. "guest" is not allowed.');
+            continue;
+          }
+          USER_ID = input;
+          localStorage.setItem('flex-userid', USER_ID);
+          // Mark that we just set a username this session so load() can check uniqueness once.
+          try { sessionStorage.setItem('flex-userid-just-set', '1'); } catch (e) {}
+          break;
+        }
+        // Update display and start the boot process now that we have a username
+        const ud = document.getElementById("userDisplay");
+        if (ud) ud.textContent = USER_ID ? `User: ${USER_ID}` : 'No user';
+        if (typeof initLoginAndBoot === 'function') initLoginAndBoot();
+      }
+    });
+  } else {
+    // The player has already requested a login but it hasn't been approved yet.
+    USER_ID = null;
   }
 }
+// Update user display. If USER_ID is null (pending login), show a placeholder.
 document.getElementById("userDisplay").textContent = USER_ID ? `User: ${USER_ID}` : "No user";
 
 let __saveTimer = null;
@@ -1748,7 +2024,13 @@ async function save(){
     petTimers: state.petTimers,
     permanentPetMultiplier: state.permanentPetMultiplier,
     petDex: (state.petDex || {}),
-    rebirthLevel: state.rebirthLevel || 0
+    rebirthLevel: state.rebirthLevel || 0,
+    // Persist unlocked backgrounds, selected background and achievements (quests) to the server.  These
+    // were previously only stored in localStorage via the addon, but now we include them in the
+    // remote save so they travel with the user across browsers.
+    unlockedBackgrounds: state.unlockedBackgrounds || {},
+    selectedBackground: state.selectedBackground || 'default',
+    ach: state.ach || { questsDone: {} }
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -2038,6 +2320,17 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     state.petDex = dat.petDex || state.petDex || {};
     state.unlockedBackgrounds = dat.unlockedBackgrounds || state.unlockedBackgrounds || { default:true };
     state.selectedBackground = dat.selectedBackground || state.selectedBackground || 'default';
+
+    // Merge achievements/quests from the remote save.  Previously, quest completions were
+    // only stored locally via the addon, so merge them carefully to preserve any existing
+    // progress in state.ach.  Include flags such as pet pedestal and pet unlocks when present.
+    if (dat.ach) {
+      state.ach = state.ach || { questsDone: {} };
+      state.ach.questsDone = { ...(state.ach.questsDone || {}), ...(dat.ach.questsDone || {}) };
+      if (dat.ach.petPedestalGranted) state.ach.petPedestalGranted = dat.ach.petPedestalGranted;
+      if (dat.ach.petThirdUnlocked) state.ach.petThirdUnlocked = dat.ach.petThirdUnlocked;
+      if (dat.ach.petFourthUnlocked) state.ach.petFourthUnlocked = dat.ach.petFourthUnlocked;
+    }
     // Update local backup with the chosen data so rapid refresh can't regress
     try { localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: dat.__ts || Date.now(), data: dat })); } catch (e) {}
   } catch (e) {
@@ -2048,7 +2341,26 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
 
 }
   function fmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
-  function updateTop(){ $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money))); $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec';  updateMultiplierBadge(); }
+// Safely update the top-of-screen money and EPS displays.  Each DOM element
+// lookup is guarded so that missing elements won't throw errors and freeze
+// the game loop.  The multiplier badge update is also optional.
+function updateTop(){
+  try{
+    const cashEl = $('#cash');
+    if (cashEl) {
+      cashEl.textContent = '$' + fmt(Math.max(0, Math.floor(state.money)));
+    }
+    const epsEl = $('#eps');
+    if (epsEl) {
+      epsEl.textContent = '+ $' + fmt(state.eps) + ' / sec';
+    }
+    if (typeof updateMultiplierBadge === 'function') {
+      updateMultiplierBadge();
+    }
+  }catch(e){
+    console.error('updateTop caught error:', e);
+  }
+}
 function recalcEPS(){
   // Recalculate base EPS without multiplier; tolerant to uppercase/missing rarities
   let baseTotal = 0;
@@ -2083,18 +2395,43 @@ function recalcEPS(){
   save();
 }
   let lastTick = performance.now();
+  // Main game loop.  We wrap all of the logic in a try/finally so that
+  // unexpected errors never stop the requestAnimationFrame from firing.  This
+  // prevents the game from "freezing" if a DOM element is missing or a
+  // function throws.
   function tick(now){
-    const dt = (now - lastTick)/1000;
-    lastTick = now;
-    if(state.eps>0){
-      state.money += state.eps * dt;
-      updateTop();
+    // Always schedule the next frame, even if an error occurs.  Use a
+    // finally block to guarantee that requestAnimationFrame is called.
+    try {
+      // Make sure the stands array has the correct length.  Without this
+      // check players could lose a pedestal and earnings would stop.
+      if (typeof ensureStandsLength === 'function') {
+        ensureStandsLength();
+      }
+      const dt = (now - lastTick) / 1000;
+      lastTick = now;
+      if (state.eps > 0) {
+        // Update player money based on earnings per second and time delta
+        state.money += state.eps * dt;
+        // Update top bar values if possible
+        try {
+          updateTop();
+        } catch (err) {
+          console.error('updateTop error:', err);
+        }
+      }
+      // Check pet timers (hatch) safely
+      try {
+        checkPetHatches();
+      } catch (err) {
+        console.error('checkPetHatches error:', err);
+      }
+    } catch (err) {
+      // Catch any unexpected error so it doesn't kill the loop
+      console.error('tick error:', err);
+    } finally {
+      requestAnimationFrame(tick);
     }
-
-    // Check pet timers (hatch)
-    checkPetHatches();
-
-    requestAnimationFrame(tick);
   }
 
 function downloadSave() {
@@ -3159,6 +3496,17 @@ function reconcilePetDex(){
 }
 async function boot(){
   await load();
+  // Apply the player's selected background and update quest completions after loading.
+  try {
+    if (state && state.selectedBackground && typeof applyBG === 'function') {
+      applyBG(state.selectedBackground);
+    }
+  } catch (e) {}
+  try {
+    if (typeof persistAllCompletions === 'function') {
+      persistAllCompletions();
+    }
+  } catch (e) {}
   reconcilePetDex();
   if(!state.money) state.money = MONEY_START;
   if(!state.stands || state.stands.length!==STAND_COUNT){
@@ -3174,15 +3522,99 @@ async function boot(){
 
   requestAnimationFrame(tick);
 }
-boot();
-
-document.getElementById("resetUserBtn").addEventListener("click", function() {
-  if (confirm("Are you sure you want to reset your username? This will delete your save from this browser and you will have to enter a new name.")) {
-    localStorage.removeItem("flex-userid");
-    localStorage.removeItem("flex-save-v1");
-    location.reload();
+/**
+ * Initialize the game only after verifying the login state.
+ * If a login request is pending, we wait for the owner to approve before proceeding.
+ * When approved, the owner writes a key of the form "flex_login_approved_<username>" in localStorage.
+ * This function checks for that approval and sets USER_ID accordingly. If there is no approval yet,
+ * it displays an informational alert and aborts the boot process (the player can refresh later).
+ */
+async function initLoginAndBoot() {
+  // If USER_ID is not set (null/undefined), we may need to handle pending login requests.
+  if (!USER_ID) {
+    // When the user menu is active and no pending request exists, wait for input.
+    if (!localStorage.getItem('flex_login_pending') && window.__loginChoiceShown) {
+      return;
+    }
+    const pending = localStorage.getItem('flex_login_pending');
+    if (pending) {
+      // If a pending overlay is visible, don't interrupt with an alert; the overlay handles cancel/refresh messaging.
+      if (window.__pendingOverlayShown) {
+        return;
+      }
+      // Check the server for approval of this username.
+      const approved = await checkApproval(pending);
+      if (approved) {
+        // Assign the user, update localStorage and clean up server records.
+        USER_ID = pending;
+        localStorage.setItem('flex-userid', USER_ID);
+        localStorage.removeItem('flex_login_pending');
+        try { await removeLoginRequest(pending); } catch (e) {}
+        try { await clearApproval(pending); } catch (e) {}
+        // Update display
+        const ud = document.getElementById('userDisplay');
+        if (ud) ud.textContent = USER_ID ? `User: ${USER_ID}` : 'No user';
+      } else {
+        // Still waiting for approval. Inform the player and abort loading.
+        alert('Your login request is still awaiting approval.\n\nPlease ask the owner to approve your request, then refresh this page.');
+        return;
+      }
+    } else {
+      // No USER_ID and no pending login: user may have cancelled; wait for them to choose again.
+      return;
+    }
   }
-});
+  // If we reach here, USER_ID is available; proceed to boot the game.
+  await boot();
+
+  // After loading, refresh achievements to reflect any quest completions/background unlocks.
+  try {
+    if (typeof window !== 'undefined' && typeof window.__achRefresh === 'function') {
+      window.__achRefresh();
+    }
+  } catch (e) {}
+}
+
+// Kick off the initialization routine instead of calling boot() directly.
+initLoginAndBoot();
+
+// Replace the legacy resetUser handler with a Log Out handler.  This logs the user out
+// by clearing the stored username and pending login request, then reloads the page
+// so the login/create account menu is shown again.
+// Re-purpose the existing reset user button as a Log Out button.  If the button
+// exists, update its label and attach a handler that clears the stored username
+// and pending login request.  When confirmed, the page reloads to show the login
+// menu again.  If no reset user button is present, nothing happens.
+{ const resetBtn = document.getElementById("resetUserBtn");
+  if (resetBtn) {
+    resetBtn.textContent = 'Log Out';
+    // Make the handler asynchronous so we can await a save if needed.  In addition to
+    // removing the username and pending request from localStorage, also clear any
+    // sessionStorage flag used during account creation.  After clearing these, trigger
+    // a full page reload so the game re‑enters the login flow.  Without clearing
+    // sessionStorage.flex-userid-just-set the USER_ID variable may be repopulated
+    // immediately on reload, leaving the player logged in despite the reload.
+    resetBtn.addEventListener("click", async function() {
+      // If there is no current user we don't need to log out.  Simply return.
+      if (!USER_ID) return;
+      if (confirm("Are you sure you want to log out? You can log back in with your username later.")) {
+        try {
+          // Ensure any pending save completes before logging out.  Wrap in a
+          // try/catch so a save failure doesn't prevent logout.
+          if (typeof save === 'function' && __loadComplete) { await save(); }
+        } catch (e) {}
+        try { localStorage.removeItem("flex-userid"); } catch(e){}
+        try { localStorage.removeItem("flex_login_pending"); } catch(e){}
+        try { sessionStorage.removeItem('flex-userid-just-set'); } catch(e){}
+        // Reset the in‑memory USER_ID so subsequent code won't assume a player is logged in.
+        USER_ID = null;
+        // Immediately reload the page to re‑run the login flow.  Using replace()
+        // avoids creating a new history entry.
+        location.replace(location.href);
+      }
+    });
+  }
+}
 
   
 
@@ -3438,7 +3870,10 @@ crypto:[
 
       const pc = petCountsByEgg();
       Object.keys(PET_TABLES)
-        .filter(k => k !== 'galaxy') // hide Galaxy Egg from Pet Quests UI
+        // Hide Galaxy Egg from the Pet Quests UI and remove the Demoegg which
+        // is only used for the Stranger Things event.  Without filtering out
+        // 'demoegg', players see a quest for a pet that doesn't exist in the normal game.
+        .filter(k => k !== 'galaxy' && k.toLowerCase() !== 'demoegg')
         .forEach(egg=>{
           const row=document.createElement('div');
         const owned = pc.owned[egg]||0, total = pc.totals[egg]||0;
@@ -5447,12 +5882,75 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
         if(typeof save === 'function') await save();
         if (typeof renderInventory === 'function') try { renderInventory(); } catch(e){}
         banner('Redeemed! Item added to inventory.');
+        // Mark this code as used by removing it from the codes list on the server
+        try {
+          const nextCodes = codes.filter(x => String(x.code) !== String(raw));
+          await fetch(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}`, {
+            method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ __ts: Date.now(), codes: nextCodes })
+          });
+        } catch(e) { console.warn(e); }
       }catch(e){
         console.warn(e); msg.textContent = 'Could not add item.'; return;
+      }
+    } else if(hit.type === 'pet'){
+      try{
+        const petName = String(hit.petName || hit.itemName || hit.petType || '').trim();
+        if(!petName){ msg.textContent = 'Code is missing pet data.'; return; }
+        // Determine pet EPS: prefer petEps stored in the redeem code; fallback to PET_TABLES lookup
+        let eps = 0;
+        if(hit && typeof hit.petEps !== 'undefined' && hit.petEps !== null){
+          eps = Number(hit.petEps) || 0;
+        }
+        if(!eps){
+          outer: for(const [egg, list] of Object.entries(PET_TABLES || {})){
+            if(!Array.isArray(list)) continue;
+            for(const p of list){
+              if(!p) continue;
+              if(p.name === petName){ eps = Number(p.eps) || 0; break outer; }
+              if(p.name === 'IRL' && Array.isArray(p.subset) && p.subset.includes(petName)){ eps = Number(p.eps) || 0; break outer; }
+            }
+          }
+        }
+        const newPet = {
+          uid: uid(),
+          name: petName,
+          isEgg: false,
+          eggType: null,
+          petType: petName,
+          petEps: eps,
+          svg: getPetSvg(petName, Math.floor(Math.random()*99999))
+        };
+        window.state = window.state || {};
+        state.inventory = state.inventory || [];
+        state.inventory.push(newPet);
+        try{ registerPetOwned(petName); }catch(e){}
+        // Apply permanent multiplier flag for legacy pets if needed
+        if(petName === 'Flex T-Rex' || petName === 'Flex Dragon' || petName === 'Flexicorn'){ state.permanentPetMultiplier = 1; }
+        if(typeof save === 'function') await save();
+        if (typeof renderInventory === 'function') try { renderInventory(); } catch(e){}
+        banner('Redeemed! Pet added to inventory.');
+        // Mark this code as used by removing it from the codes list on the server
+        try {
+          const nextCodes = codes.filter(x => String(x.code) !== String(raw));
+          await fetch(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}`, {
+            method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ __ts: Date.now(), codes: nextCodes })
+          });
+        } catch(e) { console.warn(e); }
+      }catch(e){
+        console.warn(e);
+        msg.textContent = 'Could not add pet.';
+        return;
       }
     } else if(hit.type === 'background' && (hit.backgroundKey||'') === 'sunrise'){
       applySunriseUnlock();
       banner('Redeemed! Sunrise background unlocked.');
+      // Mark this code as used by removing it from the codes list on the server
+      try {
+        const nextCodes = codes.filter(x => String(x.code) !== String(raw));
+        await fetch(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}`, {
+          method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ __ts: Date.now(), codes: nextCodes })
+        });
+      } catch(e) { console.warn(e); }
     } else {
       msg.textContent = 'Unknown reward type.'; return;
     }
@@ -6762,6 +7260,41 @@ const hawkinsItems = [
 })();
 </script>
 <!-- ===== end v109 update ===== -->
+
+<!-- Added script to fix the non‑functional Log Out button
+     When the player clicks the button they are prompted for confirmation.
+     If they confirm, the user ID and any pending login state are removed
+     from storage and the page is reloaded so the login menu appears.
+     This runs after the main game logic to ensure the button exists. -->
+<script>
+  // Immediately attach a click handler to the Log Out button.  This script runs
+  // after the DOM has been parsed so the button should already exist.  We avoid
+  // waiting on the DOMContentLoaded event because it may have already fired by
+  // the time this script executes.
+  (function() {
+    const logoutBtn = document.getElementById('resetUserBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', function(ev) {
+      // Stop other listeners from triggering unintended behaviors (e.g. new account prompt)
+      ev.stopPropagation();
+      ev.preventDefault();
+      // Confirm the user's intention to log out
+      if (confirm('Do you really want to log out?')) {
+        try {
+          localStorage.removeItem('flex-userid');
+          localStorage.removeItem('flex_login_pending');
+          sessionStorage.removeItem('flex-userid-just-set');
+        } catch (e) {
+          /* ignore storage errors */
+        }
+        // Clear the in‑memory user ID if it exists
+        try { window.USER_ID = null; } catch (e) {}
+        // Reload to show the login menu; replace() avoids creating a new history entry
+        window.location.replace(window.location.href);
+      }
+    }, true);
+  })();
+</script>
 
 </body>
 </html>
