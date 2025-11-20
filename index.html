@@ -4113,9 +4113,9 @@ function renderFourthPetSlot(){
 
     if(placed.isEgg && state.petTimers[placeIndex]){
       const timer=document.createElement('div');
-      timer.className='timer-badge';
-      timer.textContent='⏳';
-      p.appendChild(timer);
+      timer.className='pet-timer';
+      timer.dataset.index=placeIndex;
+      pbox.appendChild(timer);
     }
   } else { /* no placeholder */ }
 
@@ -4153,7 +4153,7 @@ function renderFourthPetSlot(){
       state.petStands[placeIndex] = newItem;
       // 2-minute timer for the 4th pedestal
       const TWO_MIN = 2*60*1000;
-      state.petTimers[placeIndex] = Date.now() + (window.FOURTH_HATCH_DURATION || TWO_MIN);
+      state.petTimers[placeIndex] = Date.now() + (window.FOURTH_HATCH_DURATION || 2*60*1000);
     }else{
       state.petStands[placeIndex] = newItem;
       if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
@@ -7296,5 +7296,93 @@ const hawkinsItems = [
   })();
 </script>
 
+
+<!-- v132 pedestal-guard: keep all 4 pedestals visible at all times -->
+<script>
+(function(){
+  // Make sure state.stands exists and has STAND_COUNT entries
+  function ensureStandsLength(){
+    try{
+      const n = (typeof STAND_COUNT === 'number' && STAND_COUNT>0) ? STAND_COUNT : 4;
+      if(!window.state) window.state = {};
+      if(!Array.isArray(state.stands)) state.stands = Array(n).fill(null);
+      while(state.stands.length < n) state.stands.push(null);
+      if(state.stands.length > n) state.stands.length = n;
+    }catch(e){}
+  }
+
+  function fallbackRender(){
+    try{
+      const n = (typeof STAND_COUNT === 'number' && STAND_COUNT>0) ? STAND_COUNT : 4;
+      const area = document.getElementById('stands');
+      if(!area) return;
+      area.innerHTML = '';
+      for(let i=0;i<n;i++){
+        const box = document.createElement('div');
+        box.className = 'stand';
+        const ped = document.createElement('div');
+        ped.className = 'pedestal';
+        box.appendChild(ped);
+        area.appendChild(box);
+      }
+    }catch(e){}
+  }
+
+  function restoreIfMissing(){
+    try{
+      ensureStandsLength();
+      const host = document.getElementById('stands');
+      if(!host) return;
+      const n = (typeof STAND_COUNT === 'number' && STAND_COUNT>0) ? STAND_COUNT : 4;
+      const standCount = host.querySelectorAll('.stand').length;
+      const pedCount = host.querySelectorAll('.stand .pedestal').length;
+      if(standCount !== n || pedCount < n){
+        if(typeof window.renderStands === 'function'){
+          try{ window.renderStands(); }catch(e){ fallbackRender(); }
+        }else{
+          fallbackRender();
+        }
+      }
+    }catch(e){}
+  }
+
+  // Kick once DOM is ready
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', restoreIfMissing, {once:true});
+  }else{
+    restoreIfMissing();
+  }
+
+  // Re-check on common lifecycle events
+  ['visibilitychange','pageshow','focus','resize'].forEach(ev=>{
+    window.addEventListener(ev, restoreIfMissing, {passive:true});
+  });
+
+  // Watch for DOM removals inside #stands
+  (function attachObserver(){
+    const attach = ()=>{
+      const host = document.getElementById('stands');
+      if(!host) return false;
+      const mo = new MutationObserver(()=> restoreIfMissing());
+      mo.observe(host, {childList:true, subtree:true});
+      window.__standGuardObserver = mo;
+      return true;
+    };
+    if(!attach()){
+      // If #stands not yet present, observe the document until it appears
+      const boot = new MutationObserver(()=>{
+        if(attach()){
+          boot.disconnect();
+        }
+      });
+      boot.observe(document.documentElement, {childList:true, subtree:true});
+      window.__standGuardBoot = boot;
+    }
+  })();
+
+  // Periodic safety net
+  setInterval(restoreIfMissing, 3000);
+})();
+</script>
 </body>
 </html>
