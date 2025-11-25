@@ -67,8 +67,6 @@ body.redblue::after {
   background: none !important;
 }
 
-
-
 /* game container */
 .game{
   position:relative;
@@ -288,7 +286,6 @@ body.redblue::after {
 .pet-placed { height: 80px; }
 .pet-placed img { width: 72px; height: 72px; border-radius: 10px; }
 
-
 /* shop overlay and other UI left mostly unchanged */
 .overlay{
   position:fixed;
@@ -378,7 +375,6 @@ body.redblue::after {
           drop-shadow(0 0 16px rgba(0,255,255,.5));
 }
 
-
 .t-unique {
   color: navy;
   position: relative;
@@ -405,7 +401,6 @@ body.redblue::after {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-
 
 @keyframes rainbowShift{ 0%{ background-position: 0% 50%; } 100%{ background-position: 100% 50%; } }
 @keyframes goldShimmer{ 0%{ background-position: 0% 50%; } 100%{ background-position: 200% 50%; } }
@@ -457,9 +452,6 @@ body.redblue::before,
 body.redblue::after {
   display: none !important; /* turn off the original pseudo-element layers */
 }
-
-
-
 
 // === Universal PNG resolver for any item name ===
 window.ITEM_FILE_MAP = window.ITEM_FILE_MAP || {};
@@ -581,7 +573,6 @@ body.bg-crypto{background:linear-gradient(135deg,#ff62d5,#ffd84a)!important;}
 body.bg-rainbow{background:linear-gradient(135deg,#ff004c,#ff7a00,#ffd400,#18e300,#00e7ff,#3a31ff,#ff31ff);background-size:400% 400%;animation:rainbowFlow 14s linear infinite;}
 @keyframes rainbowFlow{0%{background-position:0% 50%}100%{background-position:100% 50%}}
 
-
 /* Deletion mode */
 body.deleting .slot .del-x { display:block !important; }
 .slot .del-x,
@@ -594,7 +585,6 @@ body.deleting .slot .del-x { display:block !important; }
 /* Trash toggle visual state */
 #deleteToggleBtn svg{filter:none;opacity:.95;}
 #deleteToggleBtn.active svg{filter:drop-shadow(0 0 6px rgba(255,59,48,.6));stroke:#ff3b30;}
-
 
 /* === Achievements overlay: size, scroll, and no-overlap (final) === */
 #achOverlay .sheet{
@@ -664,8 +654,6 @@ body.deleting .slot .del-x { display:block !important; }
   box-shadow: none !important;
 }
 
-
-
 /* === Red Money (top money banner override) === */
 body.money-red .cash{
   background: linear-gradient(#ff4b5c, #8b0000) !important;
@@ -694,7 +682,6 @@ body.money-red .cash{
   #petOverlay .shop{ max-height: min(92dvh, 740px); }
 }
 
-
 /* ===== admin broadcast banner ===== */
 #adminMsgBanner{
   position:fixed; left:0; right:0; top:-120px; z-index:9999;
@@ -713,7 +700,6 @@ body.money-red .cash{
 #adminMsgBanner.info{ background: #79ffe1; }
 #adminMsgBanner.warn{ background: #ffd86a; }
 #adminMsgBanner.success{ background: #a7ff83; }
-
 
 /* === Quick Inventory Filters (mini-sheet) === */
 .inv-filter-toggle{
@@ -769,7 +755,6 @@ body.money-red .cash{
   .inv-filter-toggle{ right:12px; bottom: 90px; width:56px; height:56px; }
   .inv-filter-sheet{ right:12px; bottom: 146px; width:238px; }
 }
-
 
 /* === Rarity-themed styles for filter options === */
 :root{
@@ -880,10 +865,26 @@ body.money-red .cash{
 .inv-filter-sheet .opt-event span{ color: var(--c-event); }
 .inv-filter-sheet .opt-event{ animation: opt-glow 1.8s ease-in-out infinite; }
 
-
 /* === Remove Dodgers Event UI (button & overlay only) — keep items/data intact === */
 .event-row{ display:none !important; }
 #dodgerOverlay{ display:none !important; }
+
+/* Red Pedestal cosmetic (applies to item pedestals only) */
+body.red-pedestals .pedestal{
+  background: linear-gradient(180deg,#ff5a5a,#8b0000) !important;
+  box-shadow: inset 0 6px 0 rgba(255,255,255,.25), 0 10px 0 #710000, 0 14px 18px rgba(0,0,0,.45) !important;
+}
+
+/* Aqua Pedestal cosmetic (applies to item pedestals only) */
+body.aqua-pedestals .pedestal{
+  background: linear-gradient(180deg,#a8deff,#0a4cbf) !important;
+  box-shadow: inset 0 6px 0 rgba(255,255,255,25), 0 10px 0 #0a3a86, 0 14px 18px rgba(0,0,0,45) !important;
+}
+/* Pedestal page tiles */
+.ped-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;}
+.ped-tile{height:120px;border-radius:18px;border:4px solid #111;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;background:linear-gradient(180deg,#ffd24a,#b8860b);}
+.ped-tile.locked::after{content:"LOCKED";position:absolute;inset:auto 0 0 0;background:rgba(0,0,0,.55);color:#fff;text-align:center;padding:6px 0;font-weight:900;}
+.ped-apply{align-self:flex-end;margin-top:6px;}
 
 </style>
 <style>
@@ -1031,7 +1032,7 @@ body.bg-sunrise{
   max-height: min(92vh, 860px);
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* cap the dialog; inner grid will scroll */
+  overflow: visible; /* cap the dialog; inner grid will scroll */
 }
 #bgOverlay h2{ margin: 0 0 12px 0; }
 #bgOverlay #bgGrid{
@@ -1219,12 +1220,10 @@ body.bg-sunrise{
 #toolBarArea{ z-index: 8 !important; }
 </style>
 
-
 <!-- override: enlarge Stranger Things icon on button -->
 <style>
   .icon-stranger::after{ inset:6% !important; }
 </style>
-
 
 <!-- override: max-size Stranger Things icon and hide fallback text -->
 <style>
@@ -1234,8 +1233,113 @@ body.bg-sunrise{
   .icon-stranger .fallback-text{ display:none !important; }
 </style>
 
-
 <!-- v112 demon-persist patch: include `demon` in save() for inventory and placed items -->
+
+<style>
+/* === Side tabs (Backgrounds / Pedestals) === */
+#bgOverlay .sheet{ position: relative; overflow: visible; }
+#bgOverlay .bg-side-tabs{
+  position: absolute;
+  right: -132px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 20;
+}
+#bgOverlay .bg-tab{
+  font-family: 'Bungee', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
+  letter-spacing: 1px;
+  font-size: 18px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  border: 4px solid var(--ui-blue-dark);
+  background: #f5f8fe;
+  color: #0c3556;
+  box-shadow: 0 3px 0 rgba(0,0,0,.35), 0 6px 14px rgba(0,0,0,.15);
+  text-shadow: none;
+  user-select: none;
+}
+#bgOverlay .bg-tab.active{
+  background: linear-gradient(to bottom, var(--ui-blue) 0%, #2f8de6 100%);
+  color:#fff;
+  border-color:#1a5fbf;
+}
+#bgOverlay .bg-tab:focus{ outline: none; }
+#bgOverlay .bg-tab:active{ transform: translateY(1px); }
+#bgOverlay .pedestal-page{
+  flex: 1 1 auto;
+  min-height: 0;
+  /* empty page by design for now */
+}
+@media (max-width: 980px){
+  #bgOverlay .bg-side-tabs{
+    position: absolute;
+    right: 12px;
+    top: 72px;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 20;
+  }
+  #bgOverlay .bg-tab{ font-size: 16px; padding: 10px 14px; }
+}
+</style>
+
+<style id="bg-tabs-connected-override">
+/* Connect Backgrounds/Pedestals tabs to the overlay sheet so they track it */
+#bgOverlay .sheet{ overflow: visible !important; position: relative; }
+#bgOverlay .bg-side-tabs{
+  position: absolute !important;
+  right: -132px !important;  /* hang just outside the sheet edge */
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  display: flex; flex-direction: column; gap: 12px;
+  z-index: 20;
+}
+@media (max-width: 980px){
+  #bgOverlay .bg-side-tabs{
+    position: absolute !important;
+    right: 12px !important;    /* tuck inside on small screens so it's always visible */
+    top: 72px !important;
+    transform: none !important;
+  }
+}
+</style>
+
+<style id="bg-tabs-under-title-override">
+/* Place Backgrounds / Pedestals buttons under the title on the left */
+#bgOverlay .sheet { position: relative; overflow: visible; }
+#bgOverlay h2#bgTitle { text-align: left; }
+#bgOverlay .bg-side-tabs{
+  position: static !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  margin: 0 0 12px 0 !important; /* sit directly under the title */
+  z-index: 1 !important;
+}
+#bgOverlay .bg-tab{
+  font-size: 16px !important;
+  padding: 10px 14px !important;
+  border-radius: 14px !important;
+}
+/* Ensure the grid doesn't get overlapped by the buttons */
+#bgOverlay .bg-grid{ margin-top: 0 !important; }
+/* Mobile: keep same layout; buttons wrap nicely if needed */
+@media (max-width: 600px){
+  #bgOverlay .bg-side-tabs{ flex-wrap: wrap !important; gap: 8px !important; }
+  #bgOverlay .bg-tab{ font-size: 15px !important; padding: 9px 12px !important; }
+}
+</style>
+
 </head>
 <body>
 <div class="event-row" id="eventRow"></div>
@@ -1637,7 +1741,6 @@ body.bg-sunrise{
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
 
-
 function getPetSvg(petName, seed){
   // Normalize filename
   const nameMap = { "Dog": "dog.png",
@@ -1999,7 +2102,6 @@ async function save(){
   // Batch saves occurring within 400ms
   await new Promise(r=>{ __saveTimer = setTimeout(()=>{ __saveTimer=null; r(); }, 400); });
 
-
   // Write a fast local backup first so spam-refresh can't wipe state
   const __nowTs = Date.now();
 
@@ -2030,7 +2132,9 @@ async function save(){
     // remote save so they travel with the user across browsers.
     unlockedBackgrounds: state.unlockedBackgrounds || {},
     selectedBackground: state.selectedBackground || 'default',
-    ach: state.ach || { questsDone: {} }
+    ach: state.ach || { questsDone: {} },
+    pedestalSkins: state.pedestalSkins || { default:true, red: !!((state.ach||{}).redPedestalUnlocked) },
+    selectedPedestalSkin: state.selectedPedestalSkin || 'default',
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -2321,7 +2425,9 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     state.unlockedBackgrounds = dat.unlockedBackgrounds || state.unlockedBackgrounds || { default:true };
     state.selectedBackground = dat.selectedBackground || state.selectedBackground || 'default';
 
-    // Merge achievements/quests from the remote save.  Previously, quest completions were
+        state.pedestalSkins = dat.pedestalSkins || state.pedestalSkins || { default:true, red: !!((state.ach||{}).redPedestalUnlocked), aqua: !!((state.ach||{}).aquaPedestalUnlocked) };
+    state.selectedPedestalSkin = dat.selectedPedestalSkin || state.selectedPedestalSkin || 'default';
+// Merge achievements/quests from the remote save.  Previously, quest completions were
     // only stored locally via the addon, so merge them carefully to preserve any existing
     // progress in state.ach.  Include flags such as pet pedestal and pet unlocks when present.
     if (dat.ach) {
@@ -2473,8 +2579,6 @@ function handleSaveUpload(event) {
   };
   reader.readAsText(file);
 }
-
-
 
 function rarityBadge(r){
   // normalize to lowercase key used in RARITY object
@@ -2797,7 +2901,6 @@ pbox.addEventListener('click', () => {
     state.petStands[placeIndex] = null;
     delete state.petTimers[placeIndex];
   }
-
 
   // ✅ Allow eggs or pets here
   if (!(newItem.isEgg || newItem.petType)) {
@@ -3125,8 +3228,6 @@ function updateMultiplierStatus() {
   multiplierTimer = setInterval(refresh, 1000);
 }
 
-
-
 function buyMultiplier() {
   const now = Date.now();
   if (state.money < MULTIPLIER_COST) return;
@@ -3189,8 +3290,6 @@ function toggleBackground() {
 
   save();
 }
-
-
 
 function updateRedMoneyUI(){
   const buy = document.getElementById("buyRedMoney");
@@ -3277,8 +3376,6 @@ recalcEPS = function() {
   save();
 };
 
-
-
 /* -----------------------
    PET SHOP LOGIC
    ----------------------- */
@@ -3297,7 +3394,8 @@ function petCountsByEgg(){
   const totals={}, owned={};
   const dex = ensurePetDex();
   for(const [egg, list] of Object.entries(PET_TABLES)){
-    if(egg === 'galaxy') continue; // Exclude Galaxy Egg from Pet Quests tallies
+    const key = String(egg).toLowerCase();
+    if(key === 'galaxy' || key === 'demoegg') continue; // Exclude Galaxy + Demoegg from Pet Quests tallies
     const names=[];
     list.forEach(e => { if(e.name==='IRL' && Array.isArray(e.subset)) names.push(...e.subset); else names.push(e.name); });
     totals[egg]=names.length; owned[egg]=names.filter(n => !!dex[n]).length;
@@ -3481,7 +3579,6 @@ document.getElementById('buyUniversalEgg').addEventListener('click', ()=>buyEgg(
    BOOT
 ----------------------- */
 
-
 function reconcilePetDex(){
   try{
     if(!state.petDex) state.petDex = {};
@@ -3502,7 +3599,28 @@ async function boot(){
       applyBG(state.selectedBackground);
     }
   } catch (e) {}
+  
   try {
+    // Apply selected pedestal skin on load (red, aqua, strange)
+    if (state && state.selectedPedestalSkin === 'red') {
+      document.body.classList.add('red-pedestals');
+      document.body.classList.remove('aqua-pedestals');
+      document.body.classList.remove('strange-pedestals');
+    } else if (state && state.selectedPedestalSkin === 'aqua') {
+      document.body.classList.add('aqua-pedestals');
+      document.body.classList.remove('red-pedestals');
+      document.body.classList.remove('strange-pedestals');
+    } else if (state && state.selectedPedestalSkin === 'strange') {
+      document.body.classList.add('strange-pedestals');
+      document.body.classList.remove('red-pedestals');
+      document.body.classList.remove('aqua-pedestals');
+    } else {
+      document.body.classList.remove('red-pedestals');
+      document.body.classList.remove('aqua-pedestals');
+      document.body.classList.remove('strange-pedestals');
+    }
+  } catch (e) {}
+try {
     if (typeof persistAllCompletions === 'function') {
       persistAllCompletions();
     }
@@ -3673,6 +3791,8 @@ initLoginAndBoot();
 <div class="achv-wrap">
 <div class="rarity-rail" id="rarityRail">
 <div class="rail-btn" data-tab="quests"><span>QUESTS</span><span class="badge-dot" id="questsDot"></span></div>
+<div class="rail-btn" data-tab="quests2" id="btn-quests2" style="display:none;"><span>QUESTS 2</span><span class="badge-dot" id="dot-quests2"></span></div>
+<div class="rail-btn" data-tab="quests3" id="btn-quests3" style="display:none;"><span>QUESTS 3</span><span class="badge-dot" id="dot-quests3"></span></div>
 <div class="rail-btn" data-tab="petquests"><span>PET QUESTS</span><span class="badge-dot" id="dot-petquests"></span></div>
 <div class="rail-btn" data-tab="common"><span>COMMON</span><span class="badge-dot" id="dot-common"></span></div>
 <div class="rail-btn" data-tab="rare"><span>RARE</span><span class="badge-dot" id="dot-rare"></span></div>
@@ -3692,8 +3812,15 @@ initLoginAndBoot();
 <div aria-hidden="true" class="overlay" id="bgOverlay">
 <div aria-labelledby="bgTitle" aria-modal="true" class="sheet" role="dialog">
 <button aria-label="Close" class="closeX" id="closeBg" onclick="document.getElementById('bgOverlay').classList.remove('show')">✕</button>
+
 <h2 id="bgTitle">Backgrounds</h2>
+<div class="bg-side-tabs" id="bgSideTabs" aria-label="Background sections">
+  <button class="bg-tab active" data-target="bgGrid" aria-controls="bgGrid" aria-selected="true">BACKGROUNDS</button>
+  <button class="bg-tab" data-target="pedestalPage" aria-controls="pedestalPage" aria-selected="false">PEDESTALS</button>
+</div>
 <div class="bg-grid" id="bgGrid"></div>
+<div class="pedestal-page" id="pedestalPage" style="display:none;"></div>
+
 </div>
 </div>
 <script>
@@ -3736,6 +3863,30 @@ initLoginAndBoot();
     {id:'g_ex1',label:'Own an Exotic',check:()=>countR('exotic')>=1},
     {id:'g_my1',label:'Own a Mythic',check:()=>countR('mythic')>=1}
   ];
+  
+  
+  const ELITE=[    {id:'h_u15',      label:'Own 15 Unique',                     check:()=> countR('unique') >= 15},
+    {id:'h_x5',       label:'Own 5 Exotic',                      check:()=> countR('exotic') >= 5},
+    {id:'h_m4',       label:'Own 4 Mythic',                      check:()=> countR('mythic') >= 4},
+    {id:'h_cr1',      label:'Own 1 Crypto',                      check:()=> countR('crypto') >= 1},
+    {id:'h_cr3',      label:'Own 3 Crypto',                      check:()=> countR('crypto') >= 3},
+    {id:'h_bg',       label:'Apply a custom Background',         check:()=> String(state.selectedBackground||'default') !== 'default'},
+    {id:'h_pets15',   label:'Own 15 different pets',             check:()=> Object.keys(state.petDex||{}).length >= 15},
+    {id:'h_c65',  label:'Own 65 Common items',            check:()=> countR('common') >= 65},
+    {id:'h_place_x',  label:'Place an Exotic',                   check:()=> hasPlaced('exotic')},
+    {id:'h_rebirth5', label:'Rebirth five times',                check:()=> (state.rebirthLevel||0) >= 5}
+  ];
+
+  const ULTIMATE=[{id:'u3_c100',   label:'Own 100 Common items',           check:()=> countR('common') >= 100},
+    {id:'u3_r40',    label:'Own 40 Rare items',              check:()=> countR('rare') >= 40},
+    {id:'u3_e20',    label:'Own 20 Epic items',              check:()=> countR('epic') >= 20},
+    {id:'u3_l8',     label:'Own 8 Legendary items',          check:()=> countR('legendary') >= 8},
+    {id:'u3_m6',     label:'Own 6 Mythic items',             check:()=> countR('mythic') >= 6},
+    {id:'u3_x7',     label:'Own 7 Exotic items',             check:()=> countR('exotic') >= 7},
+    {id:'u3_cr5',    label:'Own 5 Crypto items',             check:()=> countR('crypto') >= 5},
+    {id:'u3_place_m',label:'Place a Mythic',                 check:()=> hasPlaced('mythic')},
+    {id:'u3_rebirth10',label:'Reach level 9 rebirth',check:()=> (state.rebirthLevel||0) >= 9}];
+
 
   function __isDone(q){ return (state.ach && state.ach.questsDone && !!state.ach.questsDone[q.id]) || (!!q.check && q.check()); }
 
@@ -3792,6 +3943,8 @@ crypto:[
     let changed=false;
     GLOBAL.forEach(q=>{ if(q.check && q.check() && !(state.ach.questsDone||{})[q.id]){ state.ach.questsDone[q.id]=true; changed=true; } });
     RLIST.forEach(r=>{ (RQ[r]||[]).forEach(q=>{ if(q.check && q.check() && !(state.ach.questsDone||{})[q.id]){ state.ach.questsDone[q.id]=true; changed=true; } }); });
+    
+    try{ (ELITE||[]).forEach(q=>{ if(q.check && q.check() && !(state.ach.questsDone||{})[q.id]){ state.ach.questsDone[q.id]=true; changed=true; } }); }catch(e){}
     if(changed){ window.__addonSave&&__addonSave(); if(typeof save==='function') save(); }
   }
 
@@ -3817,6 +3970,68 @@ crypto:[
     const md=(id,done)=>{const el=document.getElementById(id); if(el) el.classList.toggle('done',!!done);};
     md('questsDot', gDone());
     RLIST.forEach(r=>{ const all=(RQ[r]||[]).every(q=>__isDone(q)); md('dot-'+r, all); });
+
+    // Pet Quests overall completion dot (persists across refresh via achievement flag)
+    try{
+      const dotPet = document.getElementById('dot-petquests');
+      if(dotPet && window.state){
+        const donePet = !!(state.ach && state.ach.petFourthUnlocked);
+        // If the 4th pedestal has ever been unlocked, keep the Pet Quests dot green.
+        dotPet.classList.toggle('done', donePet);
+      }
+    }catch(e){}
+
+    // Reveal second quest page once first page is complete
+    try{
+      const q2 = document.getElementById('btn-quests2');
+      if(q2) q2.style.display = gDone() ? '' : 'none';
+    }catch(e){}
+
+    // Elite page progress + dot
+    let eliteAll = false;
+    try{
+      eliteAll = (ELITE||[]).every(q=>__isDone(q));
+      const d2 = document.getElementById('dot-quests2');
+      if(d2) d2.classList.toggle('done', !!eliteAll);
+    }catch(e){}
+
+    
+    // Reveal third quest page once second page is complete
+    try{
+      const q3 = document.getElementById('btn-quests3');
+      if(q3) q3.style.display = eliteAll ? '' : 'none';
+    }catch(e){}
+
+    // Master page progress + dot
+    let ultimateAll = false;
+    try{
+      ultimateAll = (ULTIMATE||[]).every(q=>__isDone(q));
+      const d3 = document.getElementById('dot-quests3');
+      if(d3) d3.classList.toggle('done', !!ultimateAll);
+    }catch(e){}
+
+    // Reward: unlock Aqua Pedestal when all 10 are complete
+    try{
+      if(ultimateAll){
+        state.ach = state.ach || {questsDone:{}};
+        if(!state.ach.aquaPedestalUnlocked){
+          state.ach.aquaPedestalUnlocked = true;
+          state.pedestalSkins = Object.assign({default:true}, state.pedestalSkins||{}, {aqua:true});
+          window.__addonSave && __addonSave();
+        }
+      }
+    }catch(e){}  
+// Reward: unlock Red Pedestal when all 12 are complete
+    try{
+      if(eliteAll){
+        state.ach = state.ach || {questsDone:{}};
+        if(!state.ach.redPedestalUnlocked){
+          state.ach.redPedestalUnlocked = true;
+          state.pedestalSkins = Object.assign({default:true}, state.pedestalSkins||{}, {red:true});
+          window.__addonSave && __addonSave();
+        }
+      }
+    }catch(e){}    
 
     if(gDone() && !state.ach.petPedestalGranted){
   state.ach.petPedestalGranted=true;
@@ -3851,7 +4066,62 @@ crypto:[
       f.textContent='Progress: '+done+' / '+GLOBAL.length; host.appendChild(f);
       return;
     }
-    if(tab!=='petquests'){
+
+    if(tab==='quests2'){
+      const host=document.getElementById('achContent'); if(!host) return;
+      const head=document.createElement('div');
+      head.innerHTML='<h3 style="margin:8px 0 10px;font-family:Bungee;letter-spacing:1px;">Elite Quests</h3>'
+        + '<div style="opacity:.85;margin-bottom:10px">12 tougher quests that pull from more game systems. Complete them all to unlock a <span class="reward-pill">Red Pedestal</span>.</div>';
+      host.appendChild(head);
+      (ELITE||[]).forEach(q=>host.appendChild(qRow(q)));
+      const done=(ELITE||[]).filter(q=>__isDone(q)).length;
+      const f=document.createElement('div'); f.style.cssText='margin-top:12px;font-weight:900;opacity:.9;';
+      f.textContent='Progress: '+done+' / '+(ELITE||[]).length; host.appendChild(f);
+      if((state.ach||{}).redPedestalUnlocked){
+        const ok=document.createElement('div'); ok.style.cssText='margin-top:10px;font-weight:900;color:#73ff81;';
+        ok.textContent='Reward unlocked: Red Pedestal (equip it from Backgrounds → Pedestals).';
+        host.appendChild(ok);
+      }
+      return;
+    }
+
+    
+    
+    if(tab==='quests3'){
+      const host=document.getElementById('achContent'); if(!host) return;
+      const head=document.createElement('div');
+      head.innerHTML='<h3 style="margin:8px 0 10px;font-family:Bungee;letter-spacing:1px;">Master Quests</h3>'
+        + '<div style="opacity:.85;margin-bottom:10px">The hardest quests. Complete them all to unlock a <span class="reward-pill">Light/Dark Blue Pedestal</span>.</div>';
+      host.appendChild(head);
+      (ULTIMATE||[]).forEach(q=>host.appendChild(qRow(q)));
+      const done=(ULTIMATE||[]).filter(q=>__isDone(q)).length;
+      const f=document.createElement('div'); f.style.cssText='margin-top:12px;font-weight:900;opacity:.9;';
+      f.textContent='Progress: '+done+' / '+(ULTIMATE||[]).length; host.appendChild(f);
+      if((state.ach||{}).aquaPedestalUnlocked){
+        const ok=document.createElement('div'); ok.style.cssText='margin-top:10px;font-weight:900;color:#73ff81;';
+        ok.textContent='Reward unlocked: Light/Dark Blue Pedestal (equip it from Backgrounds → Pedestals).';
+        host.appendChild(ok);
+      }
+      return;
+    }
+if(tab==='quests3'){
+      const host=document.getElementById('achContent'); if(!host) return;
+      const head=document.createElement('div');
+      head.innerHTML='<h3 style="margin:8px 0 10px;font-family:Bungee;letter-spacing:1px;">Master Quests</h3>'
+        + '<div style="opacity:.85;margin-bottom:10px">The hardest quests. Complete them all to unlock a <span class="reward-pill">Light/Dark Blue Pedestal</span>.</div>';
+      host.appendChild(head);
+      (ULTIMATE||[]).forEach(q=>host.appendChild(qRow(q)));
+      const done=(ULTIMATE||[]).filter(q=>__isDone(q)).length;
+      const f=document.createElement('div'); f.style.cssText='margin-top:12px;font-weight:900;opacity:.9;';
+      f.textContent='Progress: '+done+' / '+(ULTIMATE||[]).length; host.appendChild(f);
+      if((state.ach||{}).aquaPedestalUnlocked){
+        const ok=document.createElement('div'); ok.style.cssText='margin-top:10px;font-weight:900;color:#73ff81;';
+        ok.textContent='Reward unlocked: Light/Dark Blue Pedestal (equip it from Backgrounds → Pedestals).';
+        host.appendChild(ok);
+      }
+      return;
+    }
+if(tab!=='petquests'){
     const hdr=document.createElement('div');
     hdr.innerHTML='<h3 style=\"margin:8px 0 10px;font-family:Bungee;letter-spacing:1px;\">'+tab.toUpperCase()+'</h3>'
       + '<div style=\"opacity:.85;margin-bottom:10px\">Complete these to unlock a themed background '+(R2BG[tab]?'for this rarity':'')+'.</div>';
@@ -4167,7 +4437,6 @@ function renderFourthPetSlot(){
   });
 }
 
-
   (function(){
     const __rs = window.renderStands;
     if(typeof __rs==='function'){
@@ -4417,12 +4686,10 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 })();
 </script>
 
-
 <!-- Quick reward reveal -->
 <img alt="reward" id="revealImg"/>
 <div id="revealName" style="font-weight:900;margin-top:6px;"></div>
 <div class="rar" id="revealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
-
 
 <!-- LA Dodgers Event Overlay -->
 <div aria-hidden="true" class="overlay" id="dodgerOverlay">
@@ -6582,9 +6849,7 @@ function doForge(){
           <button class="stranger-buy" id="buyDemoEgg">Purchase</button>
         </div>
       </div>
-      <div class="stranger-card" style="display:grid;place-items:center;">
-        <img alt="Stranger Things" id="strangerShopLogo"/>
-      </div>
+      <div class="stranger-card" id="cardStrangePedestals"><h3>Strange Pedestals</h3><div class="stranger-desc">Unlocks a red–yellow glowing pedestal with white polka dots. Equip it from Backgrounds → Pedestals.</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><div class="stranger-price">$15,000,000,000,000</div><button class="stranger-buy" id="buyStrangePedestals">Purchase</button></div></div>
     </div>
   </div>
 </div>
@@ -6597,7 +6862,6 @@ function doForge(){
     <div class="rar" id="strangerRevealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
   </div>
 </div>
-
 
 <script>
 (function(){
@@ -6668,7 +6932,7 @@ function doForge(){
     document.getElementById('strangerOverlay').setAttribute('aria-hidden','false');
     setStrangerEventIcon();
     updateHawkinsStyleUI();
-  }
+  updateStrangePedestalUI && updateStrangePedestalUI(); }
 
   document.getElementById('closeStranger')?.addEventListener('click', ()=>{
     document.getElementById('strangerOverlay').classList.remove('show');
@@ -6841,7 +7105,31 @@ const hawkinsItems = [
   }
   document.getElementById('buyHawkinsStyle')?.addEventListener('click', buyHawkinsStyle);
 
-  (function extendBgGridForHawkins(){
+  const STRANGE_PEDESTAL_COST = 15_000_000_000_000;
+function updateStrangePedestalUI(){
+  try{
+    const btn = document.getElementById('buyStrangePedestals');
+    if(!btn) return;
+    const owned = !!((state.pedestalSkins||{}).strange);
+    btn.disabled = owned;
+    btn.textContent = owned ? 'Owned' : 'Purchase';
+  }catch(e){}
+}
+function buyStrangePedestals(){
+  try{
+    if((state.pedestalSkins||{}).strange){ updateStrangePedestalUI(); return; }
+    if(state.money < STRANGE_PEDESTAL_COST){ alert('Not enough money.'); return; }
+    state.money -= STRANGE_PEDESTAL_COST;
+    state.pedestalSkins = state.pedestalSkins || { default:true };
+    state.pedestalSkins.strange = true;
+    alert('Strange Pedestals unlocked! Equip it from Backgrounds → Pedestals.');
+    try{ updateStrangePedestalUI(); }catch(e){}
+    try{ if(typeof window.__renderPedestalPage==='function') window.__renderPedestalPage(); }catch(e){}
+    if(typeof save==='function') save();
+  }catch(e){}
+}
+document.getElementById('buyStrangePedestals')?.addEventListener('click', buyStrangePedestals);
+(function extendBgGridForHawkins(){
     const orig = window.__renderBgGrid;
     window.__renderBgGrid = function(){
       if(typeof orig === 'function') orig();
@@ -6973,7 +7261,6 @@ const hawkinsItems = [
   new MutationObserver(()=> ensureEventButton()).observe(document.body, {childList:true, subtree:true});
 })();
 </script>
-
 
 <!-- ===== Stranger Things: Hawkins Pack + Demon Potion update (v109) ===== -->
 <style>
@@ -7296,7 +7583,6 @@ const hawkinsItems = [
   })();
 </script>
 
-
 <!-- v132 pedestal-guard: keep all 4 pedestals visible at all times -->
 <script>
 (function(){
@@ -7384,5 +7670,156 @@ const hawkinsItems = [
   setInterval(restoreIfMissing, 3000);
 })();
 </script>
+
+<script>
+(function(){
+  const $ = (sel, ctx=document) => ctx.querySelector(sel);
+  const overlay = $('#bgOverlay');
+  if(!overlay) return;
+  const title = $('#bgTitle', overlay);
+  const grid = $('#bgGrid', overlay);
+  const ped = $('#pedestalPage', overlay);
+  const tabs = overlay.querySelectorAll('.bg-tab');
+
+  function setActive(which){
+    if(which === 'bg'){
+      title.textContent = 'Backgrounds';
+      grid.style.display = '';
+      ped.style.display = 'none';
+    }else{
+      title.textContent = 'PEDESTALS';
+      grid.style.display = 'none';
+      ped.style.display = '';
+    }
+    tabs.forEach(btn => {
+      const t = btn.getAttribute('data-target');
+      const isActive = (which === 'bg' && t === 'bgGrid') || (which === 'ped' && t === 'pedestalPage');
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true':'false');
+    });
+  }
+
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setActive(btn.dataset.target === 'bgGrid' ? 'bg' : 'ped');
+    });
+  });
+
+  // When opening from the main button, default to Backgrounds
+  const openBtn = document.getElementById('openBgSelector');
+  if(openBtn){
+    openBtn.addEventListener('click', () => setActive('bg'));
+  }
+
+  // Expose small helper in case other code wants to flip
+  window.__bg_setActivePage = setActive;
+})();
+</script>
+<style>
+/* Strange Pedestal cosmetic (applies to item pedestals only) */
+body.strange-pedestals .pedestal{
+  background:
+    radial-gradient(circle at 28% 32%, rgba(255,255,255,.92) 0 3px, transparent 4px),
+    radial-gradient(circle at 62% 68%, rgba(255,255,255,.92) 0 3px, transparent 4px),
+    radial-gradient(circle at 78% 40%, rgba(255,255,255,.92) 0 3px, transparent 4px),
+    linear-gradient(180deg,#ffd84a,#ff2b2b) !important;
+  background-size: 18px 18px, 20px 20px, 22px 22px, auto !important;
+  background-blend-mode: screen, screen, screen, normal !important;
+  box-shadow: inset 0 6px 0 rgba(255,255,255,.25), 0 10px 0 #8b1a00, 0 14px 20px rgba(0,0,0,.45), 0 0 18px rgba(255,200,0,.45) !important;
+}
+</style>
 </body>
 </html>
+<script>
+// --- Pedestal Skins & Changer Page (non-destructive add-on) ---
+(function(){
+  function ensurePedestalState(){
+    window.state = window.state || {};
+    state.ach = state.ach || { questsDone:{} };
+    state.pedestalSkins = state.pedestalSkins || { default:true, red: !!(state.ach.redPedestalUnlocked), aqua: !!(state.ach.aquaPedestalUnlocked) };
+    state.pedestalSkins.strange = !!state.pedestalSkins.strange;state.selectedPedestalSkin = state.selectedPedestalSkin || 'default';
+    applyPedestalSkin();
+  }
+  function applyPedestalSkin(){
+    try{
+      document.body.classList.toggle('red-pedestals', String(state.selectedPedestalSkin)==='red');
+      document.body.classList.toggle('aqua-pedestals', String(state.selectedPedestalSkin)==='aqua');
+    document.body.classList.toggle('strange-pedestals', String(state.selectedPedestalSkin)==='strange');}catch(e){}
+  }
+  window.__renderPedestalPage = function(){
+    ensurePedestalState();
+    const host = document.getElementById('pedestalPage'); if(!host) return;
+    host.innerHTML = '';
+    const grid = document.createElement('div'); grid.className='ped-grid';
+    // Default (Gold)
+    const def = document.createElement('div');
+    def.className = 'ped-tile';
+    def.innerHTML = '<div style="font-weight:900">Default (Gold)</div>'
+                  + '<button class="buy ped-apply" '+('default'===(state.selectedPedestalSkin||'default')?'disabled':'')+'>Equip</button>';
+    def.querySelector('.ped-apply').onclick = ()=>{ state.selectedPedestalSkin='default'; applyPedestalSkin(); if(typeof save==='function') save(); __renderPedestalPage(); };
+    grid.appendChild(def);
+    // Red (Reward)
+    const unlocked = !!((state.ach||{}).redPedestalUnlocked);
+    const red = document.createElement('div');
+    red.className = 'ped-tile'+(unlocked?'':' locked');
+    red.style.background = 'linear-gradient(180deg,#ff5a5a,#8b0000)';
+    red.innerHTML = '<div style="font-weight:900">Red Pedestal</div>'
+                  + '<button class="buy ped-apply" '+(!unlocked || (state.selectedPedestalSkin==='red')?'disabled':'')+'>Equip</button>';
+    if(unlocked){
+      red.querySelector('.ped-apply').onclick = ()=>{ state.selectedPedestalSkin='red'; applyPedestalSkin(); if(typeof save==='function') save(); __renderPedestalPage(); };
+    }
+    
+    // Aqua (Reward for Quests 3)
+    const unlockedA = !!((state.ach||{}).aquaPedestalUnlocked);
+    const aqua = document.createElement('div');
+    aqua.className = 'ped-tile'+(unlockedA?'':' locked');
+    aqua.style.background = 'linear-gradient(180deg,#a8deff,#0a4cbf)';
+    aqua.innerHTML = '<div style="font-weight:900">Light/Dark Blue</div>'
+                   + '<button class="buy ped-apply" '+(!unlockedA || (state.selectedPedestalSkin==='aqua')?'disabled':'')+'>Equip</button>';
+    if(unlockedA){
+      aqua.querySelector('.ped-apply').onclick = ()=>{ state.selectedPedestalSkin='aqua'; applyPedestalSkin(); if(typeof save==='function') save(); __renderPedestalPage(); };
+    }
+    
+    // Strange (Purchased from Stranger Things)
+    const unlockedS = !!((state.pedestalSkins||{}).strange);
+    const strange = document.createElement('div');
+    strange.className = 'ped-tile' + (unlockedS ? '' : ' locked');
+    strange.style.background = 'radial-gradient(circle at 30% 30%, rgba(255,255,255,.9) 0 6px, transparent 7px), radial-gradient(circle at 65% 70%, rgba(255,255,255,.9) 0 6px, transparent 7px), linear-gradient(180deg,#ffd84a,#ff2b2b)';
+    strange.style.backgroundSize = '22px 22px, 26px 26px, auto';
+    strange.style.backgroundBlendMode = 'screen, screen, normal';
+    strange.innerHTML = '<div style="font-weight:900">Strange Pedestals</div>'
+                      + '<button class="buy ped-apply" ' + ((!unlockedS || (state.selectedPedestalSkin === 'strange')) ? 'disabled' : '') + '>Equip</button>';
+    if (unlockedS) {
+      strange.querySelector('.ped-apply').onclick = () => { state.selectedPedestalSkin = 'strange'; try{ applyPedestalSkin(); }catch(e){} if (typeof save === 'function') save(); __renderPedestalPage(); };
+    }
+    grid.appendChild(red);
+    // Second row layout
+    try { aqua.style.gridRow = '2'; aqua.style.gridColumn = '1'; } catch(e) {}
+    grid.appendChild(aqua);
+    try { strange.style.gridRow = '2'; strange.style.gridColumn = '2'; } catch(e) {}
+    grid.appendChild(strange);
+
+    host.appendChild(grid);
+  };
+  // Hook the side tabs to render the page when PEDESTALS is shown
+  document.addEventListener('DOMContentLoaded', function(){
+    ensurePedestalState();
+    const tabs = document.getElementById('bgSideTabs');
+    if(tabs){
+      tabs.addEventListener('click', function(e){
+        const t = e.target.closest('.bg-tab'); if(!t) return;
+        const tgt = t.getAttribute('data-target');
+        if(tgt==='pedestalPage'){ setTimeout(()=>{ try{ __renderPedestalPage(); }catch(e){} }, 0); }
+      });
+    }
+    // In case the Pedestals tab starts active
+    try{
+      const active = document.querySelector('#bgSideTabs .bg-tab.active');
+      if(active && active.getAttribute('data-target')==='pedestalPage'){
+        __renderPedestalPage();
+      }
+    }catch(e){}
+  });
+})();
+</script>
+
