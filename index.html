@@ -1219,12 +1219,10 @@ body.bg-sunrise{
 /* Toolbar behind-overlay blur fix: drop below overlay so it dims/blur like the others */
 #toolBarArea{ z-index: 8 !important; }
 </style>
-
 <!-- override: enlarge Stranger Things icon on button -->
 <style>
   .icon-stranger::after{ inset:6% !important; }
 </style>
-
 <!-- override: max-size Stranger Things icon and hide fallback text -->
 <style>
   /* Fill the button with the icon artwork */
@@ -1232,9 +1230,7 @@ body.bg-sunrise{
   /* Remove the 'ST' letters behind the icon */
   .icon-stranger .fallback-text{ display:none !important; }
 </style>
-
 <!-- v112 demon-persist patch: include `demon` in save() for inventory and placed items -->
-
 <style>
 /* === Side tabs (Backgrounds / Pedestals) === */
 #bgOverlay .sheet{ position: relative; overflow: visible; }
@@ -1287,7 +1283,6 @@ body.bg-sunrise{
   #bgOverlay .bg-tab{ font-size: 16px; padding: 10px 14px; }
 }
 </style>
-
 <style id="bg-tabs-connected-override">
 /* Connect Backgrounds/Pedestals tabs to the overlay sheet so they track it */
 #bgOverlay .sheet{ overflow: visible !important; position: relative; }
@@ -1308,7 +1303,6 @@ body.bg-sunrise{
   }
 }
 </style>
-
 <style id="bg-tabs-under-title-override">
 /* Place Backgrounds / Pedestals buttons under the title on the left */
 #bgOverlay .sheet { position: relative; overflow: visible; }
@@ -1339,7 +1333,6 @@ body.bg-sunrise{
   #bgOverlay .bg-tab{ font-size: 15px !important; padding: 9px 12px !important; }
 }
 </style>
-
 <style>
 /* === Upside Down mode styles === */
 body.upside-down .icon-btn,
@@ -1525,14 +1518,98 @@ body.ud-flip {
   transform-origin: 50% 50%;
 }
 </style>
-
 <style>
 body.bg-upsidedown{
   background: url('background_files/stranger_things_quests_style.png') center center / cover no-repeat fixed !important;
 }
 </style>
+<!-- Inventory Redesign Override -->
+<style id="inventory-redesign">
+  /* --- Glassy, see-through inventory bar --- */
+  .inventory-wrap{
+    /* keep position from existing, we only nudge visuals if needed */
+    padding-bottom: 0;
+  }
+  .inventory{
+    background: linear-gradient(180deg, rgba(120, 226, 220, .45), rgba(100, 208, 206, .40));
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
+    border-radius: 28px;
+    border: 6px solid #22272b;
+    box-shadow:
+      inset 0 6px 0 rgba(255,255,255,.35),
+      inset 0 -8px 0 rgba(0,0,0,.20),
+      0 14px 30px rgba(0,0,0,.45);
+  }
+  /* --- 3D inventory slots resembling the reference --- */
+  .slot{
+    min-width: 128px;
+    height: 106px;
+    border-radius: 22px;
+    position: relative;
+    cursor: pointer;
+    background:
+      linear-gradient(180deg, #aeb3b8 5%, #9ba0a6 45%, #8c9197 100%) padding-box,
+      linear-gradient(#272b30, #272b30) border-box;
+    border: 6px solid transparent; /* border rendered by the second gradient */
+    box-shadow:
+      inset 0 7px 0 rgba(255,255,255,.38),   /* top bevel */
+      inset 0 -10px 0 rgba(0,0,0,.22),      /* bottom bevel */
+      0 6px 0 #1b1e22,                       /* base ledge */
+      0 12px 16px rgba(0,0,0,.45);           /* soft drop */
+  }
+  /* deeper drop shadow behind each slot */
+  .slot::after{
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:-10px; top:auto;
+    height: 12px;
+    border-radius: 18px;
+    background: rgba(0,0,0,.65);
+    filter: blur(4px);
+    opacity:.75;
+    z-index:-1;
+  }
+  /* inner rim highlight */
+  .slot::before{
+    content:"";
+    position:absolute;
+    inset: 3px;
+    border-radius: 16px;
+    box-shadow:
+      inset 0 3px 0 rgba(255,255,255,.35),
+      inset 0 -4px 0 rgba(0,0,0,.18);
+    pointer-events:none;
+  }
+  .slot img{ width:72px; height:72px; border-radius:12px; }
+  .slot.is-pet { height: 126px; }
+  .slot.is-pet img { width: 96px; height: 96px; }
 
-</head>
+  /* selection state unchanged but make sure it sits above bevels */
+  .slot.selected{ outline:6px solid var(--ui-blue); outline-offset:2px; }
+
+  /* tighter spacing like the screenshot */
+  .inventory{ gap: 24px; }
+</style>
+<style id="inventory-hover-pop">/* === Inventory: extra subtle hover "pop" effect === */
+.inventory .slot{
+  transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms cubic-bezier(.2,.8,.2,1);
+  transform-origin: center;
+  will-change: transform;
+}
+.inventory .slot:hover{
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(0,0,0,.22), 0 1px 4px rgba(0,0,0,.10);
+  z-index: 2;
+}
+.inventory .slot:active{
+  transform: translateY(-1px) scale(1.01);
+}
+.inventory .slot:focus-visible{
+  outline: 2px solid var(--ui-blue, #2973e3);
+  outline-offset: 2px;
+  transform: translateY(-2px) scale(1.02);
+}</style></head>
 <body>
 <div class="event-row" id="eventRow"></div>
 <div class="game">
@@ -1553,7 +1630,7 @@ body.bg-upsidedown{
 </svg>
 </button>
 <button aria-label="Tools" class="icon-btn icon-tools" id="toolsBtn" title="Tools (toggle fast refresh)">
-  <img src="icons/gear_shop_icon.png" alt="Gear Shop">
+<img alt="Gear Shop" src="icons/gear_shop_icon.png"/>
 </button>
 <!-- NEW: Pet Shop button (paw) -->
 <button aria-label="Pet Shop" class="icon-btn icon-pets" id="openPetShop" title="Pet Shop"> <svg aria-hidden="true" fill="none" stroke="#111" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
@@ -4035,15 +4112,13 @@ initLoginAndBoot();
 <div aria-hidden="true" class="overlay" id="bgOverlay">
 <div aria-labelledby="bgTitle" aria-modal="true" class="sheet" role="dialog">
 <button aria-label="Close" class="closeX" id="closeBg" onclick="document.getElementById('bgOverlay').classList.remove('show')">✕</button>
-
 <h2 id="bgTitle">Backgrounds</h2>
-<div class="bg-side-tabs" id="bgSideTabs" aria-label="Background sections">
-  <button class="bg-tab active" data-target="bgGrid" aria-controls="bgGrid" aria-selected="true">BACKGROUNDS</button>
-  <button class="bg-tab" data-target="pedestalPage" aria-controls="pedestalPage" aria-selected="false">PEDESTALS</button>
+<div aria-label="Background sections" class="bg-side-tabs" id="bgSideTabs">
+<button aria-controls="bgGrid" aria-selected="true" class="bg-tab active" data-target="bgGrid">BACKGROUNDS</button>
+<button aria-controls="pedestalPage" aria-selected="false" class="bg-tab" data-target="pedestalPage">PEDESTALS</button>
 </div>
 <div class="bg-grid" id="bgGrid"></div>
 <div class="pedestal-page" id="pedestalPage" style="display:none;"></div>
-
 </div>
 </div>
 <script>
@@ -4909,12 +4984,10 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
 })();
 </script>
-
 <!-- Quick reward reveal -->
 <img alt="reward" id="revealImg"/>
 <div id="revealName" style="font-weight:900;margin-top:6px;"></div>
 <div class="rar" id="revealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
-
 <!-- LA Dodgers Event Overlay -->
 <div aria-hidden="true" class="overlay" id="dodgerOverlay">
 <div aria-labelledby="dodgerTitle" aria-modal="true" class="sheet" role="dialog">
@@ -4942,8 +5015,8 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 <div class="dodger-desc">Event items are limited‑time. When the event ends the button goes away, but your rewards stay forever. Dodger rarity gives +40,000 EPS with animated waves.</div>
 </div>
 <div class="dodger-card" style="display:grid;place-items:center;">
-<img alt="LA" id="dodgerShopLogo" style="height:120px;filter:drop-shadow(0 8px 30px rgba(30,144,255,.35));opacity:.95;"/>
-</div>
+<img alt="LA" id="dodgerShopLogo" style="height:120px;filter:drop-shadow(0 8px 30px rgba(30,144,255,.35));opacity:.95;">
+</img></div>
 </div>
 </div>
 </div>
@@ -6685,8 +6758,8 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
 <!-- Tool Bar rail (positioned by JS to kiss the inventory edge) -->
 <div id="toolBarArea">
 <button id="forgeOpenBtn" title="Forge">
-<img alt="Forge" src="icons/forge_icon.png">
-</img></button>
+<img alt="Forge" src="icons/forge_icon.png"/>
+</button>
 </div>
 <!-- Forge Overlay -->
 <div aria-hidden="true" class="overlay" id="forgeOverlay">
@@ -7054,48 +7127,46 @@ function doForge(){
 </script>
 <!-- Stranger Things Event Overlay -->
 <div aria-hidden="true" class="overlay" id="strangerOverlay">
-  <div aria-labelledby="strangerTitle" aria-modal="true" class="sheet" role="dialog">
-    <button aria-label="Close" class="closeX" id="closeStranger">✕</button>
-    <h2 id="strangerTitle">STRANGER THINGS</h2>
-    <div class="stranger-grid">
-      <div class="stranger-card" id="cardHawkinsPack">
-        <h3>Hawkins Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
-        <div class="stranger-desc">Open the pack to receive a random item in EPIC/LEGENDARY/UNIQUE/MYTHIC from the Hawkins set.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="stranger-price">$2,000,000,000</div>
-          <button class="stranger-buy" id="buyHawkinsPack">Purchase</button>
-        </div>
-      </div>
-      <div class="stranger-card" id="cardHawkinsBG">
-        <h3>Welcome to Hawkins</h3>
-        <div class="stranger-desc">Themed background; appears in Backgrounds after purchase.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="stranger-price">$10,000,000,000,000</div>
-          <button class="stranger-buy" id="buyHawkinsStyle">Purchase</button>
-        </div>
-      </div>
-      <div class="stranger-card">
-        <h3>Demoegg</h3>
-        <div class="stranger-desc">Hatches: Dart (68% / 25,000 EPS), Demobat (30% / 45,000 EPS), Demodog (2% / 65,000 EPS). Demodog every 20 minutes 50% morph of a placed item adds DEMON badge + red pulse +15,000 EPS to that item.</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
-          <div class="stranger-price">$3,000,000,000</div>
-          <button class="stranger-buy" id="buyDemoEgg">Purchase</button>
-        </div>
-      </div>
-      <div class="stranger-card" id="cardStrangePedestals"><h3>Strange Pedestals</h3><div class="stranger-desc">Unlocks a red–yellow glowing pedestal with white polka dots. Equip it from Backgrounds → Pedestals.</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><div class="stranger-price">$15,000,000,000,000</div><button class="stranger-buy" id="buyStrangePedestals">Purchase</button></div></div>
-    </div>
-  </div>
+<div aria-labelledby="strangerTitle" aria-modal="true" class="sheet" role="dialog">
+<button aria-label="Close" class="closeX" id="closeStranger">✕</button>
+<h2 id="strangerTitle">STRANGER THINGS</h2>
+<div class="stranger-grid">
+<div class="stranger-card" id="cardHawkinsPack">
+<h3>Hawkins Pack <span class="cosmic-badge t-legendary">LIMITED</span></h3>
+<div class="stranger-desc">Open the pack to receive a random item in EPIC/LEGENDARY/UNIQUE/MYTHIC from the Hawkins set.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+<div class="stranger-price">$2,000,000,000</div>
+<button class="stranger-buy" id="buyHawkinsPack">Purchase</button>
 </div>
-
+</div>
+<div class="stranger-card" id="cardHawkinsBG">
+<h3>Welcome to Hawkins</h3>
+<div class="stranger-desc">Themed background; appears in Backgrounds after purchase.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+<div class="stranger-price">$10,000,000,000,000</div>
+<button class="stranger-buy" id="buyHawkinsStyle">Purchase</button>
+</div>
+</div>
+<div class="stranger-card">
+<h3>Demoegg</h3>
+<div class="stranger-desc">Hatches: Dart (68% / 25,000 EPS), Demobat (30% / 45,000 EPS), Demodog (2% / 65,000 EPS). Demodog every 20 minutes 50% morph of a placed item adds DEMON badge + red pulse +15,000 EPS to that item.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+<div class="stranger-price">$3,000,000,000</div>
+<button class="stranger-buy" id="buyDemoEgg">Purchase</button>
+</div>
+</div>
+<div class="stranger-card" id="cardStrangePedestals"><h3>Strange Pedestals</h3><div class="stranger-desc">Unlocks a red–yellow glowing pedestal with white polka dots. Equip it from Backgrounds → Pedestals.</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><div class="stranger-price">$15,000,000,000,000</div><button class="stranger-buy" id="buyStrangePedestals">Purchase</button></div></div>
+</div>
+</div>
+</div>
 <div class="cosmic-reveal" id="strangerReveal">
-  <div class="card">
-    <div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
-    <img alt="reward" id="strangerRevealImg"/>
-    <div id="strangerRevealName" style="font-weight:900;margin-top:6px;"></div>
-    <div class="rar" id="strangerRevealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
-  </div>
+<div class="card">
+<div style="font-family:'Bungee';font-size:28px;letter-spacing:1px;">You received</div>
+<img alt="reward" id="strangerRevealImg"/>
+<div id="strangerRevealName" style="font-weight:900;margin-top:6px;"></div>
+<div class="rar" id="strangerRevealRarity" style="margin:8px auto 0;padding:6px 12px;border-radius:12px;"></div>
 </div>
-
+</div>
 <script>
 (function(){
   function setStrangerEventIcon(btnEl){
@@ -7494,9 +7565,7 @@ document.getElementById('buyStrangePedestals')?.addEventListener('click', buyStr
   new MutationObserver(()=> ensureEventButton()).observe(document.body, {childList:true, subtree:true});
 })();
 </script>
-
 <!-- ===== end v109 update ===== -->
-
 <!-- Added script to fix the non‑functional Log Out button
      When the player clicks the button they are prompted for confirmation.
      If they confirm, the user ID and any pending login state are removed
@@ -7531,7 +7600,6 @@ document.getElementById('buyStrangePedestals')?.addEventListener('click', buyStr
     }, true);
   })();
 </script>
-
 <!-- v132 pedestal-guard: keep all 4 pedestals visible at all times -->
 <script>
 (function(){
@@ -7619,7 +7687,6 @@ document.getElementById('buyStrangePedestals')?.addEventListener('click', buyStr
   setInterval(restoreIfMissing, 3000);
 })();
 </script>
-
 <script>
 (function(){
   const $ = (sel, ctx=document) => ctx.querySelector(sel);
@@ -7677,16 +7744,10 @@ body.strange-pedestals .pedestal{
   box-shadow: inset 0 6px 0 rgba(255,255,255,.25), 0 10px 0 #8b1a00, 0 14px 20px rgba(0,0,0,.45), 0 0 18px rgba(255,200,0,.45) !important;
 }
 </style>
-
-  </div>
-</div>
-
-<div id="toast" role="status" aria-live="polite"></div>
-
+<div aria-live="polite" id="toast" role="status"></div>
 <!-- Upside Down runtime UI -->
-<div id="udTimerBadge" aria-live="polite">5:00</div>
+<div aria-live="polite" id="udTimerBadge">5:00</div>
 <div id="udSpinOverlay"><div class="spinner"></div></div>
-
 <script>
 (function(){
   // --- Persistent progress for Save Hawkins (only progresses while in upside-down) ---
@@ -8043,7 +8104,6 @@ body.strange-pedestals .pedestal{
   window.addEventListener('beforeunload', ()=>{ try{ applyUpsideDownUI(false); }catch(e){} });
 })();
 </script>
-
 <script>
 // Minimal helper to trigger a save when quests progress changes
 
@@ -8086,7 +8146,6 @@ window.__saveHawkinsProgress = function(){
   try { typeof save==='function' && save(); } catch(e) {}
 };
 </script>
-
 <script>
 (function(){
   const _applyBG = window.applyBG;
@@ -8096,8 +8155,75 @@ window.__saveHawkinsProgress = function(){
   };
 })();
 </script>
-
 </body>
+<!-- Inventory Redesign Override -->
+<style id="inventory-redesign-final">
+  /* --- Glassy, see-through inventory bar --- */
+  .inventory-wrap{
+    /* keep position from existing, we only nudge visuals if needed */
+    padding-bottom: 0;
+  }
+  .inventory{
+    background: linear-gradient(180deg, rgba(120, 226, 220, .45), rgba(100, 208, 206, .40));
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
+    border-radius: 28px;
+    border: 6px solid #22272b;
+    box-shadow:
+      inset 0 6px 0 rgba(255,255,255,.35),
+      inset 0 -8px 0 rgba(0,0,0,.20),
+      0 14px 30px rgba(0,0,0,.45);
+  }
+  /* --- 3D inventory slots resembling the reference --- */
+  .slot{
+    min-width: 128px;
+    height: 106px;
+    border-radius: 22px;
+    position: relative;
+    cursor: pointer;
+    background:
+      linear-gradient(180deg, #aeb3b8 5%, #9ba0a6 45%, #8c9197 100%) padding-box,
+      linear-gradient(#272b30, #272b30) border-box;
+    border: 6px solid transparent; /* border rendered by the second gradient */
+    box-shadow:
+      inset 0 7px 0 rgba(255,255,255,.38),   /* top bevel */
+      inset 0 -10px 0 rgba(0,0,0,.22),      /* bottom bevel */
+      0 6px 0 #1b1e22,                       /* base ledge */
+      0 12px 16px rgba(0,0,0,.45);           /* soft drop */
+  }
+  /* deeper drop shadow behind each slot */
+  .slot::after{
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:-10px; top:auto;
+    height: 12px;
+    border-radius: 18px;
+    background: rgba(0,0,0,.65);
+    filter: blur(4px);
+    opacity:.75;
+    z-index:-1;
+  }
+  /* inner rim highlight */
+  .slot::before{
+    content:"";
+    position:absolute;
+    inset: 3px;
+    border-radius: 16px;
+    box-shadow:
+      inset 0 3px 0 rgba(255,255,255,.35),
+      inset 0 -4px 0 rgba(0,0,0,.18);
+    pointer-events:none;
+  }
+  .slot img{ width:72px; height:72px; border-radius:12px; }
+  .slot.is-pet { height: 126px; }
+  .slot.is-pet img { width: 96px; height: 96px; }
+
+  /* selection state unchanged but make sure it sits above bevels */
+  .slot.selected{ outline:6px solid var(--ui-blue); outline-offset:2px; }
+
+  /* tighter spacing like the screenshot */
+  .inventory{ gap: 24px; }
+</style>
 </html>
 <script>
 // --- Pedestal Skins & Changer Page (non-destructive add-on) ---
@@ -8191,7 +8317,6 @@ window.__saveHawkinsProgress = function(){
   });
 })();
 </script>
-
 <script>
 (function(){
   function __udVisBackup(){
@@ -8205,7 +8330,6 @@ window.__saveHawkinsProgress = function(){
   document.addEventListener('visibilitychange', __udVisBackup);
 })();
 </script>
-
 <script>
 try{
   window.addEventListener('pagehide', function(){
