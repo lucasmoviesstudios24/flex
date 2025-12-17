@@ -2892,6 +2892,7 @@ function rarityBadge(r){
     state.inventory.forEach(it=>{
       const el = document.createElement('div');
       el.className = 'slot' + ((it.isEgg||it.petType)?' is-pet':'') + (state.selectedItemUid===it.uid?' selected':'');
+      el.setAttribute('data-uid', String(it.uid||''));
       // badge: EGG or PET or rarity
       let badgeHtml = '';
       if(it.isEgg) badgeHtml = `<div class="rar" style="right:8px;bottom:8px;background:rgba(255,255,255,.12);color:#fff;">EGG</div>`;
@@ -8155,6 +8156,421 @@ window.__saveHawkinsProgress = function(){
   };
 })();
 </script>
+
+<!-- v138.1 Pedestal hardening & auto-repair -->
+<script>
+(function(){
+  try {
+    // 1) Safe RARITY: provide a fallback entry so rendering never crashes on missing/unknown rarities (e.g., pets/eggs).
+    if (window.RARITY && !window.__rarityHardened) {
+      const base = window.RARITY;
+      const FALLBACK = { label:'PET', color:'#9aa', income:0, price:[0,0], prob:0 };
+      window.RARITY = new Proxy(base, {
+        get(t, p) {
+          try {
+            return (p in t) ? t[p] : FALLBACK;
+          } catch (e) {
+            return FALLBACK;
+          }
+        }
+      });
+      window.__rarityHardened = true;
+    }
+  } catch(e) { /* no-op */ }
+
+  // 2) Auto-repair: keep stands consistent and move invalid entries back to inventory.
+  function sanitizeStands() {
+    try {
+      if (!window.state) return;
+      if (!Array.isArray(state.stands)) state.stands = Array((window.STAND_COUNT||4)).fill(null);
+      if (!state.placed) state.placed = {};
+      if (!Array.isArray(state.inventory)) state.inventory = [];
+
+      let changed = false;
+
+      // Fix main stands: only items with a known rarity belong here
+      for (let i=0; i<state.stands.length; i++) {
+        const uid = state.stands[i];
+        if (!uid) continue;
+        const it = state.placed[uid] || state.inventory.find(x => x && x.uid === uid);
+        if (!it) { state.stands[i] = null; changed = true; continue; }
+
+        const rkey = String(it.rarity || '').toLowerCase();
+        const isValidItem = !!rkey && !!(window.RARITY && RARITY[rkey] && typeof RARITY[rkey].income !== 'undefined');
+        const isPetOrEgg = (!!it.isEgg) || (!!it.petType);
+
+        if (!isValidItem || isPetOrEgg) {
+          // Return anything invalid (e.g., pets/eggs) to inventory
+          try { if (state.placed[uid]) delete state.placed[uid]; } catch(e){}
+          try { if (!state.inventory.find(x => x && x.uid === (it.uid||uid))) state.inventory.push(it); } catch(e){}
+          state.stands[i] = null;
+          changed = true;
+        }
+      }
+
+      // Fix pet pedestals: only eggs/pets belong here
+      if (Array.isArray(state.petStands)) {
+        for (let j=0; j<state.petStands.length; j++) {
+          const p = state.petStands[j];
+          if (!p) continue;
+          const isPetOrEgg = (!!p.isEgg) || (!!p.petType);
+          if (!isPetOrEgg) {
+            try { state.inventory.push(p); } catch(e){}
+            state.petStands[j] = null;
+            if (state.petTimers) try { delete state.petTimers[j]; } catch(e){}
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        try { if (typeof recalcEPS === 'function') recalcEPS(); } catch(e){}
+        try { if (typeof renderInventory === 'function') renderInventory(); } catch(e){}
+        try { if (typeof renderStands === 'function') renderStands(); } catch(e){}
+        try { if (typeof save === 'function') save(); } catch(e){}
+      }
+    } catch(e) { /* swallow */ }
+  }
+
+  // 3) Place-guard: prevent placing pets/eggs on main pedestals without disturbing existing logic.
+  //    We intercept clicks on stands in the capture phase and enforce "items only".
+  function interceptMainStandClicks(){
+    document.addEventListener('click', function(ev){
+      const stand = ev.target && ev.target.closest && ev.target.closest('.stands .stand');
+      if (!stand) return;
+      // Identify index of the stand box
+      const parent = stand.parentNode;
+      if (!parent) return;
+      const i = Array.prototype.indexOf.call(parent.children, stand);
+      if (i < 0) return;
+
+      // If nothing is selected, let original handler run (removal) by not blocking
+      if (!window.state || !state.selectedItemUid) return;
+
+      const sel = (state.inventory||[]).find(it => it && it.uid === state.selectedItemUid);
+      if (!sel) return;
+
+      const rkey = String(sel.rarity || '').toLowerCase();
+      const isItem = !!rkey && !!(window.RARITY && RARITY[rkey] && typeof RARITY[rkey].income !== 'undefined');
+      const isPetOrEgg = (!!sel.isEgg) || (!!sel.petType);
+
+      if (!isItem || isPetOrEgg) {
+        // Block the original place logic and route the player to pet pedestals
+        ev.stopImmediatePropagation();
+        ev.preventDefault();
+        try { if (typeof banner === 'function') banner('Use the PET pedestals for pets/eggs.'); } catch(e){}
+      }
+      // else: let the original handler run
+    }, true); // capture=true
+  }
+
+  // Run once the DOM is ready and also on load (covers slow CSS/asset scenarios)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ try{ sanitizeStands(); interceptMainStandClicks(); }catch(e){} });
+  } else {
+    try{ sanitizeStands(); interceptMainStandClicks(); }catch(e){}
+  }
+  window.addEventListener('load', function(){ setTimeout(function(){ try{ sanitizeStands(); }catch(e){} }, 50); });
+  // Periodic safety (handles rare mid-session corruption on very large accounts)
+  setInterval(function(){ try{ sanitizeStands(); }catch(e){} }, 5000);
+})();
+</script>
+
+<!-- v138.2 Pedestal auto-repair + normalization -->
+<script>
+(function(){
+  'use strict';
+  // Fallback rarity object used only when we can't resolve to a known key
+  var __FALLBACK_RARITY = { label:'COMMON', color:'var(--c-common)', income:0, price:[0,0], prob:0 };
+
+  // Normalize a single item: ensure a valid, lowercase rarity key
+  function normItem(it){
+    try{
+      if(!it || typeof it !== 'object') return;
+      // Pets/eggs can have any "rarity"; we just make sure it's a known key for UI stability
+      if(typeof it.rarity !== 'string') it.rarity = 'common';
+      var key = String(it.rarity||'common').toLowerCase();
+      if(!window.RARITY || !RARITY[key]) key = 'common';
+      it.rarity = key;
+      // Ensure a uid
+      if(!it.uid) it.uid = Math.random().toString(36).slice(2)+Date.now().toString(36);
+    }catch(e){}
+  }
+
+  function isPetLike(it){
+    return !!(it && (it.isEgg || it.petType));
+  }
+
+  // Auto-repair all major collections so renderers never crash on big/legacy accounts
+  function sanitizeAll(){
+    try{
+      if(!window.state) window.state = {};
+      var n = (typeof window.STAND_COUNT==='number' && STAND_COUNT>0) ? STAND_COUNT : 4;
+      if(!Array.isArray(state.stands)) state.stands = Array(n).fill(null);
+      while(state.stands.length<n) state.stands.push(null);
+      if(state.stands.length>n) state.stands.length = n;
+
+      if(!Array.isArray(state.inventory)) state.inventory = [];
+      if(!state.placed || typeof state.placed!=='object') state.placed = {};
+
+      // Normalize everything up-front
+      try{ state.inventory.forEach(normItem); }catch(e){}
+      try{ Object.keys(state.placed).forEach(function(u){ normItem(state.placed[u]); }); }catch(e){}
+
+      var changed = false;
+
+      // Ensure each stand points to a valid placed item (move from inventory if needed)
+      for(var i=0;i<state.stands.length;i++){
+        var uid = state.stands[i];
+        if(!uid){ continue; }
+        var it = state.placed[uid];
+        if(!it){
+          // Maybe it's still in inventory — adopt it into placed
+          var idx = -1;
+          for(var k=0;k<state.inventory.length;k++){
+            if(state.inventory[k] && state.inventory[k].uid===uid){ idx=k; break; }
+          }
+          if(idx>=0){
+            it = state.inventory[idx];
+            state.placed[uid] = it;
+            // keep it in inventory until placed by the real handler? No, remove to avoid dupes
+            state.inventory.splice(idx,1);
+            changed = true;
+          }
+        }
+        // After adoption, if still missing OR item belongs to pet pedestals → return to inventory
+        if(!it || isPetLike(it)){
+          if(it && !state.inventory.find(function(x){return x && x.uid===it.uid;})){
+            state.inventory.push(it);
+          }
+          state.stands[i] = null;
+          try{ delete state.placed[uid]; }catch(e){}
+          changed = true;
+        }else{
+          // Final safety: normalize rarity in case old saves had uppercase keys
+          var before = it.rarity;
+          normItem(it);
+          if(before!==it.rarity) changed = true;
+        }
+      }
+
+      // Pet pedestals: must contain pet-like objects; wrong things go back to inventory
+      if(!Array.isArray(state.petStands)) state.petStands = [null,null];
+      for(var j=0;j<state.petStands.length;j++){
+        var p = state.petStands[j];
+        if(!p) continue;
+        if(!isPetLike(p)){
+          state.inventory.push(p);
+          state.petStands[j] = null;
+          if(state.petTimers) try{ delete state.petTimers[j]; }catch(e){}
+          changed = true;
+        }else{
+          normItem(p); // normalize rarity/key too for UI
+        }
+      }
+
+      if(changed){
+        try{ if(typeof recalcEPS==='function') recalcEPS(); }catch(e){}
+        try{ if(typeof renderInventory==='function') renderInventory(); }catch(e){}
+        try{ if(typeof renderStands==='function') renderStands(); }catch(e){}
+        try{ if(typeof save==='function') save(); }catch(e){}
+      }
+    }catch(e){}
+  }
+
+  // Guard clicks on MAIN pedestals to allow only items (not pets/eggs)
+  function interceptMainStandClicks(){
+    document.addEventListener('click', function(ev){
+      var stand = ev.target && ev.target.closest && ev.target.closest('#stands .stand');
+      if(!stand) return;
+
+      // Find stand index
+      var parent = stand.parentNode;
+      if(!parent) return;
+      var idx = Array.prototype.indexOf.call(parent.children, stand);
+      if(idx<0) return;
+
+      if(!window.state || !state.selectedItemUid) return; // let original handler remove if no selection
+
+      // Lookup selected object from inventory
+      var sel = null;
+      for(var i=0;i<(state.inventory||[]).length;i++){
+        var it = state.inventory[i];
+        if(it && it.uid===state.selectedItemUid){ sel = it; break; }
+      }
+      if(!sel) return;
+
+      if(isPetLike(sel)){
+        ev.stopImmediatePropagation();
+        ev.preventDefault();
+        try{ if(typeof banner==='function') banner('Use the PET pedestals for pets/eggs.'); }catch(e){}
+        return;
+      }
+      // Normalize rarity of the selected item before place handler runs,
+      // so expressions like RARITY[sel.rarity] always resolve.
+      normItem(sel);
+    }, true); // capture phase
+  }
+
+  // Run when DOM is ready; also re-run periodically for big accounts
+  function boot(){
+    try{ sanitizeAll(); }catch(e){}
+    try{ interceptMainStandClicks(); }catch(e){}
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot, {once:true}); }
+  else { boot(); }
+  window.addEventListener('load', function(){ setTimeout(function(){ try{ sanitizeAll(); }catch(e){} }, 60); });
+  setInterval(function(){ try{ sanitizeAll(); }catch(e){} }, 5000);
+})();
+</script>
+
+<style id="dragdrop-styles">
+  #dragGhost{
+    position:fixed; left:0; top:0;
+    width:96px; height:96px;
+    border-radius:16px;
+    pointer-events:none; z-index:10000;
+    display:grid; place-items:center;
+    box-shadow:0 14px 30px rgba(0,0,0,.35);
+    background:rgba(0,0,0,.20);
+    backdrop-filter: blur(4px) saturate(120%);
+  }
+  #dragGhost img{ width:80px; height:80px; border-radius:14px; display:block; }
+  #dragGhost .label{ position:absolute; bottom:-18px; left:0; right:0; text-align:center; font-weight:800; font-size:12px; color:#fff; text-shadow:0 1px 0 #000; }
+  body.dragging { cursor:grabbing; }
+  .drag-target{ outline: 4px dashed #ffd24a; outline-offset: 4px; }
+</style>
+
+
+<script id="dragdrop-logic">
+(function(){
+  const $ = s => document.querySelector(s);
+
+  let drag = null;
+  let active = false;
+  let lastTarget = null;
+
+  function getItemByUid(uid){
+    try{
+      uid = String(uid);
+      const inv = (window.state && state.inventory) ? state.inventory : [];
+      for(let i=0;i<inv.length;i++){ if(inv[i] && String(inv[i].uid)===uid) return inv[i]; }
+    }catch(e){}
+    return null;
+  }
+
+  function startDragFromSlot(slotEl, startEv){
+    if(!slotEl) return;
+    if(slotEl.querySelector('.del-x')){
+      // If user grabbed the tiny delete button, don't initiate drag.
+      const rect = slotEl.querySelector('.del-x').getBoundingClientRect();
+      const x = startEv.clientX, y = startEv.clientY;
+      if(x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return;
+    }
+    const uid = slotEl.getAttribute('data-uid');
+    if(!uid) return;
+    const item = getItemByUid(uid);
+    if(!item) return;
+
+    drag = { uid: String(uid), item, origin: slotEl, ghost:null };
+    // Create ghost
+    const g = document.createElement('div');
+    g.id = 'dragGhost';
+    const label = (item.name || item.petType || item.eggType || 'Item');
+    const imgSrc = item.svg || '';
+    g.innerHTML = '<img src="'+imgSrc+'" alt="'+label+'"/><div class="label">'+label+'</div>';
+    document.body.appendChild(g);
+    drag.ghost = g;
+    document.body.classList.add('dragging');
+  }
+
+  function updateHoverHighlight(x, y){
+    const el = document.elementFromPoint(x, y);
+    const t = el ? el.closest('.forge-slot, #stands .stand, .pet-row .pet-stand') : null;
+    if(lastTarget && lastTarget !== t){ try{ lastTarget.classList.remove('drag-target'); }catch(e){} }
+    if(t && t !== lastTarget){ try{ t.classList.add('drag-target'); }catch(e){} }
+    lastTarget = t || null;
+  }
+
+  function moveGhost(x, y){
+    if(drag && drag.ghost){
+      drag.ghost.style.transform = 'translate(' + (x - 48) + 'px,' + (y - 48) + 'px)';
+      updateHoverHighlight(x, y);
+    }
+  }
+
+  function cleanup(){
+    if(lastTarget){ try{ lastTarget.classList.remove('drag-target'); }catch(e){} lastTarget=null; }
+    document.body.classList.remove('dragging');
+    if(drag && drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+    drag = null;
+  }
+
+  function dropAt(clientX, clientY){
+    const el = document.elementFromPoint(clientX, clientY);
+    const target = el ? el.closest('.forge-slot, #stands .stand, .pet-row .pet-stand') : null;
+    if(!drag){ cleanup(); return; }
+
+    if(target){
+      const prevSel = state.selectedItemUid;
+      state.selectedItemUid = drag.uid;
+
+      // Simulate a click on the existing handlers — they already do all the swapping logic.
+      target.click();
+
+      // Clear selection to match the usual UX after placing
+      state.selectedItemUid = null;
+
+      // Renders are handled by the original handler, but just in case:
+      try{ if(typeof renderInventory==='function') renderInventory(); }catch(e){}
+      try{ if(typeof renderStands==='function') renderStands(); }catch(e){}
+    }
+    // If target is null, we simply do nothing: item remains in original slot (auto-revert).
+    cleanup();
+  }
+
+  // Delegated pointer events
+  document.addEventListener('pointerdown', (e)=>{
+    const slot = e.target && e.target.closest && e.target.closest('#inventory .slot');
+    if(!slot) return;
+    if(e.button !== 0) return;
+    e.preventDefault();
+    active = true;
+    startDragFromSlot(slot, e);
+    moveGhost(e.clientX, e.clientY);
+  });
+
+  document.addEventListener('pointermove', (e)=>{
+    if(!active || !drag) return;
+    moveGhost(e.clientX, e.clientY);
+  });
+
+  document.addEventListener('pointerup', (e)=>{
+    if(!active) return;
+    active = false;
+    dropAt(e.clientX, e.clientY);
+  });
+  document.addEventListener('pointercancel', ()=>{ active=false; cleanup(); });
+
+  // Ensure slots have data-uid after each render
+  const __ri = window.renderInventory;
+  if(typeof __ri === 'function'){
+    window.renderInventory = function(){
+      const r = __ri.apply(this, arguments);
+      try{
+        const slots = document.querySelectorAll('#inventory .slot');
+        const inv = (state && state.inventory) ? state.inventory : [];
+        slots.forEach((el, i)=>{
+          const it = inv[i];
+          if(it && !el.getAttribute('data-uid')) el.setAttribute('data-uid', String(it.uid||''));
+        });
+      }catch(e){}
+      return r;
+    };
+  }
+})();
+</script>
+
 </body>
 <!-- Inventory Redesign Override -->
 <style id="inventory-redesign-final">
