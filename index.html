@@ -2433,6 +2433,7 @@ async function save(){
     pedestalSkins: state.pedestalSkins || { default:true, red: !!((state.ach||{}).redPedestalUnlocked) },
     selectedPedestalSkin: state.selectedPedestalSkin || 'default',
     upsideDown: state.upsideDown || { purchases:0, earned:0, hatchedDemo:false, completed:false },
+    winterGifts: (state.winterGifts || {forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]}),
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -2722,6 +2723,17 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     state.petDex = dat.petDex || state.petDex || {};
     state.unlockedBackgrounds = dat.unlockedBackgrounds || state.unlockedBackgrounds || { default:true };
     state.selectedBackground = dat.selectedBackground || state.selectedBackground || 'default';
+// --- Winter Gifts (persisted) ---
+(function ensureWG() {
+  try {
+    const DEF = {forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]};
+    if (dat && dat.winterGifts && typeof dat.winterGifts === 'object') {
+      state.winterGifts = Object.assign({}, DEF, state.winterGifts||{}, dat.winterGifts);
+    } else {
+      state.winterGifts = Object.assign({}, DEF, state.winterGifts||{});
+    }
+  } catch (e) {}
+})();
 
         state.pedestalSkins = dat.pedestalSkins || state.pedestalSkins || { default:true, red: !!((state.ach||{}).redPedestalUnlocked), aqua: !!((state.ach||{}).aquaPedestalUnlocked) };
     state.selectedPedestalSkin = dat.selectedPedestalSkin || state.selectedPedestalSkin || 'default';
@@ -8571,6 +8583,378 @@ window.__saveHawkinsProgress = function(){
 })();
 </script>
 
+
+<!-- Injected Winter Gifts (from AGUK v10) start -->
+<!-- ========= WINTER GIFTS EVENT (revised button placement) ========= -->
+<style>
+  .icon-winter{position:relative;display:grid;place-items:center;background:#185a7a;overflow:hidden;width:72px;height:72px;border-radius:18px;border:4px solid rgba(0,0,0,.35);box-shadow:0 6px 16px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.06);}
+  .icon-winter::after{content:'';position:absolute;inset:0;background-image:url('icons/winter_gifts_icon.png');background-repeat:no-repeat;background-position:center;background-size:64% 64%;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}
+  .rar.t-jolly{background:linear-gradient(135deg,#e50039,#0fbf65);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 10px rgba(255,255,255,.85),0 0 18px rgba(21,255,126,.55)}
+  #winterOverlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:80}
+  #winterOverlay.show{display:flex}
+  #winterOverlay .sheet{width:min(980px,96vw);max-height:90vh;overflow:auto;border-radius:26px;border:5px solid #8fe7ff;background:linear-gradient(180deg,#eaffff,#bff0ff 45%,#a9e4ff 75%);box-shadow:0 18px 50px rgba(0,90,120,.35);padding:18px;color:#06364f;position:relative;}
+  #winterOverlay h2{font-family:'Russo One';margin:8px 0 6px;color:#0a76a8;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+  #closeWinter{position:absolute;right:12px;top:8px;font-size:24px;background:#0b5068;color:#fff;border:none;border-radius:14px;width:44px;height:44px;cursor:pointer}
+  .winter-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:12px 0}
+  .gift-card{position:relative;border-radius:18px;border:4px solid #0aa3c4;background:#0c6b88;padding:0;min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;box-shadow:0 14px 28px rgba(0,120,160,.25)}
+  .gift-card .top{width:100%;height:140px;background:#0c9ec4;border-bottom:4px solid rgba(0,0,0,.25);display:grid;place-items:center;border-top-left-radius:14px;border-top-right-radius:14px}
+  .gift-card .top img{image-rendering:auto;width:96px;height:96px}
+  .gift-card .label{font-family:'Russo One';font-size:20px;color:#fff;margin-top:6px;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .gift-card .quest{margin:8px 10px 12px;background:#083a4e;color:#c5f3ff;border:3px solid #0aa3c4;border-radius:12px;padding:8px 10px;width:calc(100% - 26px);font-weight:900;font-size:14px;letter-spacing:.2px}
+  .gift-card.locked{filter:grayscale(1) brightness(.75)}
+  .gift-card .check{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:50%;background:#2ecc71;color:#052;display:none;align-items:center;justify-content:center;font-weight:900}
+  .gift-card.claimed .check{display:flex}
+  #giftOpenOverlay{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:90}
+  #giftOpenOverlay.show{display:flex}
+  #giftOpenOverlay .open-card{background:radial-gradient(800px 400px at 50% -160px,#ffffff,#dff6ff);border:6px solid #a5e7ff;border-radius:28px;box-shadow:0 18px 90px rgba(0,0,0,.45);padding:24px;display:grid;place-items:center;min-width:min(680px,94vw);min-height:420px;color:#083a4e;position:relative}
+  #giftOpenOverlay img.gift-big{width:220px;height:220px;transition:transform .08s ease;will-change:transform;image-rendering:auto}
+  #giftOpenOverlay .tap{margin-top:10px;font-weight:900}
+  #giftOpenOverlay .xbtn{position:absolute;right:12px;top:8px;font-size:24px;background:#0b5068;color:#fff;border:none;border-radius:14px;width:44px;height:44px;cursor:pointer;display:none}
+  #giftOpenOverlay.opened .xbtn{display:block}
+  #giftReward{display:none;text-align:center}
+  #giftOpenOverlay.opened #giftReward{display:block}
+  #giftOpenOverlay.opened .tap{display:none}
+  #blizzard{position:fixed;inset:0;pointer-events:none;display:none;z-index:75}
+  #blizzard.show{display:block;pointer-events:auto}
+  .snowflake{position:fixed;top:-40px;left:0;width:36px;height:36px;background-image:url('icons/winter_gifts_icon.png');background-size:contain;background-repeat:no-repeat;opacity:.9;cursor:pointer;}
+</style>
+
+<div id="winterOverlay" aria-hidden="true" class="overlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="winterTitle">
+    <button class="closeX" id="closeWinter">✕</button>
+    <div style="display:flex;justify-content:center;align-items:center;gap:10px;">
+      <img src="icons/winter_gifts_icon.png" alt="Winter" style="width:42px;height:42px;border-radius:10px;box-shadow:0 3px 8px rgba(0,0,0,.2);background:#0c6b88">
+      <h2 id="winterTitle">WINTER GIFTS</h2>
+    </div>
+    <div class="winter-grid" id="winterGrid"></div>
+    <div style="text-align:center;color:#083a4e;font-weight:900">Complete the quests to open gifts</div>
+  </div>
+</div>
+
+<div id="giftOpenOverlay" aria-hidden="true">
+  <div class="open-card">
+    <button class="xbtn" id="giftClose">✕</button>
+    <img class="gift-big" id="giftBig" src="" alt="Gift">
+    <div class="tap" id="giftTap">Tap to open…</div>
+    <div id="giftReward"></div>
+  </div>
+</div>
+
+<div id="blizzard"></div>
+
+<script>
+(function(){
+  /* === state & rarity === */
+  window.state = window.state || {};
+  state.winterGifts = state.winterGifts || { forge:0, hatch:0, legacyPurchases:0, uniquePurchases:0, gift:{}, blizzardActive:false };
+  try{ window.RARITY = window.RARITY || {}; if(!RARITY.jolly){ RARITY.jolly = { label:'JOLLY', color:'#0fbf65', income:45000, price:[0,0], prob:0 }; } }catch(e){}
+
+  /* === Button placement: next to Stranger button (upper-left) === */
+  function addWinterButton(){
+    const stranger = document.getElementById('openStranger');
+    const row = document.querySelector('.event-row') || document.getElementById('eventRow');
+    const rowVisible = row && getComputedStyle(row).display !== 'none';
+    if(rowVisible){
+      // Put our button right after Stranger in the row
+      if(!document.getElementById('openWinterGifts')){
+        const btn = document.createElement('button');
+        btn.className = 'icon-btn icon-winter'; btn.id = 'openWinterGifts'; btn.title = 'Winter Gifts';
+        row.appendChild(btn);
+        btn.addEventListener('click', openWinterOverlay);
+      }
+    }else{
+      // Fallback: fixed position next to Stranger's fixed left/top
+      if(!document.getElementById('openWinterGifts')){
+        const b = document.createElement('button');
+        b.className = 'icon-winter'; b.id = 'openWinterGifts'; b.title = 'Winter Gifts';
+        const s = stranger;
+        const sLeft = s ? parseInt((s.style.left||'16px'),10) : 16;
+        const sTop  = s ? parseInt((s.style.top||'28px'),10) : 28;
+        const gap = 12, size = 72;
+        b.style.position='fixed'; b.style.left = (sLeft + size + gap) + 'px'; b.style.top = sTop + 'px'; b.style.zIndex='20';
+        document.body.appendChild(b);
+        b.addEventListener('click', openWinterOverlay);
+      }
+    }
+  }
+
+  /* === Page === */
+  const gifts = [
+    { id:'g1', img:'icons/gifts/gift_1.png', label:'GIFT 1', quest:()=>`Quest: forge 3 times ( ${state.winterGifts.forge||0} / 3 )`, ready:()=> (state.winterGifts.forge||0) >= 3, reward: gift1Reward },
+    { id:'g2', img:'icons/gifts/gift_2.png', label:'GIFT 2', quest:()=>`Quest: hatch 10 pets ( ${state.winterGifts.hatch||0} / 10 )`, ready:()=> (state.winterGifts.hatch||0) >= 10, reward: gift2Reward },
+    { id:'g3', img:'icons/gifts/gift_3.png', label:'GIFT 3', quest:()=>`Quest: purchase 4 legacy items ( ${state.winterGifts.legacyPurchases||0} / 4 )`, ready:()=> (state.winterGifts.legacyPurchases||0) >= 4, reward: gift3Reward },
+    { id:'g4', img:'icons/gifts/gift_4.png', label:'GIFT 4', quest:()=>`Quest: purchase 8 unique items ( ${state.winterGifts.uniquePurchases||0} / 8 )`, ready:()=> (state.winterGifts.uniquePurchases||0) >= 8, reward: gift4Reward },
+    { id:'g5', img:'icons/gifts/gift_5.png', label:'GIFT 5', quest:()=>`Quest: hatch a Golden Dog`, ready:()=> !!state.winterGifts.hatchedGoldDog, reward: gift5Reward },
+    { id:'g6', img:'icons/gifts/gift_6.png', label:'GIFT 6', quest:()=>`Quest: own 45 rare items ( ${countRares()} / 45 )`, ready:()=> countRares() >= 45, reward: gift6Reward },
+  ];
+
+  function fmt(n){ try{return (n||0).toLocaleString();}catch(e){return String(n);} }
+  function countRares(){ try{ const all=(state.inventory||[]).concat(Object.values(state.placed||{})); return all.filter(x=>String(x.rarity).toLowerCase()==='rare').length; }catch(e){ return 0; } }
+
+  function openWinterOverlay(){ const o=document.getElementById('winterOverlay'); renderWinterGrid(); o.classList.add('show'); o.setAttribute('aria-hidden','false'); }
+  function closeWinterOverlay(){ const o=document.getElementById('winterOverlay'); o.classList.remove('show'); o.setAttribute('aria-hidden','true'); }
+  document.getElementById('closeWinter').addEventListener('click', closeWinterOverlay);
+
+  function renderWinterGrid(){
+    const g = document.getElementById('winterGrid'); if(!g) return; g.innerHTML='';
+    gifts.forEach(gf=>{
+      const card = document.createElement('div'); card.className='gift-card';
+      if(state.winterGifts.gift[gf.id]==='claimed') card.classList.add('claimed');
+      const ready = gf.ready(); if(!ready) card.classList.add('locked');
+      card.innerHTML = '<div class="top"><img src="'+gf.img+'" alt="gift"></div>'
+                     + '<div class="label">'+gf.label+'</div>'
+                     + '<div class="quest">'+gf.quest()+'</div>'
+                     + '<div class="check">✓</div>';
+      card.addEventListener('click', ()=>{ if(ready && state.winterGifts.gift[gf.id]!=='claimed'){ startGiftOpen(gf); } });
+      g.appendChild(card);
+    });
+  }
+
+  let openingGift=null, openClicks=0;
+  function startGiftOpen(gf){
+    openingGift = gf; openClicks = 0;
+    const ov = document.getElementById('giftOpenOverlay');
+    document.getElementById('giftBig').src = gf.img;
+    document.getElementById('giftReward').innerHTML = '';
+    ov.classList.remove('opened'); ov.classList.add('show');
+    const big = document.getElementById('giftBig');
+    function tap(){ if(!openingGift) return; openClicks++; big.style.transform = 'scale('+(1 + openClicks*0.03)+') rotate('+(Math.random()*2-1)+'deg)'; if(openClicks>=12){ finishOpen(); big.removeEventListener('click', tap);} }
+    big.addEventListener('click', tap);
+    document.getElementById('giftTap').textContent = 'Tap the gift to open!';
+  }
+  function finishOpen(){
+    const ov = document.getElementById('giftOpenOverlay');
+    ov.classList.add('opened');
+    try{ if(openingGift && typeof openingGift.reward==='function'){ openingGift.reward(); } }catch(e){}
+    document.getElementById('giftClose').onclick = ()=>{ ov.classList.remove('show','opened'); openingGift=null; renderWinterGrid(); };
+  }
+  document.getElementById('giftClose').addEventListener('click', ()=>{ const ov=document.getElementById('giftOpenOverlay'); ov.classList.remove('show','opened'); openingGift=null; renderWinterGrid(); });
+
+  function pushItem(name, rarity, filePath, eps){
+    const it={ uid:(Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity, price:0, baseIdx:0, svg:filePath };
+    if(eps){ it.price=[0,0]; }
+    state.inventory = state.inventory || [];
+    state.inventory.push(it); if(typeof renderInventory==='function') renderInventory(); if(typeof recalcEPS==='function') recalcEPS(); if(typeof save==='function') save();
+    return it;
+  }
+  function showReward(html){ const box=document.getElementById('giftReward'); box.innerHTML = html + '<div style="margin-top:10px;font-weight:900">Tap ✕ to close</div>'; }
+  function markClaimed(id){ state.winterGifts.gift[id] = 'claimed'; if(typeof save==='function') save(); }
+
+  function gift1Reward(){ const it = pushItem('Candy Cane','jolly','winter_items/candy_cane.png',45000); showReward("<div style='font-size:22px;font-weight:900'>Candy Cane</div><div class='rar t-jolly'>JOLLY · +$"+fmt(45000)+" EPS</div><img src='"+it.svg+"' style='width:128px;height:128px;margin-top:12px;border-radius:16px'>"); markClaimed('g1'); }
+  function gift2Reward(){ state.pedestalSkins = state.pedestalSkins || { default:true }; state.pedestalSkins.snowy = true; try{ window.__renderPedestalPage && window.__renderPedestalPage(); }catch(e){} showReward("<div style='font-size:22px;font-weight:900'>Snowy Pedestal</div><div>Equip from Backgrounds → Pedestals.</div>"); markClaimed('g2'); }
+  function gift3Reward(){ const it = pushItem('Hanukkah Menorah','jolly','winter_items/hanukkah_menorah.png',45000); showReward("<div style='font-size:22px;font-weight:900'>Hanukkah Menorah</div><div class='rar t-jolly'>JOLLY · +$"+fmt(45000)+" EPS</div><img src='"+it.svg+"' style='width:128px;height:128px;margin-top:12px;border-radius:16px'>"); markClaimed('g3'); }
+  function gift4Reward(){ state.unlockedBackgrounds = state.unlockedBackgrounds || { default:true }; state.unlockedBackgrounds.winter_wonderland = true; try{ window.__renderBgGrid && window.__renderBgGrid(); }catch(e){} showReward("<div style='font-size:22px;font-weight:900'>Winter Wonderland Background</div><div>Apply from Backgrounds.</div><img src='background_files/winter_wonderland.png' style='width:240px;height:auto;margin-top:12px;border-radius:16px'>"); markClaimed('g4'); }
+  function gift5Reward(){ const r=Math.random(); const gotAll=(r<0.05); const picks=[]; function add(nm,file){ picks.push(pushItem(nm,'jolly','winter_items/'+file,45000)); } if(gotAll){ add('Item Shop Ornament','item_shop_ornament.png'); add('Gear Shop Ornament','gear_shop_ornament.png'); add('Pet Ornament','pet_ornament.png'); } else if(r<0.45){ add('Item Shop Ornament','item_shop_ornament.png'); } else if(r<0.80){ add('Gear Shop Ornament','gear_shop_ornament.png'); } else { add('Pet Ornament','pet_ornament.png'); } const names=picks.map(p=>p.name).join(', '); showReward("<div style='font-size:22px;font-weight:900'>"+names+"</div><div class='rar t-jolly'>JOLLY · +$"+fmt(45000)+" EPS each</div>"); markClaimed('g5'); }
+  function gift6Reward(){ const p={ uid:(Math.random().toString(36).slice(2)+Date.now().toString(36)), name:'Snowman', isEgg:false, eggType:null, petType:'Snowman', petEps:30000, svg:'pets/snowman.png' }; state.inventory=state.inventory||[]; state.inventory.push(p); renderInventory && renderInventory(); save && save(); showReward("<div style='font-size:22px;font-weight:900'>Snowman</div><div>Pet · +$"+fmt(30000)+" EPS</div><img src='pets/snowman.png' style='width:140px;height:140px;margin-top:12px;border-radius:16px'>"); markClaimed('g6'); maybeStartSnowmanWatcher(); }
+
+  /* === Hook into existing quest mechanics === */
+  (function hookForge(){ const check=()=>{ const f=window.doForge; if(typeof f==='function' && !f.__winterWrapped){ window.doForge=function(){ const r=f.apply(this,arguments); try{ state.winterGifts.forge=(state.winterGifts.forge||0)+1; save&&save(); }catch(e){} return r; }; window.doForge.__winterWrapped=true; } else { setTimeout(check,600); } }; check(); })();
+  (function hookShop(){ const orig=window.renderShop; window.renderShop=function(){ if(typeof orig==='function') orig.apply(this,arguments); try{ document.querySelectorAll('#shopGrid .buy').forEach(btn=>{ if(btn.__winterHooked) return; btn.__winterHooked=true; btn.addEventListener('click',()=>{ setTimeout(()=>{ try{ const ok=btn.disabled||/Purchased/i.test(btn.textContent); if(!ok) return; const card=btn.closest('.card'); if(!card) return; const tag=card.querySelector('.tag'); if(!tag) return; const cls=Array.from(tag.classList).find(c=>/^t-/.test(c)); const rar=(cls||'').replace('t-',''); if(rar==='legacy'){ state.winterGifts.legacyPurchases=(state.winterGifts.legacyPurchases||0)+1; } if(rar==='unique'){ state.winterGifts.uniquePurchases=(state.winterGifts.uniquePurchases||0)+1; } save&&save(); }catch(e){} },120); }); }); }catch(e){} }; })();
+  (function hookPetHatch(){ const prev=window.__udOnPetHatch; window.__udOnPetHatch=function(petObj){ try{ if(typeof prev==='function') prev.apply(this,arguments); }catch(e){} try{ state.winterGifts.hatch=(state.winterGifts.hatch||0)+1; const n=String((petObj&&(petObj.petType||petObj.name))||'').toLowerCase(); if(n.includes('gold')&&n.includes('dog')){ state.winterGifts.hatchedGoldDog=true; } save&&save(); }catch(e){} }; })();
+
+  /* === Background/Pedestal availability rendering === */
+  (function extendBg(){ const orig=window.__renderBgGrid; window.__renderBgGrid=function(){ if(typeof orig==='function') orig(); try{ const g=document.getElementById('bgGrid'); if(!g) return; if(!g.querySelector('[data-winterbg]') && (state.unlockedBackgrounds||{}).winter_wonderland){ const el=document.createElement('div'); el.setAttribute('data-winterbg','1'); el.className='bg-tile'; el.style.cssText='background-image:url("background_files/winter_wonderland.png");background-size:cover;background-position:center;border-color:#8fe7ff;'; el.innerHTML='<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">WINTER WONDERLAND</div><button class="buy bg-apply">Apply</button>'; el.querySelector('.bg-apply').onclick=function(){ document.body.classList.remove("bg-green","bg-blue","bg-purple","bg-orange","bg-legacy","bg-unique","bg-exotic","bg-mythic","bg-rainbow","bg-crypto","bg-dodger","bg-dodgerquests","bg-spaceview","redblue","bg-hawkins","bg-sunrise"); document.body.style.background=''; document.body.classList.add('bg-winter'); state.selectedBackground='winter_wonderland'; save&&save(); }; g.appendChild(el);} }catch(e){} }; })();
+  (function extendPed(){ const orig=window.__renderPedestalPage; window.__renderPedestalPage=function(){ if(typeof orig==='function') orig(); try{ const host=document.getElementById('pedestalPage'); if(!host) return; if(!host.querySelector('[data-snowyped]')){ const grid=host.querySelector('.ped-grid')||host; const el=document.createElement('div'); el.setAttribute('data-snowyped','1'); el.className='ped-tile'+(!(state.pedestalSkins||{}).snowy?' locked':''); el.style.background='linear-gradient(180deg,#ffffff,#dff6ff)'; el.innerHTML='<div style="font-weight:900">Snowy Pedestal</div><button class="buy ped-apply" '+(!((state.pedestalSkins||{}).snowy)?'disabled':'')+'>Equip</button>'; el.querySelector('.ped-apply').onclick=function(){ if(!((state.pedestalSkins||{}).snowy)) return; state.selectedPedestalSkin='snowy'; document.body.classList.add('snowy-pedestals'); document.body.classList.remove('red-pedestals','aqua-pedestals','strange-pedestals'); save&&save(); }; grid.appendChild(el);} }catch(e){} }; })();
+  try{ var st2=document.createElement('style'); st2.textContent = '.snowy-pedestals .pedestal{background:linear-gradient(#f0fbff,#cfeeff);box-shadow:inset 0 6px 0 rgba(255,255,255,.8),inset 0 -6px 0 rgba(0,0,0,.15),0 10px 28px rgba(0,120,160,.25);position:relative} .snowy-pedestals .pedestal::after{content:"";position:absolute;inset:0;background-image:radial-gradient(#fff 1px, transparent 1px);background-size:10px 10px;opacity:.28;border-radius:inherit;pointer-events:none}'; document.head.appendChild(st2);}catch(e){}
+
+  /* === Snowman Blizzard === */
+  function isSnowmanPlaced(){ try{ return Object.values(state.petStands||{}).concat(Object.values(state.placed||{})).some(p=>p && !p.isEgg && (String(p.petType||p.name).toLowerCase()==='snowman')); }catch(e){ return false; } }
+  let blizTimer=null, flakeTimer=null, blizEnds=0;
+  function maybeStartSnowmanWatcher(){ setTimeout(()=>{ try{ if(isSnowmanPlaced()){ scheduleBlizzard(); } }catch(e){} }, 0); }
+  function scheduleBlizzard(){ if(blizTimer) clearInterval(blizTimer); blizTimer = setInterval(()=>{ if(!isSnowmanPlaced()) return; if(Math.random() <= 0.05){ startBlizzard(); } }, 15*60*1000); }
+  function startBlizzard(){ if(state.winterGifts.blizzardActive) return; state.winterGifts.blizzardActive = true; blizEnds = Date.now() + 90*1000; showBlizzard(); recalcEPS && recalcEPS(); save&&save();
+    const t = setInterval(()=>{ if(Date.now()>=blizEnds){ clearInterval(t); endBlizzard(); } }, 500);
+  }
+  function endBlizzard(){ hideBlizzard(); state.winterGifts.blizzardActive=false; recalcEPS && recalcEPS(); save&&save(); }
+  function showBlizzard(){ const layer=document.getElementById('blizzard'); layer.classList.add('show');
+    function spawn(){ if(!state.winterGifts.blizzardActive) return; const s=document.createElement('div'); s.className='snowflake'; const x=Math.random()*(window.innerWidth-40); const dur=4000+Math.random()*3000; s.style.left=x+'px'; document.body.appendChild(s); s.style.top='-40px'; let y=-40; const vy=(window.innerHeight+80)/(dur/16); let tick=setInterval(()=>{ y+=vy; s.style.top=y+'px'; if(y>window.innerHeight+60){ clearInterval(tick); s.remove(); } },16); s.addEventListener('click',()=>{ try{ state.money=(state.money||0)+5000000; updateTop && updateTop(); save&&save(); }catch(e){} s.remove(); }); }
+    if(flakeTimer) clearInterval(flakeTimer); flakeTimer=setInterval(()=>{ if(!state.winterGifts.blizzardActive){ clearInterval(flakeTimer); return; } for(let i=0;i<4;i++) spawn(); },800);
+  }
+  function hideBlizzard(){ const layer=document.getElementById('blizzard'); layer.classList.remove('show'); try{ if(flakeTimer) clearInterval(flakeTimer); }catch(e){} document.querySelectorAll('.snowflake').forEach(n=>n.remove()); }
+  (function patchMultiplier(){ const orig = window.getActivePedestalMultiplier || function(){return 1}; window.getActivePedestalMultiplier=function(){ const m=orig.apply(this,arguments); return m * (state.winterGifts && state.winterGifts.blizzardActive ? 3 : 1); }; })();
+
+  // Make sure we place the button even if Stranger is injected later
+  function tryAdd(){ addWinterButton(); }
+  document.addEventListener('DOMContentLoaded', tryAdd);
+  new MutationObserver(tryAdd).observe(document.body, {childList:true,subtree:true});
+})();
+</script>
+
+<!-- ========= WINTER GIFTS PATCH v1.40g (robust forge + persistent claims + snowman blizzard) ========= -->
+<script>
+(function(){
+  const WG_KEY = 'WG_WINTER_GIFTS_V1';
+
+  // ------- Load persisted WG state early
+  try{
+    const raw = localStorage.getItem(WG_KEY);
+    if(raw){
+      window.state = window.state || {};
+      const dat = JSON.parse(raw);
+      state.winterGifts = Object.assign({forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]}, state.winterGifts||{}, dat);
+    }
+  }catch(e){}
+
+  // ------- Ensure state shape
+  window.state = window.state || {};
+  state.winterGifts = state.winterGifts || {forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]};
+
+  function saveWG(){ try{ localStorage.setItem(WG_KEY, JSON.stringify(state.winterGifts)); }catch(e){} }
+
+  // Persist any markClaimed calls from the event code
+  (function persistMarkClaimed(){
+    const orig = window.markClaimed;
+    window.markClaimed = function(id){
+      try{ state.winterGifts.gift = state.winterGifts.gift || {}; state.winterGifts.gift[id] = 'claimed'; saveWG(); }catch(e){}
+      if(typeof orig === 'function'){ try{ return orig.apply(this, arguments); }catch(e){} }
+    };
+  })();
+
+  // ------- Update Winter overlay live if open
+  function refreshWinterIfOpen(){
+    const o = document.getElementById('winterOverlay');
+    if(o && o.classList.contains('show') && typeof renderWinterGrid==='function'){ try{ renderWinterGrid(); }catch(e){} }
+  }
+
+  // ------- Robust FORGE hooking
+  (function hookForge(){
+    function attachToBtn(){
+      const btn = document.getElementById('forgeBtn');
+      if(!btn || btn.__wgForgeHooked) return;
+      btn.__wgForgeHooked = true;
+      btn.addEventListener('click', ()=>{
+        const before = JSON.stringify(state.stands)+JSON.stringify(state.placed);
+        setTimeout(()=>{
+          try{
+            // Only count if a mythic is present after click (means forge succeeded)
+            const mythicPresent = Object.values(state.placed||{}).some(it=>it && it.rarity === 'mythic');
+            if(mythicPresent){
+              state.winterGifts.forge = (state.winterGifts.forge||0) + 1;
+              saveWG(); save && save();
+              refreshWinterIfOpen();
+            }
+          }catch(e){}
+        }, 60);
+      }, true);
+    }
+    // Also wrap createMythicItem for belt-and-suspenders
+    function wrapCreate(){
+      const f = window.createMythicItem;
+      if(typeof f === 'function' && !f.__wgWrapped){
+        window.createMythicItem = function(){
+          const r = f.apply(this, arguments);
+          try{ state.winterGifts.forge = (state.winterGifts.forge||0) + 1; saveWG(); save&&save(); refreshWinterIfOpen(); }catch(e){}
+          return r;
+        };
+        window.createMythicItem.__wgWrapped = true;
+      }
+    }
+    // Try now and keep trying as DOM/script loads
+    const poll = setInterval(()=>{ attachToBtn(); wrapCreate(); }, 300);
+    document.addEventListener('DOMContentLoaded', ()=>{ attachToBtn(); wrapCreate(); });
+  })();
+
+  // ------- Hatch persist (if event added earlier)
+  (function rehookHatch(){
+    const prev = window.__udOnPetHatch;
+    window.__udOnPetHatch = function(petObj){ try{ if(typeof prev==='function') prev.apply(this, arguments); }catch(e){} try{
+      state.winterGifts.hatch = (state.winterGifts.hatch||0) + 1;
+      const n = String((petObj && (petObj.petType||petObj.name))||'').toLowerCase();
+      if(n.includes('gold') && n.includes('dog')) state.winterGifts.hatchedGoldDog = true;
+      saveWG(); save&&save(); refreshWinterIfOpen();
+    }catch(e){} };
+  })();
+
+  // ======== Snowman Blizzard system ========
+  function isSnowmanPlaced(){
+    try{
+      return (state.petStands||[]).some(p=>p && !p.isEgg && String(p.petType||p.name).toLowerCase()==='snowman');
+    }catch(e){ return false; }
+  }
+  let blizTimer=null, flakeTimer=null, blizEnds=0;
+
+  function scheduleBlizzard(){
+    if(blizTimer) clearInterval(blizTimer);
+    const interval = (state.fastMode ? 15 : 15*60) * 1000;  // fast mode: 15s for testing, otherwise 15 min
+    blizTimer = setInterval(()=>{
+      if(!isSnowmanPlaced()) return;
+      if(Math.random() <= 0.05){ startBlizzard(); }
+    }, interval);
+  }
+
+  function startBlizzard(){
+    if(state.winterGifts.blizzardActive) return;
+    state.winterGifts.blizzardActive = true;
+    saveWG(); save && save();
+    blizEnds = Date.now() + 90*1000;
+
+    // Visual layer
+    let layer = document.getElementById('blizzard');
+    if(!layer){
+      layer = document.createElement('div'); layer.id='blizzard';
+      layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;display:none;z-index:75';
+      document.body.appendChild(layer);
+    }
+    layer.classList.add('show'); layer.style.display='block';
+
+    function spawn(){
+      if(!state.winterGifts.blizzardActive) return;
+      const s = document.createElement('div');
+      s.className = 'snowflake';
+      s.style.cssText = 'position:fixed;top:-40px;left:0;width:36px;height:36px;background-image:url(icons/winter_gifts_icon.png);background-size:contain;background-repeat:no-repeat;opacity:.9;cursor:pointer;pointer-events:auto;z-index:76;';
+      const x = Math.random() * (window.innerWidth - 40);
+      const dur = 4000 + Math.random()*3000;
+      s.style.left = x + 'px';
+      document.body.appendChild(s);
+      s.style.top = '-40px';
+      let y = -40;
+      const vy = (window.innerHeight + 80) / (dur/16);
+      const tick = setInterval(()=>{
+        y += vy; s.style.top = y + 'px';
+        if(y > window.innerHeight + 60){ clearInterval(tick); s.remove(); }
+      }, 16);
+      s.addEventListener('click', ()=>{
+        try{ state.money = (state.money||0) + 5000000; if(typeof updateTop==='function') updateTop(); save && save(); }catch(e){}
+        s.remove();
+      });
+    }
+    if(flakeTimer) clearInterval(flakeTimer);
+    flakeTimer = setInterval(()=>{ if(!state.winterGifts.blizzardActive){ clearInterval(flakeTimer); return; } for(let i=0;i<4;i++) spawn(); }, 800);
+
+    // Stop timer for the event
+    const chk = setInterval(()=>{ if(Date.now() >= blizEnds){ clearInterval(chk); endBlizzard(); } }, 400);
+  }
+
+  function endBlizzard(){
+    state.winterGifts.blizzardActive = false;
+    saveWG(); save && save();
+    try{ clearInterval(flakeTimer); }catch(e){}
+    document.querySelectorAll('.snowflake').forEach(n=>n.remove());
+    const layer = document.getElementById('blizzard');
+    if(layer){ layer.classList.remove('show'); layer.style.display='none'; }
+  }
+
+  // Multiplier: x3 during blizzard only
+  (function patchMultiplier(){
+    const orig = window.getActivePedestalMultiplier || function(){ return 1; };
+    window.getActivePedestalMultiplier = function(){
+      const m = orig.apply(this, arguments);
+      return m * (state.winterGifts && state.winterGifts.blizzardActive ? 3 : 1);
+    };
+  })();
+
+  // Start watcher on load, and whenever pets UI changes
+  function ensureWatcher(){ if(isSnowmanPlaced()) scheduleBlizzard(); }
+  document.addEventListener('DOMContentLoaded', ensureWatcher);
+  new MutationObserver(ensureWatcher).observe(document.body, {childList:true,subtree:true});
+
+  // Optional quick test: press Shift+B to trigger blizzard immediately (handy for QA)
+  document.addEventListener('keydown', (e)=>{ if(e.shiftKey && (e.key==='B' || e.key==='b')){ startBlizzard(); } });
+
+})();
+</script>
+
+<!-- Injected Winter Gifts end -->
 </body>
 <!-- Inventory Redesign Override -->
 <style id="inventory-redesign-final">
@@ -8752,4 +9136,45 @@ try{
     try{ if(window.__backupNow){ window.__backupNow(); } }catch(e){}
   });
 }catch(e){}
+</script>
+
+<script>
+// === Winter Gifts persistence hardening (final patch) ===
+(function(){
+  try {
+    const WG_KEY = 'WG_WINTER_GIFTS_V1';
+    function saveWG(){ try{ localStorage.setItem(WG_KEY, JSON.stringify(state.winterGifts||{forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]})); }catch(e){} }
+    // Re-wrap markClaimed safely and idempotently
+    const prev = window.markClaimed;
+    if(!prev || !prev.__wgWrapped){
+      function wrapper(id){
+        try{ 
+          window.state = window.state || {};
+          state.winterGifts = state.winterGifts || {forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]};
+          state.winterGifts.gift = state.winterGifts.gift || {};
+          state.winterGifts.gift[id] = 'claimed';
+          saveWG();
+        }catch(e){}
+        if(typeof prev === 'function') try{ return prev.apply(this, arguments); }catch(e){}
+      }
+      wrapper.__wgWrapped = true;
+      window.markClaimed = wrapper;
+    }
+    // On DOM ready, refresh the grid if open so claimed state sticks visually
+    document.addEventListener('DOMContentLoaded', function(){
+      try{ const o = document.getElementById('winterOverlay'); if(o && o.classList.contains('show') && typeof renderWinterGrid==='function') renderWinterGrid(); }catch(e){}
+    });
+    // Ensure save() pushes WG to remote/local backups as well (if our earlier patch didn't run)
+    try{
+      const __save = window.save;
+      if (__save && !__save.__wgAugmented) {
+        window.save = async function(){
+          try{ state.winterGifts = state.winterGifts || {forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]}; }catch(e){}
+          return await __save.apply(this, arguments);
+        };
+        window.save.__wgAugmented = true;
+      }
+    }catch(e){}
+  } catch (e) {}
+})();
 </script>
