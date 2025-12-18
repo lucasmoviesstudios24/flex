@@ -1609,7 +1609,33 @@ body.bg-upsidedown{
   outline: 2px solid var(--ui-blue, #2973e3);
   outline-offset: 2px;
   transform: translateY(-2px) scale(1.02);
-}</style></head>
+}</style>
+<style>
+/* Snowy Pedestal CSS */
+body.snowy-pedestals .pedestal{
+  background: linear-gradient(#f6fbff, #d9f0ff) !important;
+  box-shadow: inset 0 6px 0 rgba(255,255,255,.8), inset 0 -6px 0 rgba(0,0,0,.15), 0 10px 28px rgba(0,120,160,.25) !important;
+  position: relative;
+}
+body.snowy-pedestals .pedestal::after{
+  content:"";
+  position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+  background-image:
+    radial-gradient(#fff 1.2px, transparent 1.2px),
+    radial-gradient(#fff 1px, transparent 1px);
+  background-size: 10px 10px, 6px 6px;
+  background-position: 0 0, 3px 3px;
+  opacity: .30;
+  animation: snowySparkle 2.4s linear infinite;
+}
+@keyframes snowySparkle {
+  0%   { opacity: .22; }
+  50%  { opacity: .40; }
+  100% { opacity: .22; }
+}
+</style>
+
+</head>
 <body>
 <div class="event-row" id="eventRow"></div>
 <div class="game">
@@ -8753,8 +8779,51 @@ window.__saveHawkinsProgress = function(){
   (function hookPetHatch(){ const prev=window.__udOnPetHatch; window.__udOnPetHatch=function(petObj){ try{ if(typeof prev==='function') prev.apply(this,arguments); }catch(e){} try{ state.winterGifts.hatch=(state.winterGifts.hatch||0)+1; const n=String((petObj&&(petObj.petType||petObj.name))||'').toLowerCase(); if(n.includes('gold')&&n.includes('dog')){ state.winterGifts.hatchedGoldDog=true; } save&&save(); }catch(e){} }; })();
 
   /* === Background/Pedestal availability rendering === */
-  (function extendBg(){ const orig=window.__renderBgGrid; window.__renderBgGrid=function(){ if(typeof orig==='function') orig(); try{ const g=document.getElementById('bgGrid'); if(!g) return; if(!g.querySelector('[data-winterbg]') && (state.unlockedBackgrounds||{}).winter_wonderland){ const el=document.createElement('div'); el.setAttribute('data-winterbg','1'); el.className='bg-tile'; el.style.cssText='background-image:url("background_files/winter_wonderland.png");background-size:cover;background-position:center;border-color:#8fe7ff;'; el.innerHTML='<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">WINTER WONDERLAND</div><button class="buy bg-apply">Apply</button>'; el.querySelector('.bg-apply').onclick=function(){ document.body.classList.remove("bg-green","bg-blue","bg-purple","bg-orange","bg-legacy","bg-unique","bg-exotic","bg-mythic","bg-rainbow","bg-crypto","bg-dodger","bg-dodgerquests","bg-spaceview","redblue","bg-hawkins","bg-sunrise"); document.body.style.background=''; document.body.classList.add('bg-winter'); state.selectedBackground='winter_wonderland'; save&&save(); }; g.appendChild(el);} }catch(e){} }; })();
-  (function extendPed(){ const orig=window.__renderPedestalPage; window.__renderPedestalPage=function(){ if(typeof orig==='function') orig(); try{ const host=document.getElementById('pedestalPage'); if(!host) return; if(!host.querySelector('[data-snowyped]')){ const grid=host.querySelector('.ped-grid')||host; const el=document.createElement('div'); el.setAttribute('data-snowyped','1'); el.className='ped-tile'+(!(state.pedestalSkins||{}).snowy?' locked':''); el.style.background='linear-gradient(180deg,#ffffff,#dff6ff)'; el.innerHTML='<div style="font-weight:900">Snowy Pedestal</div><button class="buy ped-apply" '+(!((state.pedestalSkins||{}).snowy)?'disabled':'')+'>Equip</button>'; el.querySelector('.ped-apply').onclick=function(){ if(!((state.pedestalSkins||{}).snowy)) return; state.selectedPedestalSkin='snowy'; document.body.classList.add('snowy-pedestals'); document.body.classList.remove('red-pedestals','aqua-pedestals','strange-pedestals'); save&&save(); }; grid.appendChild(el);} }catch(e){} }; })();
+  (function extendBg(){ 
+  const orig=window.__renderBgGrid; 
+  window.__renderBgGrid=function(){ 
+    if(typeof orig==='function') orig(); 
+    try{ 
+      const g=document.getElementById('bgGrid'); 
+      if(!g) return; 
+      // Add or update the Winter Wonderland tile so it is ALWAYS visible
+      let el=g.querySelector('[data-winterbg]');
+      if(!el){
+        el=document.createElement('div');
+        el.setAttribute('data-winterbg','1');
+        el.className='bg-tile';
+        el.style.cssText='background-image:url("background_files/winter_wonderland.png");background-size:cover;background-position:center;border-color:#8fe7ff;';
+        el.innerHTML='<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">WINTER WONDERLAND</div><button class="buy bg-apply">Apply</button>';
+        g.appendChild(el);
+      }
+      // lock state if not unlocked yet
+      const unlocked = !!((state.unlockedBackgrounds||{}).winter_wonderland);
+      el.classList.toggle('locked', !unlocked);
+      const btn = el.querySelector('.bg-apply');
+      if(btn){
+        btn.disabled = !unlocked;
+        btn.onclick = function(){
+          if(!((state.unlockedBackgrounds||{}).winter_wonderland)) return;
+          document.body.classList.remove("bg-green","bg-blue","bg-purple","bg-orange","bg-legacy","bg-unique","bg-exotic","bg-mythic","bg-rainbow","bg-crypto","bg-dodger","bg-dodgerquests","bg-spaceview","redblue","bg-hawkins","bg-sunrise");
+          // also remove winter if present before re-adding (to mirror others)
+          document.body.classList.remove("bg-winter");
+          document.body.style.background='';
+          document.body.classList.add('bg-winter');
+          state.selectedBackground='winter_wonderland';
+          if(typeof save==='function') save();
+        };
+      }
+    }catch(e){} 
+  }; 
+})(); 
+(function extendPed(){ const orig=window.__renderPedestalPage; window.__renderPedestalPage=function(){
+    try{
+      state = state || {};
+      state.pedestalSkins = state.pedestalSkins || { default:true };
+      if (typeof state.pedestalSkins.snowy === 'undefined') state.pedestalSkins.snowy = !!state.pedestalSkins.snowy;
+      state.selectedPedestalSkin = state.selectedPedestalSkin || 'default';
+    }catch(e){} 
+     if(typeof orig==='function') orig(); try{ const host=document.getElementById('pedestalPage'); if(!host) return; if(!host.querySelector('[data-snowyped]')){ const grid=host.querySelector('.ped-grid')||host; const el=document.createElement('div'); el.setAttribute('data-snowyped','1'); el.className='ped-tile'+(!(state.pedestalSkins||{}).snowy?' locked':''); el.style.background='linear-gradient(180deg,#ffffff,#dff6ff)'; el.innerHTML='<div style="font-weight:900">Snowy Pedestal</div><button class="buy ped-apply" '+(!((state.pedestalSkins||{}).snowy)?'disabled':'')+'>Equip</button>'; el.querySelector('.ped-apply').onclick=function(){ if(!((state.pedestalSkins||{}).snowy)) return; state.selectedPedestalSkin='snowy'; document.body.classList.add('snowy-pedestals'); document.body.classList.remove('red-pedestals','aqua-pedestals','strange-pedestals'); save&&save(); }; grid.appendChild(el);} }catch(e){} }; })();
   try{ var st2=document.createElement('style'); st2.textContent = '.snowy-pedestals .pedestal{background:linear-gradient(#f0fbff,#cfeeff);box-shadow:inset 0 6px 0 rgba(255,255,255,.8),inset 0 -6px 0 rgba(0,0,0,.15),0 10px 28px rgba(0,120,160,.25);position:relative} .snowy-pedestals .pedestal::after{content:"";position:absolute;inset:0;background-image:radial-gradient(#fff 1px, transparent 1px);background-size:10px 10px;opacity:.28;border-radius:inherit;pointer-events:none}'; document.head.appendChild(st2);}catch(e){}
 
   /* === Snowman Blizzard === */
@@ -9039,7 +9108,7 @@ window.__saveHawkinsProgress = function(){
     try{
       document.body.classList.toggle('red-pedestals', String(state.selectedPedestalSkin)==='red');
       document.body.classList.toggle('aqua-pedestals', String(state.selectedPedestalSkin)==='aqua');
-    document.body.classList.toggle('strange-pedestals', String(state.selectedPedestalSkin)==='strange');}catch(e){}
+    document.body.classList.toggle('strange-pedestals', String(state.selectedPedestalSkin)==='strange');try{ document.body.classList.toggle('snowy-pedestals', String(state.selectedPedestalSkin)==='snowy'); }catch(e){} }catch(e){}
   }
   window.__renderPedestalPage = function(){
     ensurePedestalState();
@@ -9094,7 +9163,29 @@ window.__saveHawkinsProgress = function(){
     try { strange.style.gridRow = '2'; strange.style.gridColumn = '2'; } catch(e) {}
     grid.appendChild(strange);
 
-    host.appendChild(grid);
+    
+// --- Snowy (Winter Gift 2) — always visible, locked until earned; place under Blue (Aqua) ---
+(function(){
+  try{
+    const unlockedSnow = !!((state.pedestalSkins||{}).snowy);
+    const snowy = document.createElement('div');
+    snowy.className = 'ped-tile' + (unlockedSnow ? '' : ' locked');
+    snowy.style.background = 'linear-gradient(180deg,#ffffff,#dff6ff)';
+    snowy.innerHTML = '<div style="font-weight:900;display:flex;align-items:center;gap:8px;">Snowy Pedestal</div>' +
+                      '<button class="buy ped-apply" ' + (unlockedSnow ? '' : 'disabled') + '>Equip</button>';
+    try { snowy.style.gridRow = '3'; snowy.style.gridColumn = '1'; } catch(e){}
+    const btn = snowy.querySelector('.ped-apply');
+    btn.onclick = function(){
+      if(!((state.pedestalSkins||{}).snowy)) return;
+      state.selectedPedestalSkin = 'snowy';
+      try { applyPedestalSkin && applyPedestalSkin(); } catch(e){}
+      if (typeof save === 'function') save();
+      window.__renderPedestalPage && window.__renderPedestalPage();
+    };
+    grid.appendChild(snowy);
+  }catch(e){}
+})();
+host.appendChild(grid);
   };
   // Hook the side tabs to render the page when PEDESTALS is shown
   document.addEventListener('DOMContentLoaded', function(){
