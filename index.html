@@ -1025,6 +1025,11 @@ body.bg-dodger{ background:url('la_dodgers_style_files/la_dodgers_style.png') ce
 body.bg-sunrise{
   background: url('background_files/sunrise_style.png') center center / cover no-repeat fixed !important;
 }
+
+/* Background: The Great Wave (redeemable) */
+body.bg-greatwave{
+  background: url('background_files/the_great_wave.png') center center / cover no-repeat fixed !important;
+}
 </style>
 <style>
 /* === Backgrounds overlay: scrollable grid === */
@@ -5925,6 +5930,30 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
       }catch(e){}
     };
   })();
+
+  (function extendBgGridForGreatWave(){
+    const orig = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if (typeof orig === 'function') orig();
+      try{
+        const g = document.getElementById('bgGrid'); if(!g) return;
+        if ((state.unlockedBackgrounds||{}).greatwave && !g.querySelector('[data-greatwave]')){
+          const el = document.createElement('div');
+          el.setAttribute('data-greatwave','1');
+          el.className = 'bg-tile';
+          el.style.cssText = "background-image:url('background_files/the_great_wave.png');background-size:cover;background-position:center;border:4px solid rgba(255,255,255,.4)";
+          el.innerHTML = '<div style="font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)">THE GREAT WAVE</div><button class="buy bg-apply">Apply</button>';
+          el.querySelector('.bg-apply').onclick = function(){
+            document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-legendary','bg-unique','bg-exotic','bg-mythic','bg-rainbow','bg-crypto','bg-dodger','bg-spaceview','bg-dodgerquests','redblue','bg-sunrise','bg-hawkins','bg-winter');
+            document.body.classList.add('bg-greatwave');
+            state.selectedBackground = 'greatwave';
+            try{ if(typeof save==='function') save(); }catch(e){}
+          };
+          g.appendChild(el);
+        }
+      }catch(e){}
+    };
+  })();
 (function extendBgGridForSpaceView(){
     const orig = window.__renderBgGrid;
     window.__renderBgGrid = function(){
@@ -6549,16 +6578,38 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
         msg.textContent = 'Could not add pet.';
         return;
       }
-    } else if(hit.type === 'background' && (hit.backgroundKey||'') === 'sunrise'){
-      applySunriseUnlock();
-      banner('Redeemed! Sunrise background unlocked.');
-      // Mark this code as used by removing it from the codes list on the server
-      try {
-        const nextCodes = codes.filter(x => String(x.code) !== String(raw));
-        await fetch(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}`, {
-          method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ __ts: Date.now(), codes: nextCodes })
-        });
-      } catch(e) { console.warn(e); }
+    }
+    else if(hit.type === 'background'){
+      try{
+        const key = String(hit.backgroundKey||'').toLowerCase();
+        const name = String(hit.backgroundName||'Background');
+        const asset = String(hit.asset||'');
+        if(key === 'sunrise'){
+          applySunriseUnlock();
+        } else {
+          window.state = window.state || {};
+          state.unlockedBackgrounds = state.unlockedBackgrounds || {};
+          state.unlockedBackgrounds[key] = true;
+          if(asset){
+            var st = document.getElementById('bg_'+key+'_style');
+            if(!st){
+              st = document.createElement('style');
+              st.id = 'bg_'+key+'_style';
+              st.textContent = "body.bg-"+key+"{background:url('"+asset+"') center center / cover no-repeat fixed !important;}";
+              document.head.appendChild(st);
+            }
+          }
+          try{ if(typeof window.__renderBgGrid==='function') window.__renderBgGrid(); }catch(e){}
+          try{ if(typeof save==='function') await save(); }catch(e){}
+        }
+        banner('Redeemed! '+name+' background unlocked.');
+        try {
+          const nextCodes = codes.filter(x => String(x.code) !== String(raw));
+          await fetch(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}`, {
+            method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ __ts: Date.now(), codes: nextCodes })
+          });
+        } catch(e) { console.warn(e); }
+      }catch(e){ console.warn(e); msg.textContent='Could not unlock background.'; return; }
     } else {
       msg.textContent = 'Unknown reward type.'; return;
     }
