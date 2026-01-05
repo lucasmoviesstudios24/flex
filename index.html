@@ -876,17 +876,362 @@ body.red-pedestals .pedestal{
 }
 
 /* Aqua Pedestal cosmetic (applies to item pedestals only) */
+/* Ocean/Aqua wave look */
+/* Ocean/Aqua wave look — distinct from Light/Dark Blue */
 body.aqua-pedestals .pedestal{
-  background: linear-gradient(180deg,#a8deff,#0a4cbf) !important;
-  box-shadow: inset 0 6px 0 rgba(255,255,255,25), 0 10px 0 #0a3a86, 0 14px 18px rgba(0,0,0,45) !important;
+  background:
+    /* white foam arcs rising from the bottom */
+    radial-gradient(60% 180% at 15% 120%, rgba(255,255,255,0.60) 12%, rgba(255,255,255,0) 13%),
+    radial-gradient(60% 180% at 45% 120%, rgba(255,255,255,0.50) 12%, rgba(255,255,255,0) 13%),
+    radial-gradient(60% 180% at 75% 120%, rgba(255,255,255,0.55) 12%, rgba(255,255,255,0) 13%),
+    /* faint angled bands to suggest swell */
+    repeating-linear-gradient(-12deg, rgba(255,255,255,0.18) 0 6px, rgba(255,255,255,0.00) 6px 26px),
+    /* aqua gradient base with teal highlights */
+    linear-gradient(180deg,#34d2e8 0%, #9be9ff 28%, #53bfff 60%, #0a4cbf 100%) !important;
+  box-shadow: inset 0 6px 0 rgba(255,255,255,.28), 0 10px 0 #0a3a86, 0 14px 18px rgba(0,0,0,.35) !important;
 }
 /* Pedestal page tiles */
-.ped-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;}
+.ped-grid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:18px;}
+.ped-grid{margin-bottom:12px;}
+
+
+/* Sandy Shores - applied to main pedestals (grain + tiny rocks) */
+body.sandy-pedestals .pedestal{
+  background:
+    /* sand grain specks */
+    radial-gradient(1.5px 1.5px at 10% 20%, rgba(140,110,60,0.20) 0 40%, transparent 45%) ,
+    radial-gradient(1.2px 1.2px at 22% 38%, rgba(120,95,55,0.20) 0 40%, transparent 45%) ,
+    radial-gradient(1.4px 1.4px at 35% 52%, rgba(150,120,75,0.20) 0 40%, transparent 45%) ,
+    radial-gradient(1.2px 1.2px at 64% 28%, rgba(100,80,50,0.20) 0 40%, transparent 45%) ,
+    radial-gradient(1.4px 1.4px at 74% 48%, rgba(130,100,60,0.20) 0 40%, transparent 45%) ,
+    radial-gradient(1.3px 1.3px at 86% 36%, rgba(110,90,55,0.20) 0 40%, transparent 45%) ,
+    /* tiny pebbles / small rocks */
+    radial-gradient(10px 7px at 20% 78%, rgba(110,90,70,0.35) 0 60%, rgba(110,90,70,0.00) 65%) ,
+    radial-gradient(8px 6px at 44% 74%, rgba(95,80,60,0.32) 0 60%, rgba(95,80,60,0.00) 65%) ,
+    radial-gradient(9px 7px at 71% 82%, rgba(125,105,85,0.35) 0 60%, rgba(125,105,85,0.00) 65%) ,
+    radial-gradient(7px 5px at 83% 70%, rgba(80,70,60,0.32) 0 60%, rgba(80,70,60,0.00) 65%) ,
+    /* subtle dune wave */
+    linear-gradient(6deg, rgba(255,255,255,0.10) 20%, rgba(255,255,255,0.00) 22% 78%, rgba(0,0,0,0.05) 80%) ,
+    /* warm sand base */
+    linear-gradient(180deg,#ffe6a1 0%, #ffd788 55%, #e6bb62 100%) !important;
+  box-shadow: inset 0 6px 0 rgba(255,255,255,.28), 0 10px 0 #caa54a, 0 14px 18px rgba(0,0,0,.25) !important;
+}
+
+
 .ped-tile{height:120px;border-radius:18px;border:4px solid #111;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;box-shadow:var(--shadow);position:relative;overflow:hidden;background:linear-gradient(180deg,#ffd24a,#b8860b);}
 .ped-tile.locked::after{content:"LOCKED";position:absolute;inset:auto 0 0 0;background:rgba(0,0,0,.55);color:#fff;text-align:center;padding:6px 0;font-weight:900;}
 .ped-apply{align-self:flex-end;margin-top:6px;}
 
+
+/* === Crate open animation & reward toast === */
+#crateAnim {
+  position: fixed; inset: 0; display:flex; align-items:center; justify-content:center;
+  z-index: 9999; pointer-events:none;
+}
+#crateAnim .burst {
+  position: absolute; width: 220px; height: 220px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,215,128,.6) 40%, rgba(255,140,0,.0) 60%);
+  filter: blur(2px); opacity: 0;
+  animation: burstFade .65s ease-out forwards;
+}
+#crateAnim .crate {
+  width: 180px; height: 180px; opacity: 0; transform: scale(.7);
+  animation: crateOpen .65s cubic-bezier(.2,.9,.3,1) forwards;
+  image-rendering: -webkit-optimize-contrast;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,.45));
+}
+#crateAnim .reward {
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  margin-top: 200px; opacity: 0; transform: translateY(40px) scale(.9);
+  animation: rewardRise 1.2s .45s ease-out forwards;
+  font-weight: 1000; font-size: 20px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.35);
+}
+#crateAnim .reward img { width: 110px; height:110px; filter: drop-shadow(0 12px 24px rgba(0,0,0,.4)); border-radius: 14px; }
+#crateAnim.fade-out .reward { animation: flyAway .6s ease-in forwards; }
+@keyframes crateOpen {
+  0%{opacity:0; transform:scale(.7) rotate(0);}
+  50%{opacity:1; transform:scale(1.06) rotate(-2deg);}
+  100%{opacity:0; transform:scale(1.15) rotate(6deg);}
+}
+@keyframes burstFade {
+  0%{opacity:0; transform:scale(.5);}
+  40%{opacity:1; transform:scale(1.2);}
+  100%{opacity:0; transform:scale(1.6);}
+}
+@keyframes rewardRise {
+  0%{opacity:0; transform: translateY(40px) scale(.9);}
+  50%{opacity:1; transform: translateY(-6px) scale(1.02);}
+  100%{opacity:1; transform: translateY(0) scale(1);}
+}
+@keyframes flyAway {
+  0%{opacity:1; transform: translateY(0) scale(1);}
+  100%{opacity:0; transform: translateY(-140px) scale(.6);}
+}
+
+
+/* === FLEX PASS header: ocean-breeze animated text === */
+#flexPassHeader h2,
+#flexPassHeader .season{
+  position: relative;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(130deg, #b3e5ff, #4ec5ff 30%, #1a8cff 55%, #00d0ff 80%, #b3e5ff);
+  background-size: 220% 220%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: oceanFlow 6.5s ease-in-out infinite;
+  text-shadow: 0 2px 0 rgba(0,0,0,.15);
+}
+#flexPassHeader h2::after,
+#flexPassHeader .season::after{
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(-12deg, rgba(255,255,255,.18), rgba(255,255,255,.18) 4px, rgba(255,255,255,0) 10px);
+  mix-blend-mode: screen;
+  animation: breezeSlide 5.5s linear infinite;
+  border-radius: .2em;
+  -webkit-mask-image: linear-gradient(#000, #000);
+          mask-image: linear-gradient(#000, #000);
+}
+
+#flexPassHeader h2{
+  animation-name: oceanFlow, sway;
+  animation-duration: 6.5s, 4.2s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+@keyframes oceanFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
+}
+@keyframes breezeSlide{
+  0%{ background-position: 0 0; }
+  100%{ background-position: 320px 0; }
+}
+@keyframes sway{
+  0%{ transform: translateY(0) rotate(0deg); }
+  50%{ transform: translateY(-1px) rotate(-0.2deg); }
+  100%{ transform: translateY(0) rotate(0.25deg); }
+}
+
+
+/* ==== Rising Tides XP Events (Top-Right HUD + Falling Items) ==== */
+#rtxp-hud{
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 5000;
+  background: rgba(20,24,34,.85);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  font-weight: 700;
+  display:none;
+  box-shadow: 0 6px 24px rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+}
+#rtxp-hud .title{font-size:14px; opacity:.9; letter-spacing:.3px;}
+#rtxp-hud .timer{font-size:18px; margin-top:2px;}
+#rtxp-layer{
+  position: fixed;
+  inset: 0;
+  pointer-events: none; /* clicks only on items */
+  z-index: 4500;
+  overflow: hidden;
+}
+.rtxp-item{
+  position: absolute;
+  top: -80px;
+  width: 64px;
+  height: 64px;
+  pointer-events: auto;
+  user-select: none;
+  cursor: pointer;
+  will-change: transform, top;
+  image-rendering: auto;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+  transition: transform .08s ease;
+}
+.rtxp-item:active{ transform: scale(.92) rotate(-6deg); }
+@keyframes rtxp-fall {
+  from{ transform: translateY(-80px) rotate(0deg); }
+  to  { transform: translateY(110vh) rotate(360deg); }
+}
+
+
+/* === Coastal: refined animation (no spinning aura) === */
+.placed.coastal-waves::before,
+.placed.coastal-waves::after{ content:none !important; }
+
+.placed.coastal-waves{
+  position: relative;
+  transform-origin: 50% 95%;
+  animation: coastalRock 3.6s ease-in-out infinite;
+}
+
+/* Subtle shimmer sweep across the whole item */
+.placed.coastal-waves::after{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border-radius:16px;
+  pointer-events:none;
+  background: linear-gradient(120deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.20) 12%,
+    rgba(104,182,255,0.25) 18%,
+    rgba(255,255,255,0.18) 24%,
+    rgba(255,255,255,0) 36%);
+  background-size: 250% 100%;
+  animation: coastalShine 5s linear infinite;
+  mix-blend-mode: screen;
+  opacity: .45;
+}
+
+@keyframes coastalRock{
+  0% { transform: rotate(-1.2deg) translateY(0px); }
+  50%{ transform: rotate(1.2deg)  translateY(1px); }
+  100%{ transform: rotate(-1.2deg) translateY(0px); }
+}
+@keyframes coastalShine{
+  0%{ background-position: -120% 0; }
+  100%{ background-position: 220% 0; }
+}
+
+
+/* === Coastal fix: keep absolute positioning; gentle rock only (no translate) === */
+.placed.coastal-waves{ 
+  position: absolute !important; /* ensure same placement as other rarities */
+  transform-origin: 50% 60%;
+  animation: coastalRock 4.2s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes coastalRock{
+  0% { transform: rotate(-1deg); }
+  50%{ transform: rotate(1deg);  }
+  100%{ transform: rotate(-1deg); }
+}
+
+/* Reduce shimmer to stay within bounds */
+.placed.coastal-waves::after{
+  inset:0; /* no outward expansion */
+  border-radius: 14px;
+  opacity:.35;
+}
+
+/* === Coastal gradient background under transparent sprite === */
+.placed.coastal-waves .img-wrap{ 
+  position: relative; 
+  border-radius: 14px;
+  overflow: hidden; /* clip gradient to icon shape */
+}
+.placed.coastal-waves .img-wrap::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(180deg, #eaf6ff 0%, #bfe2ff 50%, #68b6ff 100%);
+  opacity: 0.9;
+  z-index: 0;
+}
+.placed.coastal-waves .img-wrap > img{
+  position: relative;
+  z-index: 1;
+}
+
+
+/* === Coastal: full-frame gradient background === */
+.placed.coastal-waves{
+  overflow: hidden;               /* clip gradient to the frame */
+  position: absolute !important;  /* keep original layout */
+}
+.placed.coastal-waves::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #eaf6ff 0%, #bfe2ff 50%, #68b6ff 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+/* Make sure shimmer stays above, but still non-interactive */
+.placed.coastal-waves::after{
+  z-index: 1;
+  pointer-events: none;
+}
+/* Lift children above the gradient base */
+.placed.coastal-waves > *{
+  position: relative;
+  z-index: 2;
+}
+
+/* Remove earlier icon-only gradient so the full-frame one is used */
+.placed.coastal-waves .img-wrap::before{ content:none !important; }
+
+
+/* === Brewer Recipes: keep inside panel, add scrolling; hide durations; better visibility === */
+#brewOverlay .panel{ position:fixed; } /* ensure positioned ancestor exists */
+#brewOverlay .panel .brew-recipes{
+  position: absolute !important;
+  left: 22px !important;
+  top: 74px !important;    /* sit nicely below the centered title */
+  bottom: 22px !important; /* stop at bottom of the panel */
+  width: var(--recipesW) !important;
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 8px !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+/* Switch to two columns automatically when the panel gives us more width */
+@media (min-width: 980px){
+  #brewOverlay .panel .brew-recipes{ grid-template-columns: 1fr 1fr !important; }
+}
+
+/* Hide duration lines on cards */
+#brewOverlay .panel .recipe-note{ display: none !important; }
+
+/* Make recipe names easier to read */
+#brewOverlay .panel .recipe-name{
+  color: #000 !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+}
+
+/* Keep recipe list title readable and pinned at top of the scroll container */
+#brewOverlay .panel .recipes-title{
+  position: sticky; top: 0; z-index: 2;
+  padding-top: 2px; padding-bottom: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.75));
+  color: #111 !important;
+  border-radius: 12px;
+}
+
 </style>
+
+    <!-- Disable Winter Gifts and Stranger Things events -->
+    <style id="disable-events">
+      /* Hide event buttons and overlays to turn off Winter Gifts and Stranger Things events */
+      #openWinterGifts,
+      .icon-winter,
+      #winterOverlay,
+      #giftOpenOverlay,
+      #blizzard,
+      .snowflake,
+      #openStranger,
+      .icon-stranger,
+      #strangerOverlay,
+      #strangerReveal {
+        display: none !important;
+      }
+    </style>
 <style>
 /* === Cosmic Event (Limited Time) === */
 .icon-cosmic{ background: radial-gradient(circle at 30% 30%, #1a2a6c, #000428); position:relative; }
@@ -1000,6 +1345,49 @@ body.bg-spaceview::before{
 .dodger-desc{ opacity:.9; font-size:18px; color:#123b5f; }
 .dodger-price{ font-weight:900; font-size:20px; }
 .dodger-buy{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer; background:linear-gradient(#a6d9ff,#65b9ff); color:#093054; }
+
+
+/* === Coastal rarity: blue/white with wave + shimmering blue === */
+.t-coastal{
+  background: linear-gradient(90deg,#eaf6ff,#68b6ff,#eaf6ff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: coastalShimmer 3s linear infinite;
+  font-weight: 900;
+  position: relative;
+}
+@keyframes coastalShimmer{
+  0%{ background-position: 0% 50%; }
+  100%{ background-position: 200% 50%; }
+}
+
+/* Wave aura around placed coastal items */
+.placed.coastal-waves::before,
+.placed.coastal-waves::after{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  border-radius:16px;
+  pointer-events:none;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,255,255,0) 0% 18%,
+    rgba(255,255,255,.50) 26%,
+    rgba(30,144,255,.55) 38%,
+    rgba(255,255,255,.35) 52%,
+    rgba(255,255,255,0) 66%
+  );
+  animation: coastalSpin 4s linear infinite;
+  mix-blend-mode: screen;
+}
+.placed.coastal-waves::after{
+  filter: blur(6px);
+  animation-duration: 6s;
+  opacity: .75;
+}
+@keyframes coastalSpin{ to { transform: rotate(360deg);} }
 
 /* Dodger rarity label */
 .t-dodger{
@@ -1269,11 +1657,7 @@ body.bg-greatwave{
 }
 #bgOverlay .bg-tab:focus{ outline: none; }
 #bgOverlay .bg-tab:active{ transform: translateY(1px); }
-#bgOverlay .pedestal-page{
-  flex: 1 1 auto;
-  min-height: 0;
-  /* empty page by design for now */
-}
+#bgOverlay .pedestal-page{ flex:1 1 auto; min-height:0; overflow-y:auto; padding-right:6px; scroll-behavior:smooth; padding-bottom:12px; }
 @media (max-width: 980px){
   #bgOverlay .bg-side-tabs{
     position: absolute;
@@ -1640,8 +2024,342 @@ body.snowy-pedestals .pedestal::after{
 }
 </style>
 
+
+<style>
+/* === FLEX PASS button === */
+.right-rail .flexpass-btn{
+  width: 76px; height: 76px; border-radius: 20px;
+  border: 4px solid rgba(0,0,0,.4);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  background: linear-gradient(180deg,#ffb22e,#ff6f00);
+  display:flex; align-items:center; justify-content:center;
+}
+.right-rail .flexpass-btn img{
+  width: 60%; height: 60%;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* === FLEX PASS overlay === */
+#flexPassOverlay .sheet{ max-width: 1100px; background: linear-gradient(180deg,#ffd2a7,#ffaf7a); }
+#flexPassHeader{
+  display:flex; align-items:end; justify-content:space-between; gap:16px;
+  margin-bottom:16px; padding-bottom:8px; border-bottom:4px solid rgba(0,0,0,.25);
+}
+#flexPassHeader h2{ margin:0; font-size:56px; line-height:1; letter-spacing:.5px; }
+#flexPassHeader .season{ font-weight:900; opacity:.9; font-size:18px; }
+#flexLevelBox{ display:flex; align-items:center; gap:14px; }
+#flexLevelNum{
+  font-weight:900; font-size:38px; padding:6px 14px; border-radius:12px;
+  background: #000; color:#ffda75; border:3px solid rgba(255,255,255,.25);
+  box-shadow:0 3px 0 rgba(0,0,0,.35);
+}
+#flexXPBar{ position:relative; height:22px; border-radius:14px; overflow:hidden; background: rgba(0,0,0,.25); border:3px solid rgba(0,0,0,.35); }
+#flexXPFill{ position:absolute; left:0; top:0; bottom:0; width:0%; background: linear-gradient(90deg,#ffe082,#ffd54f,#ffca28); }
+#flexXPCap{ font-weight:800; margin-left:12px; }
+
+.flex-rows{ display:flex; flex-direction:column; gap:14px; }
+.flex-row{ display:flex; gap:14px; overflow-x:auto; padding-bottom:6px; }
+.flex-reward{
+  min-width: 200px;
+  background: linear-gradient(180deg,#1f7aff,#2bc0ff);
+  border-radius:22px; padding:10px; box-shadow:0 6px 18px rgba(0,0,0,.35);
+  border: 3px solid rgba(255,255,255,.25); color:#fff; position:relative;
+}
+.flex-reward .lvl{ position:absolute; right:12px; bottom:8px; font-weight:1000; font-size:28px; text-shadow:0 2px 0 rgba(0,0,0,.2); }
+.flex-reward .img{ height:110px; display:flex; align-items:center; justify-content:center; }
+.flex-reward .img img{ height:96px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.35)); }
+.flex-reward .claim{
+  display:block; width:100%; margin-top:6px; font-weight:900;
+  border-radius:14px; padding:8px 10px; border:0; cursor:pointer;
+  color:#000; background:linear-gradient(180deg,#ffd54f,#ffb300);
+  box-shadow:0 3px 0 rgba(0,0,0,.25); letter-spacing:.2px;
+}
+/* Claimed state: red, disabled look */
+.flex-reward .claim.claimed{  background: linear-gradient(180deg,#ff6b6b,#e63946);  color:#fff; cursor:default; box-shadow:0 0 0 rgba(0,0,0,0);}
+.flex-reward .claim:disabled{ cursor:default; }
+
+.flex-reward.locked{ opacity:.6; filter:grayscale(0.1) saturate(.7); }
+.flex-row.row2 .flex-reward{ background: linear-gradient(180deg,#ff9da0,#ff7aa6); }
+
+/* simple crate explode animation */
+@keyframes cratePop{ 0%{ transform:scale(1); } 30%{ transform:scale(1.08); } 50%{ transform:scale(0.88); } 100%{ transform:scale(1); } }
+.crate-pop{ animation: cratePop .65s ease-in-out; }
+
+/* Aqua morph visuals */
+.rar.t-aqua{ background: linear-gradient(45deg,#8fe7ff,#2c9eff); color:#022; border:2px solid rgba(255,255,255,.25); box-shadow:0 3px 10px rgba(0,150,255,.25); }
+.aqua-morph{ animation: aquaWave 1.8s infinite; }
+@keyframes aquaWave{
+  0%{ transform: translateY(0) rotate(0deg); box-shadow:0 0 0 0 rgba(0,180,255,.25); }
+  25%{ transform: translateY(-2px) rotate(-.3deg); }
+  50%{ transform: translateY(0) rotate(.2deg); box-shadow:0 0 24px 8px rgba(0,180,255,.18); }
+  75%{ transform: translateY(2px) rotate(-.2deg); }
+  100%{ transform: translateY(0) rotate(0deg); box-shadow:0 0 0 0 rgba(0,180,255,.25); }
+}
+
+/* Coastal rarity color (sandy + ocean) */
+:root{ --c-coastal: linear-gradient(90deg, #eaf6ff, #bfe2ff, #68b6ff, #ffffff); }
+.bg-coastal{ background: var(--c-coastal) !important; }
+body.bg-beachvibes{ background: url('background_files/beach_vibes.png') center center / cover no-repeat fixed !important; }
+body.bg-winter{ background: url('background_files/winter_wonderland.png') center center / cover no-repeat fixed !important; }
+
+
+/* Sandy Shores pedestals */
+.sandy-pedestals .stands .stand .placed{ background-image: linear-gradient(180deg,rgba(252,230,173,.25),rgba(255,255,255,.05)); }
+</style>
+
+<style id="money-spin-style">
+@keyframes money-spin {
+  0%   { transform: rotateY(0deg)   scale(1); }
+  50%  { transform: rotateY(180deg) scale(1.08); }
+  100% { transform: rotateY(360deg) scale(1); }
+}
+/* apply when claiming a money reward */
+.flex-reward .img img.money-spin {
+  animation: money-spin 1.1s ease-in-out;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+</style>
+
+<style>
+
+/* === MAX LEVEL RED CRAZY ANIMATION === */
+.max-level-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  background:
+    radial-gradient(120vmax 120vmax at 20% 30%, rgba(255,0,0,0.85), transparent 60%),
+    radial-gradient(120vmax 120vmax at 80% 20%, rgba(255,60,60,0.75), transparent 60%),
+    radial-gradient(120vmax 120vmax at 30% 80%, rgba(255,0,120,0.6), transparent 60%),
+    repeating-linear-gradient(25deg, rgba(255,0,0,0.2) 0 10px, rgba(255,0,80,0.2) 10px 20px);
+  mix-blend-mode: screen;
+  animation: maxPulse 900ms ease-in-out 0s infinite alternate, maxDrift 8s linear 0s infinite;
+  backdrop-filter: blur(2.5px) saturate(1.35);
+}
+.max-level-overlay .max-text{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform: translate(-50%,-50%);
+  font-weight: 900;
+  font-size: clamp(48px, 7vw, 120px);
+  letter-spacing: 0.2em;
+  color: #fff;
+  text-shadow: 0 0 10px #ff0022, 0 0 30px #ff0022, 0 0 60px rgba(255,0,0,0.9);
+  animation: maxTextFlash 700ms ease-in-out 0s infinite alternate;
+}
+@keyframes maxPulse{
+  from{ transform: scale(1) rotate(0deg); filter: contrast(1.1) hue-rotate(-10deg) }
+  to{   transform: scale(1.06) rotate(1deg); filter: contrast(1.6) hue-rotate(10deg) }
+}
+@keyframes maxDrift{
+  from{ background-position: 0 0, 0 0, 0 0, 0 0; }
+  to{   background-position: 220px -220px, -180px 180px, 140px 260px, 400px 0; }
+}
+@keyframes maxTextFlash{
+  from{ opacity: 0.75; text-shadow: 0 0 10px #ff2244, 0 0 30px #ff2244, 0 0 60px rgba(255,0,0,1); }
+  to{   opacity: 1;    text-shadow: 0 0 20px #ff0022, 0 0 60px #ff0022, 0 0 120px rgba(255,0,0,1); }
+}
+
+</style>
+
+<style id="brewCenterRainbowPatch">
+/* === GPT patch (v4 center-only + rainbow) === */
+/* Keep the page static; center only the brewer content inside the overlay */
+#brewOverlay.show{ display: grid !important; place-items: center !important; }
+#brewOverlay .panel{ display: grid; justify-items: center; }
+#brewTitle{ text-align:center; margin-bottom: 12px; }
+/* Keep the grid block centered within the panel */
+.brew-grid{ margin-inline: auto; }
+
+/* Rainbow gradient frame for the "Other" slot */
+@keyframes brewRainbowHue { from{filter:hue-rotate(0deg)} to{filter:hue-rotate(360deg)} }
+#brewOther{
+  border: 3px solid transparent;
+  border-radius: 12px;
+  background:
+    linear-gradient(transparent, transparent) padding-box,
+    linear-gradient(135deg, #ff0040, #ff8a00, #ffee00, #00d084, #00b8ff, #7a00ff, #ff00ea) border-box;
+  animation: brewRainbowHue 10s linear infinite;
+}
+/* Ensure hover dotted outline is visible above the gradient */
+#brewOther.drop-ok::after, #brewOther.brew-hover::after{
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: 10px;
+  border: 4px dotted #FFD400;
+  box-shadow: 0 0 0 3px rgba(255,212,0,0.35);
+  pointer-events: none;
+}
+/* === End GPT patch === */
+
+
+
+/* Lift the brewer panel upward so the full inventory remains visible */
+:root{ --brewYOffset: -10vh; }
+#brewOverlay .panel{ transform: translateY(var(--brewYOffset)); }
+/* Nudge less aggressively on shorter viewports */
+@media (max-height: 800px){ :root{ --brewYOffset: -8vh; } }
+@media (max-height: 680px){ :root{ --brewYOffset: -6vh; } }
+@media (max-height: 560px){ :root{ --brewYOffset: -4vh; } }
+</style>
+
+<style id="brewRecipesStyles">
+/* === Brewer Recipes Panel styles === */
+#brewOverlay .panel .brew-grid{
+  grid-template-columns: minmax(240px, 280px) 1fr 1fr !important;
+  align-items: start !important;
+}
+
+.brew-recipes{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 8px;
+  min-width: 240px;
+}
+
+.brew-recipes .recipes-title{
+  font-weight: 900;
+  letter-spacing: 1px;
+  font-size: 14px;
+  opacity: .85;
+  margin-bottom: -2px;
+}
+
+.recipe-card{
+  border-radius: 16px;
+  border: 3px solid rgba(0,0,0,.35);
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(235,240,255,.88));
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  padding: 10px;
+}
+
+.recipe-head{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.recipe-icon{
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,.6);
+  border: 3px solid rgba(0,0,0,.25);
+  box-shadow: 0 6px 18px rgba(0,0,0,.2) inset, 0 8px 20px rgba(0,0,0,.25);
+  object-fit: contain; padding: 4px;
+}
+
+.recipe-name{
+  font-size: 16px; font-weight: 900; letter-spacing: .5px;
+}
+
+.recipe-steps{
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  font-weight: 800;
+}
+
+.recipe-steps .plus{ opacity: .6; padding: 0 2px; }
+
+.chip{
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 8px; border-radius: 999px;
+  border: 2px solid rgba(0,0,0,.35);
+  background: #fff; color: #111; font-weight: 900; letter-spacing: .3px;
+  font-size: 12px; line-height: 16px;
+}
+.chip.fuel{ background: linear-gradient(#ffdca6, #ffba52); }
+.chip.unique{ background: linear-gradient(#8cc7ff, #3a7dff); color: #061b3a; }
+.chip.other.legendary{ background: linear-gradient(#ffe6a6, #ffc852); }
+.chip.other.potion{ background: linear-gradient(#f1d6ff, #d6a8ff); }
+.chip.other.legacy{ background: linear-gradient(#ffd0d0, #ff8080); }
+.chip.other.exotic{ background: linear-gradient(#d7ffd0, #7cff86); }
+.chip.other.crypto{ background: linear-gradient(#d0fff6, #7cecff); }
+
+.recipe-note{ margin-top: 6px; font-size: 12px; opacity: .8; }
+
+.fuels-key{
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 4px; padding: 6px 6px 0 6px; opacity: .8; font-weight: 800;
+}
+.fuels-key img{ width: 20px; height: 20px; object-fit: contain; border-radius: 6px; border: 2px solid rgba(0,0,0,.3); background:#fff; padding:2px; }
+.fuels-key span{ margin-left: 4px; font-size: 12px; }
+
+</style>
+
+<style id="brewRecipesPinnedPatch">
+/* === GPT patch: Pin Recipes panel to left edge/top; responsive 1–2 columns === */
+:root{
+  --recipesW: 340px; /* single-column width */
+  --recipesPad: 12px;
+}
+
+/* Place recipes fixed to the viewport left/top while brewer overlay is open */
+#brewOverlay .brew-recipes{
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: var(--recipesW) !important;
+  height: 100vh !important;
+  overflow: auto !important;
+  padding: var(--recipesPad) !important;
+  z-index: 10000 !important;
+  display: grid !important;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 10px;
+  /* nice subtle backdrop so text reads on any bg */
+  background: linear-gradient(180deg, rgba(62,35,200,0.18), rgba(255,255,255,0.02));
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-right: 3px solid rgba(0,0,0,.25);
+}
+
+/* Keep title visible while scrolling recipes */
+#brewOverlay .brew-recipes .recipes-title{
+  position: sticky; top: 0; z-index: 1;
+  background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0));
+  padding: 6px 0 8px 0;
+  margin: -2px 0 0 0;
+}
+
+/* Shift the main brewer content right to make space for pinned recipes */
+#brewOverlay .panel{
+  padding-left: calc(var(--recipesW) + var(--recipesPad) + 8px) !important;
+}
+
+/* Slightly nudge the close button to not collide with the pinned rail */
+#brewOverlay .closeBrew{ right: 16px !important; }
+
+/* When the viewport is short, switch the recipe panel to 2 columns and widen it */
+@media (max-height: 860px){
+  :root{ --recipesW: 620px; }
+  #brewOverlay .brew-recipes{ grid-template-columns: 1fr 1fr; }
+}
+
+/* When extremely short, reduce card padding and gaps to fit more */
+@media (max-height: 720px){
+  :root{ --recipesW: 620px; }
+  #brewOverlay .brew-recipes{ gap: 8px; }
+  #brewOverlay .brew-recipes .recipe-card{ padding: 8px; }
+  #brewOverlay .brew-recipes .recipe-name{ font-size: 15px; }
+}
+/* === End GPT patch === */
+
+</style>
 </head>
 <body>
+<!-- Rising Tides XP UI -->
+<div id="rtxp-hud" aria-live="polite">
+  <div class="title">Event: <span id="rtxp-name">—</span></div>
+  <div class="timer">Time left: <span id="rtxp-eta">60</span>s</div>
+</div>
+<div id="rtxp-layer"></div>
+
 <div class="event-row" id="eventRow"></div>
 <div class="game">
 <div class="topbar">
@@ -1763,7 +2481,7 @@ body.snowy-pedestals .pedestal::after{
 <!-- Rebirth Multiplier -->
 <div class="card" id="rebirthCard">
 <h3>Rebirth X <span id="rebirthLevelTag" style="font-size:18px;opacity:.8;">(Level 0)</span></h3>
-<div style="font-size:18px; opacity:0.85;">Resets money to $1,000,000, increases multiplier. Max level 10.</div>
+<div style="font-size:18px; opacity:0.85;">Resets money to $1,000,000, increases multiplier. Max level 19.</div>
 <!-- Redeem Overlay (small white modal) -->
 <div aria-hidden="true" class="overlay" id="redeemOverlay">
 <div aria-labelledby="redeemTitle" aria-modal="true" class="shop" role="dialog" style="max-width:520px;background:#fff;color:#111">
@@ -2040,6 +2758,8 @@ body.snowy-pedestals .pedestal::after{
   
   /* Simple egg SVG generator (with 'universal' red/blue gradient support) */
   function getEggSvg(eggType, seed){
+  try { if (String(eggType).toLowerCase() === 'aqua') return 'icons/eggs/aqua_egg.png'; } catch (e) {}
+
     const size=96;
     const colorMap = { legendary: '#ffd86a', mythical:'#ff9900', enchanted:'#33cc33' };
     const gradId = `ueg${seed}`;
@@ -2098,6 +2818,14 @@ function getPetSvg(petName, seed){
 "Chloe": "chloe.png",
 "Flexicorn": "flexicorn.png",
 };
+  // --- Aqua Egg pets mapped to explicit PNG files ---
+  try { Object.assign(nameMap, {
+    'Fish': 'fish.png',
+    'Seahorse': 'seahorse.png',
+    'Dolphin': 'dolphin.png',
+    'Flex Shark': 'flex_shark.png'
+  }); } catch(e){}
+
 
   const file = nameMap[petName] || null;
 
@@ -2465,6 +3193,8 @@ async function save(){
     selectedPedestalSkin: state.selectedPedestalSkin || 'default',
     upsideDown: state.upsideDown || { purchases:0, earned:0, hatchedDemo:false, completed:false },
     winterGifts: (state.winterGifts || {forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]}),
+    brewer: (state.brewer || { owned:false, active:null }),
+    activePotions: (state.activePotions || { multiplier: { until:0, factor:1 }, shopLuckUntil: 0, fastHatchUntil: 0 }),
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -2475,7 +3205,9 @@ async function save(){
     if(ps) payload.petStands[idx] = { uid:ps.uid, name:ps.name, isEgg:!!ps.isEgg, eggType:ps.eggType||null, petType:ps.petType||null, petEps:ps.petEps||0, svg:ps.svg, baseIdx: ps.baseIdx||0 };
   });
 
-  // add timestamp and local backup
+    // include Flex Pass progress
+  try{ payload.flexPass = state.flexPass || { level: 1, xp: 0, claimed: {} }; }catch(e){}
+// add timestamp and local backup
   try {
     payload.__ts = __nowTs;
     try {
@@ -2528,7 +3260,48 @@ async function load() {
     // If the server returns nothing/empty, prefer the local backup
 const isEmpty = !dat || (typeof dat === 'object' && Object.keys(dat).length === 0);
 if (isEmpty && __localCandidate) dat = __localCandidate;
-    if (!dat) {
+    
+      // --- Username availability check (runs BEFORE creating a fresh save) ---
+      try {
+        const __justSet = sessionStorage.getItem('flex-userid-just-set') === '1';
+        if (__justSet && USER_ID) {
+          // If server (or fallback) returned data for this username, treat it as taken and re-prompt.
+          const __hasServerSave = dat && typeof dat === 'object' && Object.keys(dat).length > 0;
+          if (__hasServerSave) {
+            alert('That username is already taken. Please choose another.');
+            while (true) {
+              const input = prompt('Enter a different username (required).');
+              if (input === null) { alert('A username is required.'); continue; }
+              const trimmed = String(input).trim();
+              if (!trimmed || trimmed.toLowerCase() === 'guest') {
+                alert('Please enter a non-empty username. "guest" is not allowed.');
+                continue;
+              }
+              // Check new name directly against the server (best effort)
+              try {
+                const chk = await fetch(`${SERVER_BASE}/load?user=${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
+                const j = chk && chk.ok ? await chk.json().catch(()=>null) : null;
+                if (j && Object.keys(j).length) {
+                  alert('That username is already taken. Try again.');
+                  continue;
+                }
+              } catch (e) { /* ignore network error: allow name to keep game playable */ }
+              USER_ID = trimmed;
+              try { localStorage.setItem('flex-userid', USER_ID); } catch (e) {}
+              const ud = document.getElementById('userDisplay');
+              if (ud) ud.textContent = USER_ID ? `User: ${USER_ID}` : 'No user';
+              try { sessionStorage.removeItem('flex-userid-just-set'); } catch (e) {}
+              // Re-run load under the new username
+              return await load();
+            }
+          } else {
+            // Name is free; clear the flag so later uniqueness guard doesn't misfire.
+            try { sessionStorage.removeItem('flex-userid-just-set'); } catch (e) {}
+          }
+        }
+      } catch (e) {/* no-op */}
+
+      if (!dat) {
   // First-time player: create a brand new save on the server and locally
   const fresh = {
     money: (typeof state !== 'undefined' && typeof state.money === 'number') ? state.money : (typeof MONEY_START !== 'undefined' ? MONEY_START : 0),
@@ -2551,6 +3324,8 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     permanentPetMultiplier: 1,
     petDex: {},
     rebirthLevel: 0,
+    brewer: { owned:false, active:null },
+    activePotions: { multiplier:{until:0, factor:1}, shopLuckUntil:0, fastHatchUntil:0 },
     __ts: Date.now()
   };
   dat = fresh;
@@ -2752,6 +3527,30 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     state.rebirthLevel = dat.rebirthLevel || 0;
     // PetDex (owned pets across eggs)
     state.petDex = dat.petDex || state.petDex || {};
+// --- Potion Brewer ownership + potion timers (persisted) ---
+try {
+  state.brewer = dat.brewer || state.brewer || { owned:false, active:null };
+  // --- Promote local Brewer ownership to server if needed ---
+  try {
+    // Read sticky local flag (if present) and promote to runtime
+    let __localOwned = false;
+    try {
+      if (typeof lsKey === 'function') { __localOwned = (localStorage.getItem(lsKey()) === '1'); }
+    } catch(_) {}
+    if (__localOwned && state.brewer && !state.brewer.owned) {
+      state.brewer.owned = true;
+      try{ if (typeof writeOwned === 'function') writeOwned(true);       try{ document.dispatchEvent(new CustomEvent('brewer:purchased')); }catch(_){}
+}catch(_){}
+      try{ if (typeof save === 'function') save(); }catch(_){}
+    }
+  } catch (_) {}
+
+  state.activePotions = dat.activePotions || state.activePotions || { multiplier:{ until:0, factor:1 }, shopLuckUntil:0, fastHatchUntil:0 };
+} catch (e) {}
+// Reflect UI (disable purchase button / show open button) after load
+try { if (state.brewer && state.brewer.owned){ try{ ensureBrewButtonVisible(); }catch(e){} try{ showBrewButton(); }catch(e){} } } catch (e) {}
+try { if (typeof refreshBuyButton === 'function') refreshBuyButton(); } catch (e) {}
+
     state.unlockedBackgrounds = dat.unlockedBackgrounds || state.unlockedBackgrounds || { default:true };
     state.selectedBackground = dat.selectedBackground || state.selectedBackground || 'default';
 // --- Winter Gifts (persisted) ---
@@ -2766,7 +3565,12 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
   } catch (e) {}
 })();
 
-        state.pedestalSkins = dat.pedestalSkins || state.pedestalSkins || { default:true, red: !!((state.ach||{}).redPedestalUnlocked), aqua: !!((state.ach||{}).aquaPedestalUnlocked) };
+    // --- Flex Pass (persisted) ---
+    try {
+      state.flexPass = dat.flexPass || state.flexPass || { level: 1, xp: 0, claimed: {} };
+    } catch (e) {}
+
+    state.pedestalSkins = dat.pedestalSkins || state.pedestalSkins || { default:true, red: !!((state.ach||{}).redPedestalUnlocked), aqua: !!((state.ach||{}).aquaPedestalUnlocked) };
     state.selectedPedestalSkin = dat.selectedPedestalSkin || state.selectedPedestalSkin || 'default';
     state.upsideDown = dat.upsideDown || state.upsideDown || { purchases:0, earned:0, hatchedDemo:false, completed:false };
 // Merge achievements/quests from the remote save.  Previously, quest completions were
@@ -2787,12 +3591,37 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     // Mark load complete so future saves can hit the server safely
     __loadComplete = true;
 
+    // If a brewer purchase happened before load completed, flush to server now
+    try{
+      const __pendingKey = 'flex_brewer_pending_server_save__' + (typeof getPlayerId==='function' ? getPlayerId() : (state.username||state.userName||'default'));
+      if (localStorage.getItem(__pendingKey) === '1'){
+        try{ if (readOwned && readOwned()) state.brewer = state.brewer || {}, state.brewer.owned = true; }catch(_){}
+        try{ if (typeof save==='function') save(); }catch(_){}
+        try{ localStorage.removeItem(__pendingKey); }catch(_){}
+      }
+    }catch(_){}
+
+
+    try{ window.__flexRefresh && window.__flexRefresh(); }catch(e){}
+
 }
   function fmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
 // Safely update the top-of-screen money and EPS displays.  Each DOM element
 // lookup is guarded so that missing elements won't throw errors and freeze
 // the game loop.  The multiplier badge update is also optional.
 function updateTop(){
+try{
+  if (typeof window.updateTop === 'function' && !window.updateTop.__moneyEventPatched){
+    const __origUT = window.updateTop;
+    window.updateTop = function(){
+      const r = __origUT.apply(this, arguments);
+      try{ document.dispatchEvent(new CustomEvent('money:update')); }catch(e){}
+      return r;
+    };
+    window.updateTop.__moneyEventPatched = true;
+  }
+}catch(e){}
+
   try{
     const cashEl = $('#cash');
     if (cashEl) {
@@ -3255,7 +4084,7 @@ pbox.addEventListener('click', () => {
   if (newItem.isEgg) {
     state.petStands[placeIndex] = newItem;
             if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
-    state.petTimers[placeIndex] = Date.now() + HATCH_DURATION;
+    state.petTimers[placeIndex] = Date.now() + ((placeIndex===2 ? (window.THIRD_HATCH_DURATION||HATCH_DURATION) : (window.HATCH_DURATION||HATCH_DURATION)));
   } else {
     // If placing a pet, no timer needed
     state.petStands[placeIndex] = newItem;
@@ -3323,6 +4152,23 @@ function weightedPick(){
 
   renderShop();
 }
+
+// Force-refresh the shop immediately and reset the 1:30 timer (90s)
+function refreshShopNow(){
+  try{
+    const REFRESH_INTERVAL = 90_000; // 1:30
+    // generate a brand new set of items
+    if (typeof makeShopItems === 'function') {
+      state.shop.items = makeShopItems();
+    }
+    // reset the countdown
+    state.shop.nextRefreshAt = Date.now() + REFRESH_INTERVAL;
+    // persist + redraw
+    if (typeof save === 'function') save();
+    if (typeof renderShop === 'function') renderShop();
+  }catch(e){ /* no-op */ }
+}
+
   function msToClock(ms){ ms = Math.max(0, ms); const s = Math.floor(ms/1000); const m = Math.floor(s/60); const sec = s%60; return `${m}:${String(sec).padStart(2,'0')}`; }
   let refreshTimer;
   function renderShop(){
@@ -3448,8 +4294,8 @@ const BACKGROUND_COST = 4_000_000;
 
 const RED_MONEY_COST = 1_000_000_000_000;
 // === Rebirth Multiplier System ===
-const REBIRTH_LEVEL_MULTS = [2,3,4,5,6,7,8,9,10];
-const REBIRTH_LEVEL_COSTS = [1_000_000_000,20_000_000_000,40_000_000_000,75_000_000_000,125_000_000_000,400_000_000_000,700_000_000_000,1_000_000_000_000,10_000_000_000_000];
+const REBIRTH_LEVEL_MULTS = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+const REBIRTH_LEVEL_COSTS = [1_000_000_000,20_000_000_000,40_000_000_000,75_000_000_000,125_000_000_000,400_000_000_000,700_000_000_000,1_000_000_000_000,10_000_000_000_000,15_000_000_000_000,25_000_000_000_000,28_000_000_000_000,30_000_000_000_000,35_000_000_000_000,50_000_000_000_000,55_000_000_000_000,65_000_000_000_000,80_000_000_000_000,100_000_000_000_000];
 
 function getRebirthMultiplier(){ 
   const lvl = state.rebirthLevel || 0;
@@ -3958,7 +4804,7 @@ async function boot(){
       document.body.classList.add('strange-pedestals');
       document.body.classList.remove('red-pedestals');
       document.body.classList.remove('aqua-pedestals');
-    } else {
+    } else if (state && state.selectedPedestalSkin === 'sandy') { document.body.classList.add('sandy-pedestals'); document.body.classList.remove('red-pedestals'); document.body.classList.remove('aqua-pedestals'); document.body.classList.remove('strange-pedestals'); } else {
       document.body.classList.remove('red-pedestals');
       document.body.classList.remove('aqua-pedestals');
       document.body.classList.remove('strange-pedestals');
@@ -4100,6 +4946,11 @@ initLoginAndBoot();
 </script>
 <!-- Right-side buttons -->
 <div class="right-rail">
+
+<!-- FLEX PASS (Rising Tides) -->
+<button class="flexpass-btn" id="openFlexPass" title="FLEX PASS">
+  <img alt="Flex Pass" src="icons/flex_pass_icon.png"/>
+</button>
 <!-- Achievements -->
 <button class="icon-achievements" id="openAchievements" onclick="document.getElementById('achOverlay').classList.add('show'); window.__achRefresh &amp;&amp; window.__achRefresh();" title="Achievements">
 <svg fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
@@ -4127,6 +4978,32 @@ initLoginAndBoot();
 </svg>
 </button>
 </button></div>
+
+<!-- FLEX PASS Overlay -->
+<div aria-hidden="true" class="overlay" id="flexPassOverlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="flexPassTitle">
+    <button class="closeX" id="closeFlexPass">✕</button>
+    <div id="flexPassHeader">
+      <div>
+        <div class="season">SEASON 1 | RISING TIDES</div>
+        <h2 id="flexPassTitle">FLEX PASS</h2>
+      </div>
+      <div id="flexLevelBox">
+        <div id="flexLevelNum">LVL 1</div>
+        <div style="display:flex; align-items:center; gap:10px; min-width:420px;">
+          <div id="flexXPBar" style="flex:1"><div id="flexXPFill"></div></div>
+          <div id="flexXPCap">0 / 100 XP</div>
+        </div>
+      </div>
+    </div>
+    <div class="flex-rows">
+      <div class="row-label" style="font-weight:1000; font-size:22px; letter-spacing:.5px;">REWARDS</div>
+      <div class="flex-row" id="flexRow1"></div>
+      <div class="row-label" style="font-weight:1000; font-size:22px; letter-spacing:.5px; margin-top:6px;">REWARDS</div>
+      <div class="flex-row row2" id="flexRow2"></div>
+    </div>
+  </div>
+</div>
 <!-- Achievements Overlay -->
 <div aria-hidden="true" class="overlay" id="achOverlay">
 <div aria-labelledby="achTitle" aria-modal="true" class="sheet" role="dialog">
@@ -4169,7 +5046,11 @@ initLoginAndBoot();
 (function(){
   const RLIST=['common','rare','epic','legendary','legacy','unique','exotic','mythic','crypto'];
   const R2BG={common:'green',rare:'blue',epic:'purple',legendary:'orange',legacy:'legacy',unique:'unique',exotic:'exotic',mythic:'mythic',crypto:'crypto'};
-  const BG={green:{c:'bg-green',l:'GREEN'},blue:{c:'bg-blue',l:'BLUE'},purple:{c:'bg-purple',l:'PURPLE'},orange:{c:'bg-orange',l:'ORANGE'},legacy:{c:'bg-legacy',l:'LEGACY'},unique:{c:'bg-unique',l:'UNIQUE'},exotic:{c:'bg-exotic',l:'EXOTIC'},mythic:{c:'bg-mythic',l:'MYTHIC'},crypto:{c:'bg-crypto',l:'CRYPTO'},redblue:{c:'redblue',l:'RED/BLUE'},rainbow:{c:'bg-rainbow',l:'RAINBOW'}};
+  // Extend the background definitions to include the Beach Vibes reward.  This new
+  // entry associates the reward ID `beachvibes` with the CSS class
+  // `bg-beachvibes` and a human‑readable label.  Without this, applyBG would
+  // ignore the reward entirely because it only recognizes keys defined here.
+  const BG={green:{c:'bg-green',l:'GREEN'},blue:{c:'bg-blue',l:'BLUE'},purple:{c:'bg-purple',l:'PURPLE'},orange:{c:'bg-orange',l:'ORANGE'},legacy:{c:'bg-legacy',l:'LEGACY'},unique:{c:'bg-unique',l:'UNIQUE'},exotic:{c:'bg-exotic',l:'EXOTIC'},mythic:{c:'bg-mythic',l:'MYTHIC'},crypto:{c:'bg-crypto',l:'CRYPTO'},redblue:{c:'redblue',l:'RED/BLUE'},rainbow:{c:'bg-rainbow',l:'RAINBOW'},beachvibes:{c:'bg-beachvibes',l:'BEACH VIBES'}};
 
   window.state=window.state||{};
   state.ach=state.ach||{questsDone:{},petPedestalGranted:false};
@@ -4187,7 +5068,11 @@ initLoginAndBoot();
 
   function unlockBG(k){state.unlockedBackgrounds[k]=true;__renderBgGrid&&__renderBgGrid(); if(typeof save==='function') save();}
   function applyBG(k){
-    document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue','bg-crypto');
+    // Always remove any previously applied background classes, including the new
+    // Beach Vibes class, before adding the selected one.  Without removing
+    // `bg-beachvibes` here the class would persist and override other
+    // backgrounds when switching away.
+    document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-rainbow','redblue','bg-crypto','bg-beachvibes');
     if(k==='default'){state.selectedBackground='default';return;}
     const d=BG[k]; if(!d) return;
     document.body.classList.add(d.c); state.selectedBackground=k;
@@ -4534,7 +5419,11 @@ if(tab!=='petquests'){
       {k:'mythic',l:'MYTHIC',css:'background:linear-gradient(135deg,#FFD700,#B8860B);'},
       {k:'crypto',l:'CRYPTO',css:'background:linear-gradient(135deg,#ff62d5,#ffd84a);'},
       {k:'redblue',l:'RED/BLUE',css:'background:linear-gradient(#ff4b5c,#4b6aff);'},
-      {k:'rainbow',l:'RAINBOW',css:'background:linear-gradient(135deg,#ff004c,#ff7a00,#ffd400,#18e300,#00e7ff,#3a31ff,#ff31ff);background-size:300% 300%;'}
+      {k:'rainbow',l:'RAINBOW',css:'background:linear-gradient(135deg,#ff004c,#ff7a00,#ffd400,#18e300,#00e7ff,#3a31ff,#ff31ff);background-size:300% 300%;'},
+      // Insert a tile for the Beach Vibes background.  The style uses the
+      // custom image bundled with the game and centres it.  This entry must
+      // appear before the closing bracket so that it's part of the array.
+      {k:'beachvibes',l:'BEACH VIBES',css:"background:url('background_files/beach_vibes.png') center/cover no-repeat;"}
     ];
     tiles.forEach(t=>{
       const el=document.createElement('div');
@@ -4570,7 +5459,7 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 <script>
 // --- Add-on: Third Pet Pedestal renderer (non-destructive) ---
 (function(){
-  const HATCH_DURATION = window.HATCH_DURATION || (60*1000*5); // fallback 5 min if not defined
+  const HATCH_DURATION = window.THIRD_HATCH_DURATION || window.HATCH_DURATION || (60*1000*5); // fallback 5 min if not defined
 
   function ensureArrays(){
     if(!Array.isArray(state.petStands)) state.petStands=[];
@@ -4648,7 +5537,7 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
           if(newItem.isEgg){
             state.petStands[placeIndex]=newItem;
             if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
-            state.petTimers[placeIndex]=Date.now() + (window.HATCH_DURATION||HATCH_DURATION);
+            state.petTimers[placeIndex]=Date.now() + ((placeIndex===2 ? (window.THIRD_HATCH_DURATION||HATCH_DURATION) : (window.HATCH_DURATION||HATCH_DURATION)));
           }else{
             state.petStands[placeIndex]=newItem;
             if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
@@ -4764,7 +5653,7 @@ function renderFourthPetSlot(){
       state.petStands[placeIndex] = newItem;
       // 2-minute timer for the 4th pedestal
       const TWO_MIN = 2*60*1000;
-      state.petTimers[placeIndex] = Date.now() + (window.FOURTH_HATCH_DURATION || 2*60*1000);
+      state.petTimers[placeIndex] = Date.now() + (window.FOURTH_HATCH_DURATION||2*60*1000);
     }else{
       state.petStands[placeIndex] = newItem;
       if(!newItem.isEgg) registerPetOwned(newItem.petType||newItem.name);
@@ -4887,7 +5776,9 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
 
   // Initial reflect + augment once DOM is ready
   if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', ()=>{ reflectDeleteMode(); augmentInventorySlots(); });
+    document.addEventListener('DOMContentLoaded', ()=>{
+    try{ ensureBrewButtonVisible(); }catch(e){}
+ reflectDeleteMode(); augmentInventorySlots(); });
   }else{
     reflectDeleteMode(); augmentInventorySlots();
   }
@@ -4907,6 +5798,8 @@ new MutationObserver(()=> setDodgerEventIcons()).observe(document.body, {childLi
   const __ri_hook = window.renderInventory;
   if(typeof __ri_hook === 'function'){
     window.renderInventory = function(){
+      try{ ensureBrewButtonVisible(); }catch(_){}
+
       __ri_hook.apply(this, arguments);
       try{ augmentInventorySlots(); reflectDeleteMode(); }catch(e){}
     };
@@ -5224,6 +6117,30 @@ btn.addEventListener('click', ()=>{
       }catch(e){}
     },0);
   })();
+
+
+  // After every stand render, add the wave aura to any placed item with t-coastal badge
+  (function hookCoastalWaves(){
+    const orig = window.renderStands;
+    window.renderStands = function(){
+      if(typeof orig === 'function') orig.apply(this, arguments);
+      try{
+        document.querySelectorAll('.placed').forEach(el=>{
+          const hasCoastal = !!el.querySelector('.rar.t-coastal');
+          el.classList.toggle('coastal-waves', hasCoastal);
+        });
+      }catch(e){}
+    };
+    setTimeout(()=>{
+      try{
+        document.querySelectorAll('.placed').forEach(el=>{
+          const hasCoastal = !!el.querySelector('.rar.t-coastal');
+          el.classList.toggle('coastal-waves', hasCoastal);
+        });
+      }catch(e){}
+    },0);
+  })();
+
 
   // Reward reveal helper
   function showDodgerReveal(name, rarity, imgPath){
@@ -5811,6 +6728,8 @@ body.bg-dodgerquests{ background:url('la_dodgers_style_files/la_dodgers_quests_s
   }
 
   function claimReward(){
+    // +50 XP for completing Dodger Quests (only once)
+    try{ if(!state.dodgerQuests.unlocked){ addXP(50,'quest'); } }catch(e){}
     state.dodgerQuests.unlocked = true;
     state.unlockedBackgrounds = state.unlockedBackgrounds || {};
     state.unlockedBackgrounds.dodgerquests = true;
@@ -6406,7 +7325,7 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
         el.dataset.isEgg  = it.isEgg ? '1' : '';
         el.dataset.isPet  = (it.petType && !it.isEgg) ? '1' : '';
         const nm = String(it.name||'').toLowerCase();
-        el.dataset.isEvent = (it.event || /dodger|event|zite/.test(nm)) ? '1' : '';
+        el.dataset.isEvent = (it.event || /dodger|event|zite|coastal/.test(nm) || String(it.rarity||'').toLowerCase()==='coastal') ? '1' : '';
       }else{
         const rarEl = el.querySelector('.rar');
         if(rarEl){
@@ -6442,7 +7361,94 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
       if(typeof prev === 'function') prev.apply(this, arguments);
       try { window.applyInventoryFilters(); } catch(e){ console.warn('filter apply failed', e); }
     };
+  
+  // --- Keyboard shortcuts: s+<letter> to show, h+<letter> to hide; s+a show all, h+a hide all ---
+  (function(){
+    const PRESSED = new Set();
+    let lastFired = null;
+
+    // Group categories by the FIRST LETTER of their label (e.g., 'c' => ['common','crypto'])
+    const groups = (()=>{
+      const g = {};
+      CATS.forEach(c=>{
+        const first = String(c.label || c.key).trim().charAt(0).toLowerCase();
+        if(!first) return;
+        if(!g[first]) g[first] = new Set();
+        g[first].add(c.key);
+      });
+      return g;
+    })();
+
+    function isTypingTarget(el){
+      el = el || document.activeElement;
+      return !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable || el.tagName === 'SELECT'));
+    }
+
+    function applyByLetter(letter, show){
+      // 'a' controls ALL
+      const p = getPrefs();
+      if(letter === 'a'){
+        CATS.forEach(c => p[c.key] = show);
+        setPrefs(p);
+        try{
+          host?.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb => cb.checked = show);
+        }catch(e){}
+        try{ applyInventoryFilters(); }catch(e){}
+        return (show ? 'Show' : 'Hide') + ' ALL';
+      }
+      const keys = Array.from(groups[letter] || []);
+      if(!keys.length) return null;
+      keys.forEach(k => p[k] = show);
+      setPrefs(p);
+      try{
+        host?.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb=>{
+          const kk = cb.getAttribute('data-key');
+          if(keys.includes(kk)) cb.checked = show;
+        });
+      }catch(e){}
+      try{ applyInventoryFilters(); }catch(e){}
+      return (show ? 'Show' : 'Hide') + ': ' + keys.join(', ');
+    }
+
+    function handleChord(){
+      if(isTypingTarget(document.activeElement)) return;
+      const hasS = PRESSED.has('s');
+      const hasH = PRESSED.has('h');
+      if(!(hasS || hasH)) return;
+
+      // Check for any active letter chord; include 'a' for all
+      const letters = Object.keys(groups).concat('a');
+      for(const letter of letters){
+        if(PRESSED.has(letter)){
+          const combo = (hasS ? 's' : 'h') + '+' + letter;
+          if(combo === lastFired) return; // don't retrigger while keys held
+          const msg = applyByLetter(letter, !!hasS);
+          if(msg){
+            lastFired = combo;
+            try{ window.__queue && window.__queue({ t: msg, style: hasS ? 'success' : 'warn' }); }catch(e){}
+          }
+          return;
+        }
+      }
+    }
+
+    document.addEventListener('keydown', (e)=>{
+      // Only look at single-character keys
+      const k = String(e.key || '').toLowerCase();
+      if(k.length !== 1) return;
+      PRESSED.add(k);
+      // Avoid stealing focus shortcuts like Ctrl/Cmd combos
+      if(e.ctrlKey || e.metaKey || e.altKey) return;
+      handleChord();
+    }, true);
+
+    document.addEventListener('keyup', (e)=>{
+      const k = String(e.key || '').toLowerCase();
+      PRESSED.delete(k);
+      if(k === 's' || k === 'h') lastFired = null;
+    }, true);
   })();
+})();
 
   // Apply once at start (after initial render)
   document.addEventListener('DOMContentLoaded', ()=>{
@@ -6471,6 +7477,9 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
 /* ===== In-Game Redeem Codes ===== */
 (function(){
   const BUCKET_USER = '__redeem_codes__';
+  // Prevent double-redeem race from rapid clicks/presses
+  let __redeemBusy = false;
+
   function show(el){ el?.classList?.add('show'); el?.setAttribute('aria-hidden','false'); }
   function hide(el){ el?.classList?.remove('show'); el?.setAttribute('aria-hidden','true'); }
   function banner(msg){ try{ window.__queue && window.__queue({ t: msg, style:'success' }); }catch(e){} }
@@ -6495,13 +7504,16 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
   }
 
   async function doRedeemNow(){
+    // Spam-proof: lock + disable UI while processing
+    if (typeof __redeemBusy !== 'undefined' && __redeemBusy) { return; }
+    if (typeof __redeemBusy !== 'undefined') __redeemBusy = true;
+    const btn = document.getElementById('doRedeem');try {
+      if (btn) { btn.disabled = true; btn.setAttribute('aria-busy','1'); btn.dataset._label = btn.textContent || 'Redeem'; btn.textContent = 'Redeeming…'; }
+
     const inp = document.getElementById('redeemInput');
     const msg = document.getElementById('redeemMsg');
     const raw = normalizeCode(inp?.value||'');
-    if(raw.length !== 12){
-      msg.textContent = 'Please enter a 12‑digit code.';
-      return;
-    }
+    if(raw.length !== 12){ msg.textContent = 'Please enter a 12‑digit code.'; return; }
     msg.textContent = 'Checking…';
     const data = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}&t=${Date.now()}`) || {};
     const codes = Array.isArray(data.codes) ? data.codes : [];
@@ -6617,16 +7629,24 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
     hide(document.getElementById('redeemOverlay'));
     msg.textContent = '';
     if(inp) inp.value = '';
+  } finally {
+    if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); if (btn.dataset._label) btn.textContent = btn.dataset._label; }
+    if (typeof __redeemBusy !== 'undefined') __redeemBusy = false;
   }
-
-  document.addEventListener('DOMContentLoaded', ()=>{
+}
+document.addEventListener('DOMContentLoaded', ()=>{
     const openBtn = document.getElementById('openRedeemOverlay');
     const closeBtn = document.getElementById('closeRedeem');
     const overlay = document.getElementById('redeemOverlay');
     const goBtn = document.getElementById('doRedeem');
-    if(openBtn){ openBtn.addEventListener('click', ()=> show(overlay)); }
+    if(openBtn){ openBtn.addEventListener('click', ()=>{ if (typeof __redeemBusy !== 'undefined') __redeemBusy = false; const m=document.getElementById('redeemMsg'); if(m) m.textContent=''; const b=document.getElementById('doRedeem'); if(b){ b.disabled=false; b.removeAttribute('aria-busy'); b.textContent=b.dataset._label||'Redeem'; } show(overlay); }); }
     if(closeBtn){ closeBtn.addEventListener('click', ()=> hide(overlay)); }
-    if(goBtn){ goBtn.addEventListener('click', doRedeemNow); }
+    if(goBtn){
+      goBtn.addEventListener('click', function(ev){
+        if (typeof __redeemBusy !== 'undefined' && __redeemBusy) { ev.preventDefault(); return; }
+        doRedeemNow();
+      });
+    }
   });
 })();
 </script>
@@ -6851,6 +7871,22 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
 <img alt="Forge" src="icons/forge_icon.png"/>
 </button>
 </div>
+<script>
+
+// Re-ensure Brew button on toolbar mutations (in case something rebuilds the rail)
+(function(){
+  try{
+    const rail = document.getElementById('toolBarArea');
+    if(!rail) return;
+    const mo = new MutationObserver(()=>{ try{ ensureBrewButtonVisible(); }catch(e){} });
+    mo.observe(rail, { childList:true, subtree:false });
+    // initial ensure in case this runs after load
+    ensureBrewButtonVisible();
+  }catch(e){}
+})();
+
+</script>
+
 <!-- Forge Overlay -->
 <div aria-hidden="true" class="overlay" id="forgeOverlay">
 <div aria-labelledby="forgeTitle" aria-modal="true" class="sheet" role="dialog">
@@ -7364,6 +8400,7 @@ function __petPngFor(it, seed){
 // icons.  If you add more items or folders in the future, extend this map.
 window.ITEM_FILE_MAP = window.ITEM_FILE_MAP || {};
 Object.assign(ITEM_FILE_MAP, {
+  'Delightful Derrick': 'stranger_things_items/delightful_derrick.png',
   // Stranger Things items
   'Bat': 'stranger_things_items/bat.png',
   'Bike': 'stranger_things_items/bike.png',
@@ -7401,6 +8438,14 @@ Object.assign(ITEM_FILE_MAP, {
   'Space Suit': 'space_pack_items/space_suit.png',
   'Sun': 'space_pack_items/sun.png'
 });
+// Ensure Aqua Egg pets have file icons
+try{ window.ITEM_FILE_MAP = window.ITEM_FILE_MAP || {}; Object.assign(ITEM_FILE_MAP, {
+  'Fish':'pets/fish.png', 'Seahorse':'pets/seahorse.png', 'Dolphin':'pets/dolphin.png', 'Flex Shark':'pets/flex_shark.png'
+}); }catch(e){}
+
+// Ensure Aqua Egg uses file-based icon
+try{ window.ITEM_FILE_MAP = window.ITEM_FILE_MAP || {}; Object.assign(ITEM_FILE_MAP, { 'Aqua Egg':'icons/eggs/aqua_egg.png', 'aqua egg':'icons/eggs/aqua_egg.png' }); }catch(e){}
+
 
 // Also register lowercase/trimmed variants of each key so lookups with
 // inconsistent casing or stray whitespace will still resolve to the correct
@@ -9075,6 +10120,701 @@ window.__saveHawkinsProgress = function(){
 </script>
 
 <!-- Injected Winter Gifts end -->
+
+<script>
+// Grant +50 XP when a quest is completed/claimed (UI-level hook)
+(function hookQuestXP(){
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.quest .claim, .quest-claim, .quest .complete, .quest-complete, #questsOverlay .claim, #questsOverlay .complete');
+    if(!btn) return;
+    try{ addXP(50,'quest'); }catch(_){}
+  });
+})();
+</script>
+
+
+<script>
+// Added by Flex v1.59: Mermaid pet definition
+window.FLEX_PETS = window.FLEX_PETS || [];
+(function(){
+  // Avoid duplicate
+  if (!window.FLEX_PETS.find(p => p.id === "mermaid")) {
+    window.FLEX_PETS.push({
+      id: "mermaid",
+      name: "Mermaid",
+      icon: "pets/mermaid.png",
+      eps: 60000,
+      multiplier: 3,
+      rarity: "legacy",
+      special: true
+    });
+  }
+})();
+</script>
+
+
+<script>
+// Added by Flex v1.59: Legacy Crate with guaranteed Mermaid
+(function(){
+  window.FLEX_CRATES = window.FLEX_CRATES || [];
+  if (!window.FLEX_CRATES.find(c => c.id === "legacy")) {
+    window.FLEX_CRATES.push({
+      id: "legacy",
+      name: "Legacy Crate",
+      icon: "icons/legacy_crate.png",
+      description: "Guaranteed special pet: Mermaid (60,000 EPS, x3 multiplier).",
+      open: function(ctx){
+        const pet = { id: "mermaid", name: "Mermaid", icon: "pets/mermaid.png", eps: 60000, multiplier: 3, rarity: "legacy", special: true };
+        if (ctx && typeof ctx.onReward === "function") ctx.onReward(pet);
+        window.dispatchEvent(new CustomEvent("flex:crateOpened", { detail: { crateId: "legacy", rewards: [pet] }}));
+        return [pet];
+      }
+    });
+  }
+})();
+</script>
+
+
+<script>
+// Ensure permanent pet multiplier (e.g., Mermaid x3) applies globally
+(function(){
+  const prev = window.getActivePedestalMultiplier || function(){ return 1; };
+  window.getActivePedestalMultiplier = function(){
+    var base = 1;
+    try{ base = prev.apply(this, arguments) || 1; }catch(e){ base = 1; }
+    var petMult = 1;
+    try{ petMult = Math.max(1, Number((window.state||{}).permanentPetMultiplier)||1); }catch(_){ petMult = 1; }
+    return base * petMult;
+  };
+})();
+</script>
+
+
+<!-- robust pedestal state fix -->
+<script>
+// Force-refresh pedestal classes and UI when swapping (especially from Sandy Shores)
+(function(){
+  const KNOWN = ['red-pedestals','aqua-pedestals','strange-pedestals','sandy-pedestals','snowy-pedestals'];
+  function forcePedestalClasses(){
+    try{
+      KNOWN.forEach(cls => document.body.classList.remove(cls));
+      const map = { default:'', red:'red-pedestals', aqua:'aqua-pedestals', strange:'strange-pedestals', sandy:'sandy-pedestals', snowy:'snowy-pedestals' };
+      const sel = String(((window.state||{}).selectedPedestalSkin)||'default');
+      const cls = map[sel];
+      if (cls) document.body.classList.add(cls);
+    }catch(e){}
+  }
+  const prevApply = window.applyPedestalSkin;
+  window.applyPedestalSkin = function(){
+    try{ if (typeof prevApply === 'function') prevApply.apply(this, arguments); }catch(e){}
+    forcePedestalClasses();
+    // keep Equip buttons states fresh without reload
+    try{ if (typeof window.__renderPedestalPage === 'function') window.__renderPedestalPage(); }catch(e){}
+  };
+  // Also ensure clicks that change skins trigger the refresh immediately
+  document.addEventListener('click', function(ev){
+    const btn = ev.target && ev.target.closest && ev.target.closest('.ped-apply');
+    if(!btn) return;
+    // let the original handler mutate state first, then sync classes
+    setTimeout(function(){ try{ if(window.applyPedestalSkin) window.applyPedestalSkin(); }catch(e){} }, 0);
+  }, true);
+  // initial correction after load
+  setTimeout(function(){ try{ if(window.applyPedestalSkin) window.applyPedestalSkin(); }catch(e){} }, 0);
+})();
+</script>
+
+
+<script>
+(function(){
+  // ===== Rising Tides XP Events =====
+  const ICON_BASE = "icons/rising_tides_xp/";
+  const EVENTS = [
+    { key:"anchor", name:"Anchor Drop", icon: ICON_BASE + "anchor.png", xp: 5 },
+    { key:"coral", name:"Coral Cascade", icon: ICON_BASE + "coral.png", xp: 10 },
+    { key:"turtle", name:"Turtle Tumble", icon: ICON_BASE + "turtle.png", xp: 15 }
+  ];
+  const DURATION_MS = 60_000;       // 1 minute
+  const COOLDOWN_MS = 10 * 60_000;  // 10 minutes
+  const SPAWN_EVERY_MS = 450;       // spawn cadence
+
+  const hud   = document.getElementById('rtxp-hud');
+  const nameEl= document.getElementById('rtxp-name');
+  const etaEl = document.getElementById('rtxp-eta');
+  const layer = document.getElementById('rtxp-layer');
+
+  let active = false;
+  let endAt = 0;
+  let spawnTimer = 0;
+  let countdownTimer = 0;
+
+  function getAddXP(){
+    return (window.__flexAddXP || window.addXP || function(){});
+  }
+
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+
+  function spawnOne(cfg){
+    const img = new Image();
+    img.src = cfg.icon;
+    img.className = 'rtxp-item';
+    img.style.left = `${Math.floor(rand(0, window.innerWidth - 64))}px`;
+    img.style.animation = `rtxp-fall ${rand(5.5, 8.5)}s linear forwards`;
+    img.style.transform = `translateY(-80px) rotate(${Math.floor(rand(-30,30))}deg)`;
+    img.setAttribute('alt', cfg.name);
+    img.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      // grant XP
+      try{ getAddXP()(cfg.xp, 'rtxp'); }catch(err){}
+      // pop + remove
+      img.style.transition = 'transform .12s ease, opacity .12s ease';
+      img.style.transform = 'scale(1.15)';
+      img.style.opacity = '0';
+      setTimeout(()=> img.remove(), 120);
+    }, { passive:false });
+    // auto remove after animation
+    img.addEventListener('animationend', ()=> img.remove());
+    layer.appendChild(img);
+  }
+
+  function startEvent(){
+    if(active) return;
+    active = true;
+    const cfg = EVENTS[Math.floor(Math.random()*EVENTS.length)];
+    nameEl.textContent = cfg.name;
+    endAt = Date.now() + DURATION_MS;
+    hud.style.display = 'block';
+    layer.style.pointerEvents = 'none'; // items enable their own
+    // spawn loop
+    spawnTimer = setInterval(()=> spawnOne(cfg), SPAWN_EVERY_MS);
+    // countdown UI
+    function updateCountdown(){
+      const remain = Math.max(0, Math.ceil((endAt - Date.now())/1000));
+      etaEl.textContent = String(remain);
+      if(remain <= 0){ stopEvent(); }
+    }
+    updateCountdown();
+    countdownTimer = setInterval(updateCountdown, 250);
+  }
+
+  function stopEvent(){
+    clearInterval(spawnTimer);
+    clearInterval(countdownTimer);
+    spawnTimer = countdownTimer = 0;
+    hud.style.display = 'none';
+    // clean items
+    Array.from(layer.querySelectorAll('.rtxp-item')).forEach(n=> n.remove());
+    active = false;
+  }
+
+  // Kickoff: schedule an event every 10 minutes (first one after 10 minutes)
+  setInterval(()=> { if(!active) startEvent(); }, COOLDOWN_MS);
+  // Optional: if devs want an immediate first event when opening debug console:
+  window.__rtxpStartNow = startEvent; window.__rtxpStopNow = stopEvent;
+
+  // Responsive cleanup
+  window.addEventListener('blur', ()=>{
+    // if tab hidden long enough to surpass duration, end event
+    if(active && Date.now() > endAt) stopEvent();
+  });
+})();
+</script>
+
+
+<script>
+// === MAX LEVEL RED CRAZY ANIMATION ===
+function showMaxLevelAnimation(){
+  try{
+    // avoid stacking if already visible
+    if(document.querySelector('.max-level-overlay')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'max-level-overlay';
+    const txt = document.createElement('div');
+    txt.className = 'max-text';
+    txt.textContent = 'MAX LEVEL!';
+    wrap.appendChild(txt);
+    document.body.appendChild(wrap);
+    // Auto remove after 3 seconds
+    setTimeout(()=>{ try{ wrap.remove(); }catch(e){} }, 3000);
+  }catch(e){}
+}
+</script>
+
+<script>
+function MaxLevelAnimation(){
+  try{
+    if(document.querySelector('.max-level-overlay')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'max-level-overlay';
+    const txt = document.createElement('div');
+    txt.className = 'max-text';
+    txt.textContent = 'MAX LEVEL!';
+    wrap.appendChild(txt);
+    document.body.appendChild(wrap);
+    setTimeout(()=>{ try{ wrap.remove(); }catch(e){} }, 3000);
+  }catch(e){}
+}
+</script>
+
+
+<script>
+// PATCH: ensure winter background apply + persistence
+(function() {
+  try {
+    // Utility to remove all known bg classes (safe no-ops if missing)
+    function __removeAllBGs() {
+      document.body.classList.remove(
+        'bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-crypto',
+        'redblue','bg-rainbow','bg-hawkins','bg-sunrise','bg-greatwave','bg-upsidedown','bg-spaceview','bg-beachvibes','bg-winter','bg-dodger','bg-dodgerquests'
+      );
+      // Also clear any direct body background that may block image classes
+      document.body.style.background = '';
+    }
+
+    // Apply selected background to body based on state.selectedBackground
+    function __applySelectedBG() {
+      try {
+        if(!window.state) return;
+        const sel = state.selectedBackground || 'default';
+        __removeAllBGs();
+        switch(sel) {
+          case 'beachvibes': document.body.classList.add('bg-beachvibes'); break;
+          case 'greatwave': document.body.classList.add('bg-greatwave'); break;
+          case 'upsidedown': document.body.classList.add('bg-upsidedown'); break;
+          case 'hawkins': document.body.classList.add('bg-hawkins'); break;
+          case 'winter_wonderland': document.body.classList.add('bg-winter'); break;
+          // add other named keys here if necessary
+          default: /* default bg uses gradient via CSS or gameplay */ break;
+        }
+      } catch(e) { /* no-op */ }
+    }
+
+    // Run once on DOM ready (covers Backgrounds page and main view)
+    if(document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', __applySelectedBG, { once:true });
+    } else {
+      setTimeout(__applySelectedBG, 0);
+    }
+
+    // Delegated handler for the Winter Wonderland tile Apply button, in case
+    // the original click binding fails in some renders.
+    document.addEventListener('click', function(ev) {
+      const btn = ev.target && ev.target.closest('[data-winterbg] .bg-apply');
+      if(!btn) return;
+      try {
+        if(!((window.state||{}).unlockedBackgrounds||{}).winter_wonderland) return;
+        __removeAllBGs();
+        document.body.classList.add('bg-winter');
+        try { state.selectedBackground = 'winter_wonderland'; } catch(e) {}
+        try { if(typeof window.save === 'function') window.save(); } catch(e) {}
+      } catch(e) { /* ignore */ }
+    }, true);
+
+    // Re-apply selection any time the bg grid is re-rendered
+    // (helps keep visual in sync after unlocking)
+    const _orig = window.__renderBgGrid;
+    window.__renderBgGrid = function() {
+      if(typeof _orig === 'function') try { _orig(); } catch(e) { }
+      try { __applySelectedBG(); } catch(e) { }
+    };
+  } catch(e) { /* ignore top-level */ }
+})();
+</script>
+
+<!-- ===== Centering fix for Potion Brewer overlay (no blur) ===== -->
+<style id="brewCenterFix">
+  /* Force the brewer overlay to center to the viewport and remove blur. 
+     Also allow dragging from outside by passing pointer events through, except on the panel. */
+  #brewOverlay{
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    pointer-events: none !important;
+    z-index: 9999 !important;
+  }
+  #brewOverlay.show{
+    display: grid !important;
+    place-items: center !important;
+  }
+  /* Make the sheet a no-op so the panel can be grid-centered */
+  #brewOverlay .sheet{
+    position: static !important;
+    inset: auto !important;
+    display: contents !important;
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    pointer-events: none !important;
+  }
+  /* Panel itself is interactive and centered by overlay grid */
+  #brewOverlay .panel{
+    pointer-events: auto !important;
+    margin: 0 !important;
+  }
+</style>
+
+<!-- ===== Drag & Drop styles for Brewer ===== -->
+<style id="brewDragStyles">
+  #inventory .slot{ cursor: grab; }
+  #inventory .slot:active{ cursor: grabbing; }
+  .brew-slot.drop-ok{ outline: 4px dashed rgba(109,255,121,.95); outline-offset: 3px; }
+  .brew-slot.drop-no{ outline: 4px dashed rgba(255,90,90,.95); outline-offset: 3px; }
+</style>
+
+
+
+
+<!-- ===== Drag & Drop (v4) styles for Brewer (full-slot dotted outline) ===== -->
+<style id="brewDragStylesV4">
+  #inventory .slot, #inventory .slot *{ cursor: grab; }
+  #inventory .slot:active{ cursor: grabbing; }
+
+  /* Ensure target slots can host a pseudo-element overlay */
+  #brewFuel, #brewUnique, #brewOther, .brew-slot{
+    position: relative !important;
+  }
+
+  /* Reset any prior outlines */
+  #brewFuel, #brewUnique, #brewOther, .brew-slot{
+    outline: none !important;
+    box-shadow: none;
+  }
+
+  /* Pseudo-element that exactly matches the slot's box */
+  #brewFuel::after, #brewUnique::after, #brewOther::after, .brew-slot::after{
+    content: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* Valid hover = dotted yellow full-frame */
+  #brewFuel.drop-ok::after, #brewUnique.drop-ok::after, #brewOther.drop-ok::after, .brew-slot.drop-ok::after{
+    content: "";
+    border: 4px dotted #FFD400;
+    box-shadow: 0 0 0 3px rgba(255,212,0,0.35);
+  }
+
+  /* Invalid hover = dotted red full-frame */
+  #brewFuel.drop-no::after, #brewUnique.drop-no::after, #brewOther.drop-no::after, .brew-slot.drop-no::after{
+    content: "";
+    border: 4px dotted rgba(255,72,72,.95);
+  }
+
+  /* Pending/unknown = subtle dotted neutral */
+  #brewFuel.drop-pending::after, #brewUnique.drop-pending::after, #brewOther.drop-pending::after, .brew-slot.drop-pending::after{
+    content: "";
+    border: 4px dotted rgba(255,255,255,.5);
+  }
+</style>
+
+<!-- ===== Drag & Drop logic for Brewer v4 (same logic, full-slot visual) ===== -->
+<script id="brewDragLogicV4">
+(function(){
+  if (window.__brewDragInitV4) return; window.__brewDragInitV4 = true;
+
+  function itemByUid(uid){
+    uid = String(uid||"");
+    try{ return (window.state?.inventory||[]).find(x=>x && String(x.uid)===uid) || null; }catch(e){ return null; }
+  }
+
+  function acceptForOther(obj){
+    const rk = String(obj?.rarity||'').toLowerCase();
+    return rk==='legendary' || rk==='legacy' || rk==='exotic' || rk==='crypto' ||
+           (rk==='potion' && /multiplier x[24] potion/i.test(String(obj?.name||'')));
+  }
+
+  function ensureDraggable(el){
+    if (!el || el.__dragEnabled) return;
+    el.__dragEnabled = true;
+    (el.closest('.slot') || el).setAttribute('draggable','true');
+    el.addEventListener('dragstart', (e)=>{
+      const root = el.closest('.slot') || el;
+      const uid = root.getAttribute('data-uid');
+      if(!uid || !e.dataTransfer) return;
+      e.dataTransfer.setData('text/flex-uid', uid);
+      e.dataTransfer.setData('text/plain', uid);
+      e.dataTransfer.effectAllowed = 'move';
+      const img = root.querySelector('img');
+      if (img && e.dataTransfer.setDragImage){
+        e.dataTransfer.setDragImage(img, img.width/2, img.height/2);
+      }
+    });
+  }
+
+  function enableInventoryDrag(){
+    try{
+      document.querySelectorAll('#inventory .slot, #inventory .slot *').forEach(ensureDraggable);
+    }catch(_){}
+  }
+
+  function getDraggedUid(dt){ return dt ? (dt.getData('text/flex-uid') || dt.getData('text/plain') || null) : null; }
+  function getDraggedItem(dt){ const uid = getDraggedUid(dt); return uid ? itemByUid(uid) : null; }
+
+  function slotAttach(el, acceptFn){
+    if(!el || el.__dndAttachedV4) return;
+    el.__dndAttachedV4 = true;
+    el.classList.add('brew-slot'); // styling hook
+
+    function clear(){ el.classList.remove('drop-ok','drop-no','drop-pending'); }
+
+    el.addEventListener('dragenter', (e)=>{
+      e.preventDefault();
+      const it = getDraggedItem(e.dataTransfer);
+      if (!it){ el.classList.add('drop-pending'); return; }
+      if (acceptFn(it)){ el.classList.add('drop-ok'); el.classList.remove('drop-no','drop-pending'); }
+      else { el.classList.add('drop-no'); el.classList.remove('drop-ok','drop-pending'); }
+    });
+
+    el.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const it = getDraggedItem(e.dataTransfer);
+      if (!it){ el.classList.add('drop-pending'); el.classList.remove('drop-ok','drop-no'); return; }
+      if (acceptFn(it)){ el.classList.add('drop-ok'); el.classList.remove('drop-no','drop-pending'); }
+      else { el.classList.add('drop-no'); el.classList.remove('drop-ok','drop-pending'); }
+    });
+
+    el.addEventListener('dragleave', clear);
+
+    el.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      const it = getDraggedItem(e.dataTransfer);
+      clear();
+      if(!it || !acceptFn(it)) return;
+      try{ window.state.selectedItemUid = it.uid; }catch(_){}
+      try{ el.click(); }catch(_){}
+      setTimeout(enableInventoryDrag, 0);
+    });
+  }
+
+  function attachBrewerDnD(){
+    const fuelAccept   = (it)=> String(it?.rarity||'').toLowerCase()==='fuel';
+    const uniqueAccept = (it)=> String(it?.rarity||'').toLowerCase()==='unique';
+    const otherAccept  = (it)=> acceptForOther(it);
+
+    slotAttach(document.getElementById('brewFuel'),   fuelAccept);
+    slotAttach(document.getElementById('brewUnique'), uniqueAccept);
+    slotAttach(document.getElementById('brewOther'),  otherAccept);
+  }
+
+  try{
+    if (typeof window.renderInventory === 'function' && !window.renderInventory.__patchedForBrewDnDV4){
+      const _orig = window.renderInventory;
+      window.renderInventory = function(){
+        const r = _orig.apply(this, arguments);
+        try{ enableInventoryDrag(); attachBrewerDnD(); }catch(_){}
+        return r;
+      };
+      window.renderInventory.__patchedForBrewDnDV4 = true;
+    }
+  }catch(_){}
+
+  setTimeout(()=>{ enableInventoryDrag(); attachBrewerDnD(); }, 0);
+})();
+</script>
+
+<!-- ===== POTION BREWER: Ownership Stabilizer (stickiness) ===== -->
+<script>
+(function(){
+  try{
+    function safeGetPlayerId(){
+      try{ return typeof getPlayerId==='function' ? getPlayerId() : (window.state && (state.username||state.userName||state.player?.name||state.player?.username)) || 'default'; }catch(e){ return 'default'; }
+    }
+    function lsKey(){ return 'flex_brewer_owned__' + String(safeGetPlayerId()).toLowerCase(); }
+    function readOwned(){ try{ return localStorage.getItem(lsKey())==='1'; }catch(e){ return false; } }
+    function applyLS(){
+      try{
+        window.state = window.state || {};
+        state.brewer = state.brewer || { owned:false, active:null };
+        if (readOwned()) state.brewer.owned = true;
+        if (typeof ensureBrewButtonVisible==='function') ensureBrewButtonVisible();
+      }catch(e){}
+    }
+    // Early + late phases
+    let n=0; const t=setInterval(()=>{ n++; applyLS(); if(n>24) clearInterval(t); }, 250);
+    window.addEventListener('focus', applyLS);
+    window.addEventListener('pageshow', applyLS);
+    window.addEventListener('storage', (e)=>{ try{ if(e.key===lsKey()) applyLS(); }catch(_){} });
+  }catch(e){}
+})();
+</script>
+
+<!-- ===== POTION BREWER: Autosave Hooks ===== -->
+<script>
+(function(){
+  try{
+    let _saveInFlight = false;
+    function safeSave(){
+      try{
+        if (typeof save !== 'function') return;
+        if (_saveInFlight) return;
+        _saveInFlight = true;
+        Promise.resolve(save()).catch(()=>{}).finally(()=>{ _saveInFlight=false; });
+      }catch(_){}
+    }
+    // Save on critical lifecycle moments
+    window.addEventListener('pagehide', safeSave);
+    window.addEventListener('visibilitychange', function(){
+      if (document.visibilityState === 'hidden') safeSave();
+    });
+    // Also save shortly after purchase in case networking is delayed (belt & suspenders)
+    document.addEventListener('brewer:purchased', safeSave);
+  }catch(_){}
+})();
+</script>
+
+<!-- ===== POTION BREWER: Ownership Autosave + Migration Hardener (2026-01-04) ===== -->
+<script>
+(function(){
+  try{
+    // Safely pull a player id (username) if possible
+    function safeGetPlayerId(){
+      try{
+        if (typeof getPlayerId === 'function') return String(getPlayerId()).trim();
+      }catch(_){}
+      try{
+        const u = (window.state && (state.username || state.userName || (state.player && state.player.username))) || '';
+        if (u && String(u).trim()) return String(u).trim();
+      }catch(_){}
+      return 'default';
+    }
+
+    // New, player-scoped key (primary)
+    function scopedKey(id){ return 'flex_brewer_owned__' + String(id||safeGetPlayerId()).toLowerCase(); }
+    // Legacy global keys we may need to read/migrate
+    const LEGACY_KEYS = ['flex_brewer_owned', 'flex_brewer_owned__default'];
+
+    // Read "owned" from any known place
+    function readAnyOwned(){
+      try{
+        const id = safeGetPlayerId();
+        const keys = [scopedKey(id), ...LEGACY_KEYS];
+        for (const k of keys){
+          try{ if (localStorage.getItem(k) === '1') return true; }catch(_){}
+        }
+      }catch(_){}
+      return false;
+    }
+
+    // Write "owned" back to all relevant keys (id-aware + legacy) to guarantee stickiness
+    function writeAllOwned(v){
+      const flag = v ? '1' : '0';
+      try{
+        const id = safeGetPlayerId();
+        const keys = [scopedKey(id), ...LEGACY_KEYS, scopedKey('default')];
+        for (const k of keys){
+          try{ localStorage.setItem(k, flag); }catch(_){}
+        }
+      }catch(_){}
+    }
+
+    // Ensure runtime + UI reflect ownership
+    function assertOwnedUI(){
+      try{
+        window.state = window.state || {};
+        state.brewer = state.brewer || { owned:false, active:null };
+        if (!state.brewer.owned) state.brewer.owned = true;
+        // create/show the toolbar button if available
+        try{ if (typeof ensureBrewButtonVisible === 'function') ensureBrewButtonVisible(); }catch(_){}
+        try{ if (typeof showBrewButton === 'function') showBrewButton(); }catch(_){}
+        // refresh the shop card purchase state, if present
+        try{ if (typeof refreshBuyButton === 'function') refreshBuyButton(); }catch(_){}
+      }catch(_){}
+    }
+
+    // Promote ownership to runtime & persist in every layer
+    function promoteOwnedEverywhere(){
+      try{
+        writeAllOwned(true);
+        assertOwnedUI();
+        // Try to persist to the canonical save as well
+        try{ if (typeof save === 'function') save(); }catch(_){}
+        // Fire a signal for any listeners
+        try{ document.dispatchEvent(new CustomEvent('brewer:purchased')); }catch(_){}
+      }catch(_){}
+    }
+
+    // 1) On startup, if any key says we own it, make sure it's mirrored everywhere
+    function applyOnStart(){
+      try{
+        if (readAnyOwned()){
+          promoteOwnedEverywhere();
+        }
+      }catch(_){}
+    }
+
+    // 2) Wrap/augment existing save & payload-building to guarantee "brewer" is included
+    (function hardenSavePipeline(){
+      try{
+        const _build = window.buildSavePayload;
+        window.buildSavePayload = function(ts){
+          const p = _build ? _build.apply(this, arguments) : {};
+          try{
+            window.state = window.state || {};
+            const brewer = state.brewer || { owned:false, active:null };
+            // Only write minimal + stable data
+            p.brewer = { owned: !!brewer.owned, active: brewer.active || null };
+          }catch(_){}
+          return p;
+        };
+      }catch(_){}
+      try{
+        const _save = window.save;
+        // Ensure any call to save also refreshes localStorage stickiness for the current user
+        window.save = function(){
+          try{
+            const owned = !!(window.state && state.brewer && state.brewer.owned);
+            writeAllOwned(owned);
+          }catch(_){}
+          return _save ? _save.apply(this, arguments) : undefined;
+        };
+      }catch(_){}
+    })();
+
+    // 3) Listen for purchase signals (from our code or any other flows) and promote immediately
+    try{
+      document.addEventListener('brewer:purchased', promoteOwnedEverywhere);
+    }catch(_){}
+    // Fallback: if the shop button exists and is clicked, force the promotion immediately
+    try{
+      const shopClickPromoter = function(ev){
+        const el = ev && ev.target ? ev.target : null;
+        if (!el) return;
+        if (el.id === 'buyBrewer' || (el.closest && el.closest('#buyBrewer'))) {
+          // Next tick to allow the normal handler to run first
+          setTimeout(promoteOwnedEverywhere, 0);
+        }
+      };
+      document.addEventListener('click', shopClickPromoter, true);
+    }catch(_){}
+
+    // 4) Apply at multiple lifecycle points to beat any race with UI boot
+    applyOnStart();
+    // early and late retries
+    let n=0; const t=setInterval(()=>{ n++; applyOnStart(); if(n>32) clearInterval(t); }, 200);
+    window.addEventListener('pageshow', applyOnStart);
+    window.addEventListener('focus', applyOnStart);
+    window.addEventListener('storage', function(e){
+      try{
+        if (!e || !e.key) return;
+        const id = safeGetPlayerId();
+        if (e.key === scopedKey(id) || LEGACY_KEYS.includes(e.key)) applyOnStart();
+      }catch(_){}
+    });
+
+    // 5) On unload, mirror the final flag one last time
+    try{ window.addEventListener('beforeunload', function(){ try{
+      const owned = !!(window.state && state.brewer && state.brewer.owned);
+      writeAllOwned(owned);
+    }catch(_){} }); }catch(_){}
+  }catch(_){/* No-op to avoid breaking the game if anything here fails */}
+})();
+</script>
+
 </body>
 <!-- Inventory Redesign Override -->
 <style id="inventory-redesign-final">
@@ -9219,11 +10959,12 @@ window.__saveHawkinsProgress = function(){
 (function(){
   try{
     const unlockedSnow = !!((state.pedestalSkins||{}).snowy);
+    const selSnow = String(state.selectedPedestalSkin)==='snowy';
     const snowy = document.createElement('div');
     snowy.className = 'ped-tile' + (unlockedSnow ? '' : ' locked');
     snowy.style.background = 'linear-gradient(180deg,#ffffff,#dff6ff)';
     snowy.innerHTML = '<div style="font-weight:900;display:flex;align-items:center;gap:8px;">Snowy Pedestal</div>' +
-                      '<button class="buy ped-apply" ' + (unlockedSnow ? '' : 'disabled') + '>Equip</button>';
+                      '<button class="buy ped-apply" ' + ((unlockedSnow && !selSnow) ? '' : 'disabled') + '>Equip</button>';
     try { snowy.style.gridRow = '3'; snowy.style.gridColumn = '1'; } catch(e){}
     const btn = snowy.querySelector('.ped-apply');
     btn.onclick = function(){
@@ -9234,10 +10975,66 @@ window.__saveHawkinsProgress = function(){
       window.__renderPedestalPage && window.__renderPedestalPage();
     };
     grid.appendChild(snowy);
+    /* OCEAN PEDESTAL (Flex Pass) — always visible; unlock via pass; sits below Snowy on row 4 left */
+    (function(){
+      try{
+        const unlockedOcean = !!((state.pedestalSkins||{}).aqua || (state.pedestalSkins||{}).ocean);
+        const selOcean = String(state.selectedPedestalSkin)==='aqua';
+        const ocean = document.createElement('div');
+        ocean.setAttribute('data-ocean','1');
+        ocean.className = 'ped-tile' + (unlockedOcean ? '' : ' locked');
+        /* tile art */
+        ocean.style.background = "radial-gradient(60% 180% at 15% 120%, rgba(255,255,255,0.60) 12%, rgba(255,255,255,0) 13%)," +
+"radial-gradient(60% 180% at 45% 120%, rgba(255,255,255,0.50) 12%, rgba(255,255,255,0) 13%)," +
+"radial-gradient(60% 180% at 75% 120%, rgba(255,255,255,0.55) 12%, rgba(255,255,255,0) 13%)," +
+"repeating-linear-gradient(-12deg, rgba(255,255,255,0.18) 0 6px, rgba(255,255,255,0.00) 6px 26px)," +
+"linear-gradient(180deg,#34d2e8 0%, #9be9ff 28%, #53bfff 60%, #0a4cbf 100%)";
+        ocean.innerHTML = '<div style="font-weight:900">Ocean Pedestal</div>'
+                        + '<button class="buy ped-apply" ' + ((!unlockedOcean || selOcean) ? 'disabled' : '') + '>Equip</button>';
+        try{ ocean.style.gridRow = '4'; ocean.style.gridColumn = '1'; }catch(e){}
+        const btn = ocean.querySelector('.ped-apply');
+        btn.onclick = function(){ try{ this.disabled=true; }catch(e){};
+          if(!((state.pedestalSkins||{}).aqua || (state.pedestalSkins||{}).ocean)) return;
+          state.selectedPedestalSkin = 'aqua';
+          try { applyPedestalSkin && applyPedestalSkin(); } catch(e){}
+          if (typeof save === 'function') save();
+          window.__renderPedestalPage && window.__renderPedestalPage();
+        };
+        grid.appendChild(ocean);
+      }catch(e){}
+    })();
+
   }catch(e){}
 })();
 host.appendChild(grid);
   };
+  // Delegated fallback: make sure any Equip click always switches skins
+  (function ensurePedestalEquipDelegate(){
+    try{
+      const page = document.getElementById('pedestalPage');
+      if(!page || page.__equipDelegate) return;
+      page.__equipDelegate = true;
+      page.addEventListener('click', function(e){
+        const btn = e.target.closest && e.target.closest('.ped-apply');
+        if(!btn || btn.disabled) return;
+        const tile = btn.closest('.ped-tile'); if(!tile) return;
+        const label = (tile.textContent||'').toLowerCase();
+        let sel = null;
+        if(label.includes('default')) sel = 'default';
+        else if(label.includes('red')) sel = 'red';
+        else if(label.includes('light/dark') || label.includes('blue')) sel = 'aqua';
+        else if(label.includes('strange')) sel = 'strange';
+        else if(label.includes('snowy')) sel = 'snowy';
+        else if(label.includes('sandy')) sel = 'sandy';
+        else if(label.includes('ocean')) sel = 'aqua';
+        if(!sel) return;
+        try{ state.selectedPedestalSkin = sel; applyPedestalSkin && applyPedestalSkin(); }catch(_){}
+        try{ typeof save==='function' && save(); }catch(_){}
+        try{ window.__renderPedestalPage && window.__renderPedestalPage(); }catch(_){}
+      }, true); // capture to run even if other handlers fail
+    }catch(_){}
+  })();
+
   // Hook the side tabs to render the page when PEDESTALS is shown
   document.addEventListener('DOMContentLoaded', function(){
     ensurePedestalState();
@@ -9318,5 +11115,1730 @@ try{
       }
     }catch(e){}
   } catch (e) {}
+})();
+</script>
+
+
+<script>
+// ===== FLEX PASS: Rising Tides (Season 1) =====
+(function(){
+  const MAX_LEVEL = 524;
+  const XP_PER_LEVEL = 100;
+
+  // Ensure state bucket
+  window.state = window.state || {};
+  state.flexPass = state.flexPass || { level: 1, xp: 0, claimed: {} };
+
+  // Rarity add: Coastal
+  (function ensureCoastal(){
+    try{
+      window.RARITY = window.RARITY || {};
+      if(!RARITY.coastal){
+        RARITY.coastal = { label:'COASTAL', color:'var(--c-coastal)', income:60000, price:[0,0], prob:0 };
+      }
+    }catch(e){}
+  })();
+
+  // Aqua egg & pets
+  (function addAquaEgg(){
+    try{
+      window.PET_TABLES = window.PET_TABLES || {};
+      if(!PET_TABLES.aqua){
+        PET_TABLES.aqua = [
+          { name:'Fish', chance: 0.54, eps: 25000 },
+          { name:'Seahorse', chance: 0.41, eps: 35000 },
+          { name:'Dolphin', chance: 0.04, eps: 40000, mult: 2 },
+          { name:'Flex Shark', chance: 0.01, eps: 50000, aquaMorpher:true }
+        ];
+      }
+    }catch(e){}
+  })();
+
+  // Extend recalcEPS with Aqua morph bonus (+20,000 per aqua item)
+  (function patchEPSForAqua(){
+    const orig = window.recalcEPS;
+    window.recalcEPS = function(){
+      if(typeof orig === 'function') orig.apply(this, arguments);
+      try{
+        const extra = Object.values(state.placed||{}).reduce((s,it)=> s + (it && it.aqua ? 20000 : 0), 0);
+        state.eps = Math.floor((state.eps||0) + extra);
+        const el=document.getElementById('eps'); if(el){ el.textContent = '+ $' + ((state.eps||0).toLocaleString(undefined,{maximumFractionDigits:0})) + ' / sec'; }
+      }catch(e){}
+    };
+  })();
+
+  // UI helpers
+  function $(sel){ return document.querySelector(sel); }
+  function fmt(n){ try{ return Number(n).toLocaleString(); }catch(e){ return String(n);} }
+  function pushItem(name, rarity, filePath, eps){
+    const it = { uid:(Math.random().toString(36).slice(2)+Date.now().toString(36)), name, rarity, price:0, baseIdx:0, svg:filePath };
+    if(eps){ it.price=[0,0]; }
+    state.inventory = state.inventory || [];
+    state.inventory.push(it);
+    try{ renderInventory(); recalcEPS(); save(); }catch(e){}
+    return it;
+  }
+
+  // --- Flex Pass XP & Levels ---
+  function addXP(amount, reason){
+  if(!amount) return;
+  // Ensure state exists
+  try{
+    window.state = window.state || {};
+    state.flexPass = state.flexPass || { level: 1, xp: 0, claimed: {} };
+    if(typeof state.flexPass._maxShown === 'undefined') state.flexPass._maxShown = false;
+  }catch(e){}
+  // Guard: if already at max, do not replay animation; just keep UI in MAX state
+  try{
+    if(typeof MAX_LEVEL !== 'undefined' && state.flexPass.level >= MAX_LEVEL){
+      state.flexPass.level = MAX_LEVEL;
+      state.flexPass.xp = 0;
+      try{ if (typeof updateHeader === 'function') updateHeader(); }catch(e){}
+      try{ if (typeof updateRows === 'function') updateRows(); }catch(e){}
+      return;
+    }
+  }catch(e){}
+  const __prevLevel = (state && state.flexPass ? (state.flexPass.level||1) : 1);
+  state.flexPass.xp = Math.max(0, (state.flexPass.xp||0) + amount);
+  while(state.flexPass.xp >= XP_PER_LEVEL && state.flexPass.level < MAX_LEVEL){
+    state.flexPass.xp -= XP_PER_LEVEL;
+    state.flexPass.level++;
+  }
+  // If we just hit max, zero XP and fire animation exactly once
+  if(__prevLevel < MAX_LEVEL && state.flexPass.level >= MAX_LEVEL){
+    state.flexPass.level = MAX_LEVEL;
+    state.flexPass.xp = 0;
+    if(!state.flexPass._maxShown){
+      try{ MaxLevelAnimation(); }catch(e){}
+      state.flexPass._maxShown = true;
+    }
+  }
+  try{ save(); }catch(e){}
+  updateHeader();
+  updateRows();
+}
+  window.__flexAddXP = addXP; // expose for other systems
+
+  function updateHeader(){
+    const lvl = state.flexPass.level||1;
+    const xp = state.flexPass.xp||0;
+    const fill = Math.min(100, Math.floor((xp / XP_PER_LEVEL) * 100));
+    const lvlEl = $('#flexLevelNum'); if(lvlEl) lvlEl.textContent = 'LVL ' + lvl;
+    const cap = $('#flexXPCap'); if(cap) cap.textContent = (lvl>=MAX_LEVEL ? 'MAX' : (xp)+' / '+XP_PER_LEVEL+' XP');
+    const f = $('#flexXPFill'); if(f) f.style.width = (lvl>=MAX_LEVEL ? '100%' : (fill + '%'));
+  }
+
+  // --- Rewards config ---
+  const ITEM_LIST = [
+    ['Surfer','rising_tides_items/surfer.png'],
+    ['Life Guard','rising_tides_items/life_guard.png'],
+    ['Beach','rising_tides_items/beach.png'],
+    ['Tsunami','rising_tides_items/tsunami.png'],
+    ['Ice Cream','rising_tides_items/ice_cream.png'],
+    ['Sand Castle','rising_tides_items/sand_castle.png'],
+    ['JG’S','rising_tides_items/jgs.png'],
+    ['Buoy Swim','rising_tides_items/buoy_swim.png'],
+    ['Umbrella','rising_tides_items/umbrella.png'],
+    ['Rocks','rising_tides_items/rocks.png'],
+    ['Seagull','rising_tides_items/seagull.png'],
+    ['Shell','rising_tides_items/shell.png'],
+    ['Palm Tree','rising_tides_items/palm_tree.png'],
+    ['Packed Sandwich','rising_tides_items/packed_sandwich.png'],
+    ['Shovel','rising_tides_items/shovel.png']
+  ];
+
+  function pickItemByRarity(rarArr){
+    const pick = ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)];
+    const rar = rarArr[Math.floor(Math.random()*rarArr.length)];
+    return pushItem(pick[0], rar.toLowerCase(), pick[1]);
+  }
+
+  // Inserted: weighted rarity picker for crate item rewards
+  function pickItemByWeightedRarity(weights){
+  try{
+    const pick = ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)];
+    const entries = Object.entries(weights);
+    let total = 0;
+    for(const [,w] of entries){ total += Number(w)||0; }
+    let r = Math.random() * total;
+    for(const [rar, w] of entries){
+      r -= Number(w)||0;
+      if(r <= 0){
+        return pushItem(pick[0], String(rar).toLowerCase(), pick[1]);
+      }
+    }
+    return pushItem(pick[0], String(entries[0][0]).toLowerCase(), pick[1]);
+  }catch(e){
+    return pickItemByRarity(Object.keys(weights));
+  }
+}
+
+  // Crate open logic
+  function openCrate(kind){
+    let result = null;
+    if(kind==='rare'){
+      const r = Math.random();
+      if(r < 0.50){ result = pickItemByWeightedRarity({Common:45, Rare:30, Epic:25}); }
+      else if(r < 0.75){ grantEggs( (Math.random()<0.5)?1:2 ); result = {type:'eggs', n:(Math.random()<0.5)?1:2, label:'Aqua Egg'}; }
+      else{ const money = (100_000_000 + Math.floor(Math.random()*400_000_000)); state.money += money; result = {type:'money', amount:money}; }
+    } else if(kind==='epic'){
+      const r = Math.random();
+      if(r < 0.50){ result = pickItemByWeightedRarity({Legendary:25, Exotic:25, Crypto:35, Coastal:15}); }
+      else if(r < 0.75){ const n = 2 + Math.floor(Math.random()*2); grantEggs(n); result = {type:'eggs', n, label:'Aqua Egg'}; }
+      else{ const money = (1_000_000_000 + Math.floor(Math.random()*4_000_000_000)); state.money += money; result = {type:'money', amount:money}; }
+    } else if(kind==='legendary'){
+      const r = Math.random();
+      if(r < 0.50){
+        result = pickItemByWeightedRarity({Coastal:100});
+      } else if(r < 0.75){ const n = 2 + Math.floor(Math.random()*2); grantEggs(n); result = {type:'eggs', n, label:'Aqua Egg'}; }
+      else{ const money = (3_000_000_000 + Math.floor(Math.random()*7_000_000_000)); state.money += money; result = {type:'money', amount:money}; }
+    } else if(kind==='legacy'){
+      // Guaranteed special pet: Mermaid (60,000 EPS, x3 multiplier)
+      try{
+        // Ensure state structures
+        window.state = window.state || {};
+        state.inventory = state.inventory || [];
+        state.petStands = state.petStands || [null,null];
+        state.petTimers = state.petTimers || {};
+        // Create Mermaid pet object
+        const petObj = {
+          uid: (typeof uid==='function' ? uid() : (Math.random().toString(36).slice(2)+Date.now().toString(36))),
+          name: 'Mermaid',
+          isEgg: false,
+          eggType: null,
+          petType: 'Mermaid',
+          petEps: 60000,
+          svg: 'pets/mermaid.png'
+        };
+        // Add to inventory
+        state.inventory.push(petObj);
+        // Auto-place into first empty pet stand if available
+        try{
+          const n = Array.isArray(state.petStands) ? state.petStands.length : 2;
+          for(let i=0;i<n;i++){
+            if(!state.petStands[i]){ state.petStands[i] = petObj; break; }
+          }
+        }catch(_){}
+        // Track ownership in PetDex if available
+        try{ if(typeof registerPetOwned==='function') registerPetOwned('Mermaid'); }catch(_){}
+        // Apply permanent 3x multiplier
+        try{ state.permanentPetMultiplier = Math.max( (state.permanentPetMultiplier||1), 3 ); }catch(_){}
+        // Recalc + save
+        try{ if(typeof recalcEPS==='function') recalcEPS(); }catch(_){}
+        try{ if(typeof updateTop==='function') updateTop(); }catch(_){}
+        try{ if(typeof save==='function') save(); }catch(_){}
+        result = petObj;
+      }catch(e){
+        console.error('Legacy crate award error:', e);
+        result = { name:'Mermaid', svg:'pets/mermaid.png' };
+      }
+    }
+    try{ renderInventory(); updateTop(); save(); }catch(e){}
+    return result;
+  }
+
+
+  // Visual crate animation + reward toast
+  function showCrateReward(kind, res){
+    try{
+      const iconMap = { rare:'icons/crates/rare_crate.png', epic:'icons/crates/epic_crate.png', legendary:'icons/crates/legendary_crate.png', legacy:'icons/crates/legacy_crate.png' };
+      const crateIcon = iconMap[kind] || iconMap.rare;
+      // Compute reward label + icon
+      let rewardLabel = 'Reward';
+      let rewardIcon = 'icons/unknown.png';
+      if(res){
+        if(res.type==='money'){ rewardLabel = '$' + fmt(res.amount); rewardIcon='icons/coin_stack.png'; }
+        else if(res.type==='eggs'){ rewardLabel = (res.label||'Egg') + (res.n>1?(' x'+res.n):''); rewardIcon='icons/eggs/aqua_egg.png'; }
+        else if(res.name || res.svg){ rewardLabel = res.name || 'Item'; rewardIcon = res.svg || 'icons/item_random.png'; }
+      }
+      const host = document.createElement('div'); host.id='crateAnim';
+      host.innerHTML = '<div class="burst"></div>'
+        + '<img class="crate" alt="Crate" src="'+crateIcon+'">'
+        + '<div class="reward"><img alt="Reward" src="'+rewardIcon+'"><div>'+rewardLabel+'</div></div>';
+      document.body.appendChild(host);
+      // auto remove after a moment
+      setTimeout(()=> { host.classList.add('fade-out'); }, 1400);
+      setTimeout(()=> { host.remove(); }, 2050);
+    }catch(e){}
+  }
+
+  // grant eggs to inventory
+  function grantEggs(n){
+    for(let i=0;i<n;i++){
+      const inv = {
+        uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)),
+        name: 'Aqua Egg',
+        isEgg: true,
+        eggType: 'aqua',
+        svg: getEggSvg ? getEggSvg('aqua', Math.floor(Math.random()*99999)) : 'icons/eggs/aqua_egg.png',
+        baseIdx: 0
+      };
+      state.inventory.push(inv);
+    }
+    try{ renderInventory(); save(); }catch(e){}
+  }
+
+  function rewardIconFor(r){
+    if(r.type==='crate'){
+      const map = { rare:'icons/crates/rare_crate.png', epic:'icons/crates/epic_crate.png', legendary:'icons/crates/legendary_crate.png', legacy:'icons/crates/legacy_crate.png' };
+      return map[r.kind]||map.rare;
+    }
+    if(r.type==='money') return 'icons/pass_money_icon.png';
+    if(r.type==='aquaegg') return 'icons/eggs/aqua_egg.png';
+    if(r.type==='randomItem') return 'icons/item_random.png';
+    if(r.type==='pedestal') return 'icons/pedestal.png';
+    if(r.type==='background') return 'icons/wallpaper.png';
+    return 'icons/unknown.png';
+  }
+
+  const ROW1 = [
+    {level:5,  type:'crate',   kind:'epic'},
+    {level:10, type:'money',   amount:20_000_000},
+    {level:15, type:'aquaegg', count:1},
+    {level:20, type:'crate',   kind:'rare'},
+    {level:25, type:'randomItem', rarity:['Exotic']},
+    {level:30, type:'money',   amount:25_000_000},
+    {level:35, type:'money',   amount:25_000_000},
+    {level:40, type:'crate',   kind:'epic'},
+    {level:45, type:'money',   amount:50_000_000},
+    {level:50, type:'aquaegg', count:1},
+    {level:55, type:'money',   amount:100_000_000},
+    {level:60, type:'crate',   kind:'rare'},
+    {level:65, type:'aquaegg', count:1},
+    {level:70, type:'pedestal', id:'ocean' },
+    {level:75, type:'crate',   kind:'legendary'},
+    {level:80, type:'crate',   kind:'epic'},
+    {level:85, type:'money',   amount:500_000_000},
+    {level:90, type:'money',   amount:1_000_000_000},
+    {level:95, type:'aquaegg', count:2},
+    {level:100, type:'crate',  kind:'legacy'}
+  ];
+
+  const ROW2 = [
+    {level:105, type:'crate', kind:'legendary'},
+    {level:110, type:'money', amount:10_000_000_000},
+    {level:115, type:'randomItem', rarity:['Unique']},
+    {level:120, type:'crate', kind:'rare'},
+    {level:125, type:'aquaegg', count:2},
+    {level:130, type:'money', amount:15_000_000_000},
+    {level:135, type:'crate', kind:'epic'},
+    {level:140, type:'money', amount:20_000_000_000},
+    {level:145, type:'crate', kind:'rare'},
+    {level:150, type:'pedestal', id:'sandy'},
+    {level:155, type:'crate', kind:'epic'},
+    {level:160, type:'money', amount:25_000_000_000},
+    {level:165, type:'crate', kind:'legendary'},
+    {level:170, type:'money', amount:50_000_000_000},
+    {level:175, type:'aquaegg', count:1},
+    {level:180, type:'crate', kind:'rare'},
+    {level:185, type:'money', amount:100_000_000_000},
+    {level:190, type:'crate', kind:'epic'},
+    {level:195, type:'randomItem', rarity:['Crypto']},
+    {level:200, type:'background', id:'beachvibes'}
+  ];
+
+  function labelFor(r){
+    if(r.type==='crate') return (r.kind.charAt(0).toUpperCase()+r.kind.slice(1)) + ' Crate';
+    if(r.type==='money') return '$' + fmt(r.amount);
+    if(r.type==='aquaegg') return 'Aqua Egg' + (r.count>1?` (x${r.count})`:'');
+    if(r.type==='randomItem') return 'Random ' + r.rarity[0] + ' Item';
+    if(r.type==='pedestal') return r.id==='sandy' ? 'Sandy Shores Pedestal' : 'Ocean Pedestal';
+    if(r.type==='background') return 'Beach Vibes Background';
+    return 'Reward';
+  }
+
+  function canClaim(r){
+    const lvl = state.flexPass.level||1;
+    if(r.level>100 && lvl<101) return false; // lock row2 until >100
+    return lvl >= r.level && !state.flexPass.claimed['L'+r.level];
+  }
+
+  function claimReward(r){
+    // mark first to avoid double-claim race
+    state.flexPass.claimed['L'+r.level] = true;
+    try{ save(); }catch(e){}
+    // grant
+    if(r.type==='crate'){ var _res = openCrate(r.kind); try{ showCrateReward(r.kind, _res); }catch(e){} }
+    else if(r.type==='money'){ state.money += r.amount; try{ updateTop(); save(); }catch(e){} }
+    else if(r.type==='aquaegg'){ grantEggs(r.count||1); }
+    else if(r.type==='randomItem'){ pickItemByRarity(r.rarity||['Exotic']); }
+    else if(r.type==='pedestal'){
+      state.pedestalSkins = state.pedestalSkins || { default:true };
+      if(r.id==='ocean'){ state.pedestalSkins.aqua = true; state.ach = state.ach || { questsDone:{} }; state.ach.aquaPedestalUnlocked = true; }
+      if(r.id==='sandy'){ state.pedestalSkins.sandy = true; }
+      try{ save(); }catch(e){}
+    } else if(r.type==='background'){
+      state.unlockedBackgrounds = state.unlockedBackgrounds || {};
+      state.unlockedBackgrounds.beachvibes = true;
+      try{ save(); }catch(e){}
+    }
+    // add XP for claiming
+    updateRows();
+  }
+
+  function renderRow(host, list){
+    host.innerHTML = '';
+    const lvlNow = state.flexPass.level||1;
+    for(const r of list){
+      const el = document.createElement('div');
+      el.className = 'flex-reward';
+      if(r.level>100 && lvlNow<101) el.classList.add('locked');
+      const img = rewardIconFor(r);
+      el.innerHTML = ''
+        + '<div class="img"><img src="'+img+'" alt=""></div>'
+        + '<div style="font-weight:900; font-size:18px; text-shadow:0 1px 0 rgba(0,0,0,.2)">'+labelFor(r)+'</div>'
+        + '<div class="lvl">'+r.level+'</div>';
+      const b = document.createElement('button');
+b.className = 'claim';
+var __claimed = !!(state.flexPass && state.flexPass.claimed && state.flexPass.claimed['L'+r.level]);
+if(__claimed){
+  b.className += ' claimed';
+  b.textContent = 'Claimed';
+  b.disabled = true;
+} else {
+  b.textContent = canClaim(r) ? 'Claim' : ((r.level>100 && (state.flexPass.level||1) < 101) ? 'Locked' : 'Unreached');
+  b.disabled = !canClaim(r);
+}
+
+      b.addEventListener('click', ()=>{
+        try{ if(r && r.type==='money'){ var __imgEl = el && el.querySelector ? el.querySelector('.img img') : null; if(__imgEl){ __imgEl.classList.add('money-spin'); setTimeout(function(){ __imgEl.classList.remove('money-spin'); }, 1200); }} }catch(_){ } el.classList.add('crate-pop');
+        setTimeout(()=>{
+          claimReward(r);
+        }, 500);
+      });
+      el.appendChild(b);
+      host.appendChild(el);
+    }
+  }
+
+  function updateRows(){ const r1=$('#flexRow1'), r2=$('#flexRow2'); if(r1) renderRow(r1, ROW1); if(r2) renderRow(r2, ROW2); }
+  function openOverlay(){ $('#flexPassOverlay')?.classList.add('show'); updateHeader(); updateRows(); }
+  function closeOverlay(){ $('#flexPassOverlay')?.classList.remove('show'); }
+
+  // Button hookups
+  document.addEventListener('click', (e)=>{
+    const b = e.target.closest('#openFlexPass'); if(b){ openOverlay(); }
+  });
+  document.getElementById('closeFlexPass')?.addEventListener('click', closeOverlay);
+
+  ;
+
+
+  // Add XP hooks: buyEgg, pet hatch, shop purchases, quest completion marker
+  (function hookPetHatchXP(){
+    window.__udOnPetHatch = (function(prev){
+      return function(petObj){
+        try{ addXP(20,'hatch'); }catch(e){}
+        if(typeof prev==='function') try{ prev(petObj); }catch(e){}
+        // Dolphin multiplier special
+        try{
+          if(petObj && (petObj.petType==='Dolphin' || petObj.name==='Dolphin')){
+            state.permanentPetMultiplier = Math.max( (state.permanentPetMultiplier||1), 2 );
+            if(typeof recalcEPS==='function') recalcEPS();
+          }
+        }catch(e){}
+      };
+    })(window.__udOnPetHatch);
+  })();
+
+  // Try to give XP when clicking "Purchase" in shop
+  (function hookShopClicks(){
+    document.addEventListener('click', function(e){
+      const b = e.target.closest('.shop .buy');
+      if(!b) return;
+      // Only award XP for purchases in the main Shop overlay, not the Pet Shop
+      if (b.closest('#petOverlay')) return;
+      if (!b.closest('#shopOverlay')) return;
+      setTimeout(()=>{ try{ addXP(5,'buyItem'); }catch(_){} }, 0);
+    });
+  })();
+
+  // Flex Shark morph loop: every 30 minutes, 50% to morph a random placed item (non-pet) with aqua
+  ;(function aquaMorphLoop(){
+    state.__aquaMorphTimers = state.__aquaMorphTimers || {};
+    function step(){
+      try{
+        (state.petStands||[]).forEach((ps, idx)=>{
+          if(!ps || (ps.petType!=='Flex Shark' && ps.name!=='Flex Shark')){ delete state.__aquaMorphTimers[idx]; return; }
+          const now = Date.now();
+          if(!state.__aquaMorphTimers[idx]){
+            state.__aquaMorphTimers[idx] = now + (30*60*1000);
+          }else if(now >= state.__aquaMorphTimers[idx]){
+            state.__aquaMorphTimers[idx] = now + (30*60*1000);
+            if(Math.random() < 0.50){
+              const placedIds = (state.stands||[]).filter(Boolean);
+              if(placedIds.length){
+                const uidPick = placedIds[Math.floor(Math.random()*placedIds.length)];
+                const it = state.placed[uidPick];
+                if(it){
+                  it.aqua = true;
+                  if(typeof renderStands==='function') renderStands();
+                  if(typeof recalcEPS==='function') recalcEPS();
+                  if(typeof save==='function') save();
+                }
+              }
+            }
+          }
+        });
+      }catch(e){}
+      setTimeout(step, 1000);
+    }
+    setTimeout(step, 1500);
+  })();
+
+  // Add AQUA tag + visuals to placed items
+  (function tagAquaUI(){
+    const orig = window.renderStands;
+    window.renderStands = function(){
+      if(typeof orig === 'function') orig.apply(this, arguments);
+      try{
+        const els = Array.from(document.querySelectorAll('.stands .stand'));
+        (state.stands||[]).forEach((uid,i)=>{
+          const host = els[i]; if(!host) return;
+          const it = uid && state.placed[uid] || null; if(!it) return;
+          const p = host.querySelector('.placed'); if(!p) return;
+          if(it.aqua){
+            p.classList.add('aqua-morph');
+            if(!p.querySelector('.rar.t-aqua')){
+              const s = document.createElement('span');
+              s.className = 'rar t-aqua';
+              s.textContent = 'AQUA';
+              const c = p.querySelector('div') || p;
+              c.appendChild(s);
+            }
+          } else {
+            p.classList.remove('aqua-morph');
+            const b = p.querySelector('.rar.t-aqua'); if(b) b.remove();
+          }
+        });
+      }catch(e){}
+    };
+    setTimeout(()=>{ try{ renderStands(); }catch(e){} }, 0);
+  })();
+
+  // Pedestal overlay extension: add Sandy Shores when unlocked
+  (function extendPedestals(){
+    const injectTile = function(){
+      try{
+        const grid = document.querySelector('.ped-grid'); if(!grid) return;
+        if(grid.querySelector('[data-sandy]')) return;
+        const unlocked = !!((state.pedestalSkins||{}).sandy);
+        const sel = String(state.selectedPedestalSkin)==='sandy';
+        const el = document.createElement('div');
+        el.setAttribute('data-sandy','1');
+        el.className='ped-tile' + (unlocked?'':' locked');
+        el.style.background = "radial-gradient(1.5px 1.5px at 10% 20%, rgba(140,110,60,0.20) 0 40%, transparent 45%)," +
+"radial-gradient(1.2px 1.2px at 22% 38%, rgba(120,95,55,0.20) 0 40%, transparent 45%)," +
+"radial-gradient(1.4px 1.4px at 35% 52%, rgba(150,120,75,0.20) 0 40%, transparent 45%)," +
+"radial-gradient(1.2px 1.2px at 64% 28%, rgba(100,80,50,0.20) 0 40%, transparent 45%)," +
+"radial-gradient(1.4px 1.4px at 74% 48%, rgba(130,100,60,0.20) 0 40%, transparent 45%)," +
+"radial-gradient(1.3px 1.3px at 86% 36%, rgba(110,90,55,0.20) 0 40%, transparent 45%)," +
+"radial-gradient(10px 7px at 20% 78%, rgba(110,90,70,0.35) 0 60%, rgba(110,90,70,0.00) 65%)," +
+"radial-gradient(8px 6px at 44% 74%, rgba(95,80,60,0.32) 0 60%, rgba(95,80,60,0.00) 65%)," +
+"radial-gradient(9px 7px at 71% 82%, rgba(125,105,85,0.35) 0 60%, rgba(125,105,85,0.00) 65%)," +
+"radial-gradient(7px 5px at 83% 70%, rgba(80,70,60,0.32) 0 60%, rgba(80,70,60,0.00) 65%)," +
+"linear-gradient(6deg, rgba(255,255,255,0.10) 20%, rgba(255,255,255,0.00) 22% 78%, rgba(0,0,0,0.05) 80%)," +
+"linear-gradient(180deg,#ffe6a1 0%, #ffd788 55%, #e6bb62 100%)";
+        el.innerHTML = '<div style="font-weight:900">Sandy Shores</div>'
+                     + '<button class="buy ped-apply" '+((!unlocked||sel)?'disabled':'')+'>Equip</button>';
+        if(unlocked){
+          el.querySelector('.ped-apply').onclick = function(){ state.selectedPedestalSkin='sandy'; try{ applyPedestalSkin(); save(); }catch(e){}; try{ this.disabled=true; }catch(e){}; try{ window.__renderPedestalPage && window.__renderPedestalPage(); }catch(e){}; };
+        }
+        grid.appendChild(el);
+      }catch(e){}
+    };
+    // Hook to the render function if available
+    window.__renderPedestalPage = (function(prev){
+      return function(){ if(typeof prev==='function') prev(); injectTile(); };
+    })(window.__renderPedestalPage);
+    // Fallback observer
+    new MutationObserver(()=> injectTile()).observe(document.body,{childList:true,subtree:true});
+    // Extend apply
+    const prevApply = window.applyPedestalSkin;
+    window.applyPedestalSkin = function(){
+      if(typeof prevApply === 'function') prevApply.apply(this, arguments);
+      try{ document.body.classList.toggle('sandy-pedestals', String(state.selectedPedestalSkin)==='sandy'); }catch(e){}
+    };
+  })()
+  // Pedestal overlay extension: add Ocean pedestal when unlocked
+  (function extendOceanPedestal(){
+    const injectTile = function(){
+      try{
+        const grid = document.querySelector('.ped-grid'); if(!grid) return;
+        if(grid.querySelector('[data-ocean]')) return;
+        const unlocked = !!((state.pedestalSkins||{}).aqua || (state.pedestalSkins||{}).ocean);
+        const sel = String(state.selectedPedestalSkin)==='aqua';
+        const el = document.createElement('div');
+        el.setAttribute('data-ocean','1');
+        el.className='ped-tile' + (unlocked?'':' locked');
+        // Ocean wave look
+        el.style.background = "radial-gradient(60% 180% at 15% 120%, rgba(255,255,255,0.60) 12%, rgba(255,255,255,0) 13%)," +
+"radial-gradient(60% 180% at 45% 120%, rgba(255,255,255,0.50) 12%, rgba(255,255,255,0) 13%)," +
+"radial-gradient(60% 180% at 75% 120%, rgba(255,255,255,0.55) 12%, rgba(255,255,255,0) 13%)," +
+"repeating-linear-gradient(-12deg, rgba(255,255,255,0.18) 0 6px, rgba(255,255,255,0.00) 6px 26px)," +
+"linear-gradient(180deg,#34d2e8 0%, #9be9ff 28%, #53bfff 60%, #0a4cbf 100%)";
+        el.innerHTML = '<div style="font-weight:900">Ocean Pedestal</div>'
+                     + '<button class="buy ped-apply" '+((!unlocked||sel)?'disabled':'')+'>Equip</button>';
+        if(unlocked){
+          el.querySelector('.ped-apply').onclick = function(){ state.selectedPedestalSkin='aqua'; try{ applyPedestalSkin(); save(); }catch(e){}; try{ this.disabled=true; }catch(e){}; try{ window.__renderPedestalPage && window.__renderPedestalPage(); }catch(e){}; };
+        }
+        grid.appendChild(el);
+      }catch(e){}
+    };
+    // Hook to the render function if available
+    window.__renderPedestalPage = (function(prev){
+      return function(){ if(typeof prev==='function') prev(); injectTile(); };
+    })(window.__renderPedestalPage);
+    // Also try once on load
+    setTimeout(()=>{ try{ injectTile(); }catch(e){} }, 0);
+  })()
+  // Reorder pedestal tiles into a consistent 2-per-row layout and desired order
+  (function ensurePedestalOrder(){
+    function titleMatch(el, text){
+      try{ return el && String(el.textContent||'').toLowerCase().indexOf(text.toLowerCase())>=0; }catch(e){ return false; }
+    }
+    function reorder(){
+      function setPos(el,row,col){ try{ el.style.gridRow=String(row); el.style.gridColumn=String(col); }catch(e){} }
+
+      try{
+        const grid = document.querySelector('.ped-grid'); if(!grid) return;
+        const tiles = Array.from(grid.children);
+        const find = (label)=> tiles.find(t=>titleMatch(t,label)) || grid.querySelector('[data-'+label.toLowerCase().replace(/\s+/g,'')+']');
+        const orderLabels = [
+          'Default (Gold)','Red Pedestal',
+          'Light/Dark Blue','Strange Pedestals',
+          'Snowy Pedestal','Sandy Shores',
+          'Ocean Pedestal'
+        ];
+        const desired = [];
+        orderLabels.forEach(l=>{
+          let el = tiles.find(t=>titleMatch(t,l));
+          if(!el){
+            if(l==='Sandy Shores') el = grid.querySelector('[data-sandy]');
+            if(l==='Ocean Pedestal') el = grid.querySelector('[data-ocean]');
+            if(l==='Snowy Pedestal') el = grid.querySelector('[data-snowyped], [data-snowy]');
+          }
+          if(el) desired.push(el);
+        });
+        // Append desired in order
+        desired.forEach((el,idx)=>{
+          // compute row/col for first 4 rows
+          const map = {
+            'Default (Gold)': [1,1], 'Red Pedestal':[1,2],
+            'Light/Dark Blue':[2,1], 'Strange Pedestals':[2,2],
+            'Snowy Pedestal':[3,1], 'Sandy Shores':[3,2],
+            'Ocean Pedestal':[4,1]
+          };
+          const label = (el.textContent||'').trim();
+          if(map[label]) setPos(el, map[label][0], map[label][1]);
+          grid.appendChild(el);
+        });
+      }catch(e){}
+    }
+    window.__renderPedestalPage = (function(prev){
+      return function(){ if(typeof prev==='function') prev(); reorder(); };
+    })(window.__renderPedestalPage);
+    document.addEventListener('DOMContentLoaded', ()=> setTimeout(reorder, 0));
+  })()
+  // Strict ordering for pedestals grid (2 per row)
+  (function strictPedestalOrder(){
+    function textOf(el){ try{ return (el && (el.textContent||'')).trim(); }catch(e){ return ''; } }
+    function matches(el, label){ return textOf(el).toLowerCase().indexOf(label.toLowerCase())>=0; }
+    function reorder(){
+      function setPos(el,row,col){ try{ el.style.gridRow=String(row); el.style.gridColumn=String(col); }catch(e){} }
+
+      try{
+        const grid = document.querySelector('.ped-grid'); if(!grid) return;
+        const tiles = Array.from(grid.children);
+        const findByLabel = (label)=> tiles.find(t=>matches(t,label));
+        const order = [
+          'Default (Gold)','Red Pedestal',
+          'Light/Dark Blue','Strange Pedestals',
+          'Snowy Pedestal','Sandy Shores',
+          'Ocean Pedestal'
+        ];
+        const desired = [];
+        order.forEach(l=>{
+          let el = tiles.find(t=>matches(t,l));
+          if(!el){
+            if(l==='Sandy Shores') el = grid.querySelector('[data-sandy]');
+            if(l==='Ocean Pedestal') el = grid.querySelector('[data-ocean]');
+          }
+          if(el) desired.push(el);
+        });
+        // Append in the desired sequence, then anything else afterwards
+        desired.forEach((el,idx)=>{
+          // compute row/col for first 4 rows
+          const map = {
+            'Default (Gold)': [1,1], 'Red Pedestal':[1,2],
+            'Light/Dark Blue':[2,1], 'Strange Pedestals':[2,2],
+            'Snowy Pedestal':[3,1], 'Sandy Shores':[3,2],
+            'Ocean Pedestal':[4,1]
+          };
+          const label = (el.textContent||'').trim();
+          if(map[label]) setPos(el, map[label][0], map[label][1]);
+          grid.appendChild(el);
+        });
+        tiles.forEach(el=>{ if(!desired.includes(el)) grid.appendChild(el); });
+      }catch(e){}
+    }
+    window.__renderPedestalPage = (function(prev){
+      return function(){ if(typeof prev==='function') prev(); reorder(); };
+    })(window.__renderPedestalPage);
+    document.addEventListener('DOMContentLoaded', ()=> setTimeout(reorder, 0));
+  })();
+;
+;
+;
+
+  // Backgrounds overlay: Beach Vibes tile
+  (function extendBgGridForBeach(){
+    const render = window.__renderBgGrid;
+    window.__renderBgGrid = function(){
+      if(typeof render === 'function') render();
+      try{
+        const g = document.querySelector('.bg-tiles'); if(!g) return;
+        if(g.querySelector('[data-beachvibes]')) return;
+        const el = document.createElement('div');
+        el.setAttribute('data-beachvibes','1');
+        const unlocked = !!((state.unlockedBackgrounds||{}).beachvibes);
+        el.className = 'bg-tile' + (!unlocked ? ' locked' : '');
+        el.style.cssText = "background:url('background_files/beach_vibes.png') center/cover no-repeat;border-color:#006c91;";
+        el.innerHTML = '<div style=\"font-weight:900;text-shadow:0 2px 0 #000\">Beach Vibes</div>'
+          + '<button class=\"buy bg-apply\" '+(!unlocked?'disabled':'')+'>Apply</button>';
+        el.querySelector('.bg-apply').onclick = function(){
+          if(!((state.unlockedBackgrounds||{}).beachvibes)) return;
+          document.body.classList.remove('bg-green','bg-blue','bg-purple','bg-orange','bg-legacy','bg-unique','bg-exotic','bg-mythic','bg-crypto','bg-dodger','redblue','bg-hawkins','bg-sunrise','bg-greatwave','bg-upsidedown','bg-winter');
+          document.body.style.background = '';
+          document.body.classList.add('bg-beachvibes');
+          try{ state.selectedBackground = 'beachvibes'; save(); }catch(e){}
+        };
+        g.appendChild(el);
+      }catch(e){}
+    };
+    setTimeout(()=>{ try{ window.__renderBgGrid && window.__renderBgGrid(); }catch(e){} }, 0);
+  })()
+  // Ensure Beach Vibes appears by forcing a background grid refresh on open
+  (function bgOverlayRefresh(){
+    const open = document.getElementById('openBackgrounds');
+    if(open){
+      open.addEventListener('click', function(){
+        setTimeout(()=>{ try{ window.__renderBgGrid && window.__renderBgGrid(); }catch(e){} }, 50);
+      });
+    }
+  })();
+;
+
+  // Render the pass rows on open
+  function onOpen(){ updateHeader(); updateRows(); }
+  document.getElementById('openFlexPass')?.addEventListener('click', function(){
+    document.getElementById('flexPassOverlay')?.classList.add('show');
+    onOpen();
+  });
+  document.getElementById('closeFlexPass')?.addEventListener('click', function(){
+    document.getElementById('flexPassOverlay')?.classList.remove('show');
+  });
+
+  // Initial update
+  setTimeout(updateHeader, 0);
+})();
+</script>
+
+<!-- ===== POTION BREWER: UI + LOGIC (Flex v1.90) ===== -->
+<style>
+  /* Brewer toolbar button */
+  #brewOpenBtn{
+    width:64px; height:64px; border-radius:18px;
+    display:grid; place-items:center;
+    background:#a78bfa; border:4px solid rgba(0,0,0,.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    cursor:pointer; display:none;
+  }
+  #brewOpenBtn img{ width:70%; height:70%; object-fit:contain; }
+
+  /* Brewer overlay */
+  #brewOverlay{ display:none !important; background:transparent !important; -webkit-backdrop-filter:none !important; pointer-events:none; }
+  #brewOverlay.show{ display:block !important; pointer-events:auto; }
+
+  #brewOverlay .sheet{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.35); backdrop-filter: blur(8px);
+  }
+  #brewOverlay .panel{
+    width:min(1100px, 92vw); height:min(640px, 88vh);
+    border-radius: 28px;
+    border: 6px solid rgba(0,0,0,.35);
+    background: linear-gradient(180deg, #9b5de5 0%, #6a00f4 40%, #ea8ded 88%);
+    padding: 20px 22px; color: #fff; position:relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  }
+  #brewOverlay h2{
+    text-align:center; font-family:'Bungee', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    font-size: clamp(24px, 3.6vw, 44px); letter-spacing: 1px; margin: 6px 0 10px 0;
+    text-shadow: 0 2px 0 rgba(0,0,0,.35);
+  }
+  .brew-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items:stretch; }
+  .brew-left{ display:flex; flex-direction:column; gap: 12px; }
+  .brew-right{ display:flex; flex-direction:column; gap: 12px; }
+
+  .slotTitle{ font-weight:900; font-size:18px; letter-spacing:1px; opacity:.95; }
+  .brew-slot{
+    width: 160px; height: 160px; border-radius: 20px;
+    border: 6px solid rgba(255,255,255,.85);
+    background: linear-gradient(180deg, #f4a742, #7a3e00);
+    display:grid; place-items:center; overflow:hidden;
+    box-shadow: inset 0 0 0 4px rgba(0,0,0,.18);
+    cursor: pointer;
+  }
+  .brew-slot img{ width: 100%; height: 100%; object-fit: contain; }
+
+  .slot-unique{ background: linear-gradient(180deg, #043d7a, #000c28); }
+  .slot-rarity{ background: linear-gradient(180deg, #ffd86a, #7a4d00); }
+  .brew-mid-arrow{ align-self:center; width: 140px; height: 10px; border-radius:6px; background: repeating-linear-gradient(90deg, rgba(255,0,0,.7) 0 16px, rgba(255,0,0,.3) 16px 32px); filter: blur(.25px); }
+
+  .brew-progress{
+    display:flex; align-items:center; gap:10px; margin-top: 8px;
+  }
+  #brewBar{
+    width: 100%; height: 18px; border-radius: 12px;
+    background: rgba(255,255,255,.25); overflow:hidden; border: 4px solid rgba(0,0,0,.35);
+  }
+  #brewBar > span{ display:block; height:100%; width:0%; background: linear-gradient(90deg,#50fa7b,#20c997); transition: width .2s linear; }
+
+  #brewTimer{ font-weight:900; letter-spacing:1px; font-size:16px; background:rgba(0,0,0,.25); padding:4px 10px; border-radius:10px; }
+
+  .brew-actions{ display:flex; gap:12px; align-items:center; }
+  #brewStart{
+    padding: 14px 22px; font-weight:900; letter-spacing:1px; border-radius:16px; border:0;
+    background: linear-gradient(#3ad178,#1ba75a); color:#062e16; cursor:pointer;
+    box-shadow: var(--shadow, 0 10px 30px rgba(0,0,0,.35));
+  }
+  #brewStart:disabled{ filter:grayscale(1) brightness(.7); cursor:not-allowed; }
+  .closeBrew{ position:absolute; right:16px; top:16px; width:44px; height:44px; border-radius:50%; border:0; cursor:pointer; font-weight:900; }
+
+  /* Badges next to multiplier for active potions */
+  #potionBadges{ display:flex; gap:8px; align-items:center; }
+  .pBadge{
+    padding:2px 8px; border-radius:12px; border:2px solid rgba(0,0,0,.35);
+    background:#fff; color:#111; font-weight:900; letter-spacing:.5px; font-size:14px;
+  }
+</style>
+
+<!-- Toolbar button is injected via JS if brewer purchased -->
+
+<!-- Brewer Overlay Markup -->
+<div aria-hidden="true" class="overlay" id="brewOverlay">
+  <!-- The sheet container uses flexbox to align the brewer panel near the top,
+       mirroring the forge overlay layout.  We explicitly set display, justify
+       and align properties here so that inline styles override any prior CSS. -->
+  <div class="sheet" style="display:flex; justify-content:center; align-items:flex-start;">
+    <!-- The panel itself adopts the same width and bottom margin as the forge
+         window.  Height is allowed to auto‑size based on content.  Setting
+         position:relative and removing transforms ensures the panel sits
+         directly beneath the money banner instead of being vertically
+         centered. -->
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="brewTitle"
+         style="/* Reduce overall width significantly so the brewer fits on narrower screens */
+                width:min(860px,90%);
+                /* Allow the brewer to grow vertically to fit its contents and remove internal scrolling */
+                height:auto;
+                /* Raise the brewer to sit just below the money banner */
+                /* Reduced from 100px to bring the panel closer to the money banner */
+                margin-top:60px;
+                margin-bottom:160px;
+                position:relative;
+                top:0;
+                left:0;
+                transform:none;">
+      <button class="closeX closeBrew" aria-label="Close Brewer">✕</button>
+      <h2 id="brewTitle">POTION BREWER</h2>
+      <div class="brew-grid">
+        <!-- === Brewer Recipes Panel (left-side) === -->
+        <aside class="brew-recipes" id="brewRecipes" aria-label="Potion Recipes">
+          <div class="recipes-title">RECIPES</div>
+
+          <div class="recipe-card">
+            <div class="recipe-head">
+              <img class="recipe-icon" src="potions/multiplier_x2_potion.png" alt="Multiplier x2 Potion">
+              <div class="recipe-name">Multiplier x2</div>
+            </div>
+            <div class="recipe-steps">
+              <span class="chip fuel">Fuel</span>
+              <span class="plus">+</span>
+              <span class="chip unique">Unique</span>
+              <span class="plus">+</span>
+              <span class="chip other legendary">Legendary item</span>
+            </div>
+            <div class="recipe-note">Duration: 5 min</div>
+          </div>
+
+          <div class="recipe-card">
+            <div class="recipe-head">
+              <img class="recipe-icon" src="potions/multiplier_x4_potion.png" alt="Multiplier x4 Potion">
+              <div class="recipe-name">Multiplier x4</div>
+            </div>
+            <div class="recipe-steps">
+              <span class="chip fuel">Fuel</span>
+              <span class="plus">+</span>
+              <span class="chip unique">Unique</span>
+              <span class="plus">+</span>
+              <span class="chip other potion">Potion: Multiplier x2</span>
+            </div>
+            <div class="recipe-note">Duration: 7 min</div>
+          </div>
+
+          <div class="recipe-card">
+            <div class="recipe-head">
+              <img class="recipe-icon" src="potions/multiplier_x6_potion.png" alt="Multiplier x6 Potion">
+              <div class="recipe-name">Multiplier x6</div>
+            </div>
+            <div class="recipe-steps">
+              <span class="chip fuel">Fuel</span>
+              <span class="plus">+</span>
+              <span class="chip unique">Unique</span>
+              <span class="plus">+</span>
+              <span class="chip other potion">Potion: Multiplier x4</span>
+            </div>
+            <div class="recipe-note">Duration: 10 min</div>
+          </div>
+
+          <div class="recipe-card">
+            <div class="recipe-head">
+              <img class="recipe-icon" src="potions/shop_luck_potion.png" alt="Shop Luck Potion">
+              <div class="recipe-name">Shop Luck</div>
+            </div>
+            <div class="recipe-steps">
+              <span class="chip fuel">Fuel</span>
+              <span class="plus">+</span>
+              <span class="chip unique">Unique</span>
+              <span class="plus">+</span>
+              <span class="chip other legacy">Legacy item</span>
+            </div>
+            <div class="recipe-note">Duration: 5 min</div>
+          </div>
+
+          <div class="recipe-card">
+            <div class="recipe-head">
+              <img class="recipe-icon" src="potions/fast_hatch_potion.png" alt="Fast Hatch Potion">
+              <div class="recipe-name">Fast Hatch</div>
+            </div>
+            <div class="recipe-steps">
+              <span class="chip fuel">Fuel</span>
+              <span class="plus">+</span>
+              <span class="chip unique">Unique</span>
+              <span class="plus">+</span>
+              <span class="chip other exotic">Exotic item</span>
+            </div>
+            <div class="recipe-note">Duration: 15 min</div>
+          </div>
+
+          <div class="recipe-card">
+            <div class="recipe-head">
+              <img class="recipe-icon" src="potions/shop_refresh_potion.png" alt="Shop Refresh Potion">
+              <div class="recipe-name">Shop Refresh</div>
+            </div>
+            <div class="recipe-steps">
+              <span class="chip fuel">Fuel</span>
+              <span class="plus">+</span>
+              <span class="chip unique">Unique</span>
+              <span class="plus">+</span>
+              <span class="chip other crypto">Crypto item</span>
+            </div>
+            <div class="recipe-note">Instant effect</div>
+          </div>
+
+          <div class="fuels-key">
+            <img src="potions/fuels/coal.png" alt="Coal">
+            <img src="potions/fuels/flame.png" alt="Flame">
+            <img src="potions/fuels/gunpowder.png" alt="Gunpowder">
+            <span>Any fuel works</span>
+          </div>
+        </aside>
+        <!-- === End Brewer Recipes Panel === -->
+        
+        <div class="brew-left">
+          <div class="slotTitle">FUEL</div>
+          <div class="brew-slot" id="brewFuel"></div>
+
+          <div class="slotTitle">PROGRESS</div>
+          <div class="brew-progress">
+            <div id="brewBar"><span></span></div>
+            <div id="brewTimer">0:00</div>
+          </div>
+        </div>
+
+        <div class="brew-right">
+          <div class="slotTitle">UNIQUE</div>
+          <div class="brew-slot slot-unique" id="brewUnique"></div>
+
+          <div class="slotTitle">RARITY / SPECIAL</div>
+          <div class="brew-slot slot-rarity" id="brewOther"></div>
+
+          <div class="brew-actions" style="margin-top:12px;">
+            <button id="brewStart">START BREW</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Utilities
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const fmt = (n)=>{
+    try{ return Number(n).toLocaleString('en-US'); }catch(e){ return String(n); }
+  };
+
+  // ---- Extend rarities for fuels and potions (for inventory badges) ----
+  try{
+    if (window.RARITY) {
+      RARITY.fuel   = RARITY.fuel   || { label:'FUEL',   color:'#ffb454', income:0, price:[2_500_000,3_500_000], prob:0 };
+      RARITY.potion = RARITY.potion || { label:'POTION', color:'#d76eff', income:0, price:[0,0], prob:0 };
+    }
+  }catch(e){}
+
+  // ---- Global Brewer / Potion state ----
+  window.state = window.state || {};
+  state.brewer = state.brewer || { owned:false, active:null }; // active: {name, icon, endsAt, startedAt, duration}
+  state.activePotions = state.activePotions || { // timers (ms since epoch)
+    multiplier: { until:0, factor:1 },
+    shopLuckUntil: 0,
+    fastHatchUntil: 0
+  };
+
+  // Ensure save carries our new fields
+  try{
+    const _save = window.save;
+    window.save = function(){
+      try{
+        state.brewer = state.brewer || { owned:false, active:null };
+        state.activePotions = state.activePotions || { multiplier:{until:0,factor:1}, shopLuckUntil:0, fastHatchUntil:0 };
+      }catch(e){}
+      return _save.apply(this, arguments);
+    };
+  }catch(e){}
+
+  // ---- Add Potion Brewer card to Gear overlay ----
+  function insertBrewerCard(){
+    const gear = $('#gearOverlay .grid');
+    if(!gear || $('#brewerCard')) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'brewerCard';
+    card.innerHTML = `
+      <h3>Potion Brewer</h3>
+      <div style="font-size:18px; opacity:0.9;">Craft potions using a Fuel + UNIQUE + another rarity.<br/>Requires Rebirth Level 5.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+        <div class="price">$100,000,000,000</div>
+        <button class="buy" id="buyBrewer">Purchase</button>
+      </div>
+      <div id="brewerReq" style="margin-top:6px;font-weight:800;">
+        <span id="brewLvlCheck" style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#e74c3c;color:#fff;text-align:center;line-height:18px;margin-right:8px;">✖</span>
+        Requires Level 5 Rebirth
+      </div>
+    `;
+    gear.appendChild(card);
+    const btn = card.querySelector('#buyBrewer');
+    function refresh(){
+      const hasLvl = (state.rebirthLevel||0) >= 5;
+      const cost = 100_000_000_000;
+      $('#brewLvlCheck').textContent = hasLvl ? '✓' : '✖';
+      $('#brewLvlCheck').style.background = hasLvl ? '#2ecc71' : '#e74c3c';
+      if (state.brewer.owned){
+        btn.disabled = true; btn.textContent = 'Purchased!'; btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+      } else {
+        btn.disabled = !(hasLvl && state.money >= cost);
+        btn.textContent = 'Purchase';
+        btn.style.background = '';
+      }
+    }
+    btn.addEventListener('click', ()=>{
+      const cost = 100_000_000_000;
+      if (state.brewer.owned) return;
+      if ((state.rebirthLevel||0) < 5) return;
+      if (state.money < cost) return;
+      state.money -= cost;
+      state.brewer.owned = true;
+      try{ writeOwned(true); }catch(e){}
+      try{ __writeBackupNow(); 
+      try{
+        const __pendingKey = 'flex_brewer_pending_server_save__' + (typeof getPlayerId==='function' ? getPlayerId() : (state.username||state.userName||'default'));
+        if (typeof __loadComplete === 'boolean' && !__loadComplete) localStorage.setItem(__pendingKey, '1');
+        else localStorage.removeItem(__pendingKey);
+      }catch(e){}       
+}catch(e){}
+      showBrewButton();
+      if (typeof updateTop==='function') updateTop();
+      if (typeof save==='function') save();
+      refresh();
+    });
+    // keep in sync when opening
+    refresh();
+  }
+
+  
+// --- Keep Brewer purchase card eligibility in sync with Rebirth changes ---
+(function(){
+  function refreshBrewerCard(){
+    try{
+      const btn = document.getElementById('buyBrewer');
+      const chk = document.getElementById('brewLvlCheck');
+      if (!btn || !chk) return;
+      const hasLvl = (state.rebirthLevel||0) >= 5;
+      const cost = 100_000_000_000;
+      chk.textContent = hasLvl ? '✓' : '✖';
+      chk.style.background = hasLvl ? '#2ecc71' : '#e74c3c';
+      if (state.brewer && state.brewer.owned) {
+        btn.disabled = true; btn.textContent = 'Purchased!'; btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+      } else {
+        btn.disabled = !(hasLvl && (state.money||0) >= cost);
+        btn.textContent = 'Purchase';
+        btn.style.background = '';
+      }
+    }catch(e){}
+  }
+  try{
+    // Patch updateRebirthUI to also refresh the brewer card
+    if (typeof window.updateRebirthUI === 'function' && !window.updateRebirthUI.__brewerRefreshPatched){
+      const _u = window.updateRebirthUI;
+      window.updateRebirthUI = function(){ const r = _u.apply(this, arguments); try{ refreshBrewerCard(); }catch(_){} return r; };
+      window.updateRebirthUI.__brewerRefreshPatched = true;
+    }
+  }catch(e){}
+  // Also refresh once after load and on money updates
+  window.addEventListener('load', ()=>{ setTimeout(refreshBrewerCard, 0); });
+  document.addEventListener('money:update', refreshBrewerCard);
+})();// ---- Toolbar button (above Forge) ----
+  
+// --- Ensure the toolbar Brewer button exists & is visible when owned ---
+function ensureBrewButtonVisible(){
+  try{
+    window.state = window.state || {};
+    state.brewer = state.brewer || { owned:false, active:null };
+    if (!state.brewer.owned) return;
+    if (typeof showBrewButton === 'function') showBrewButton();
+  }catch(e){}
+}
+function showBrewButton(){
+    const bar = document.getElementById('toolBarArea');
+    if(!bar) return;
+    let btn = document.getElementById('brewOpenBtn');
+    if(!btn){
+      btn = document.createElement('button');
+      btn.id = 'brewOpenBtn';
+      btn.title = 'Potion Brewer';
+      btn.innerHTML = "<img alt='Brew' src='icons/potion_brewer_icon.png'/>";
+      // Insert *after* forge so with column-reverse it appears above
+      bar.appendChild(btn);
+      btn.addEventListener('click', openBrew);
+    }
+    btn.style.display = state.brewer.owned ? 'grid' : 'none';
+  }
+
+  // ---- Overlay open/close ----
+  function openBrew(){ const o = $('#brewOverlay'); o.classList.add('show'); o.setAttribute('aria-hidden','false'); renderBrew(); }
+  function closeBrew(){ const o = $('#brewOverlay'); o.classList.remove('show'); o.setAttribute('aria-hidden','true'); }
+  $('.closeBrew')?.addEventListener('click', closeBrew);
+
+  // ---- Slots ----
+  let brewSlots = { fuel:null, unique:null, other:null }; // inventory objects
+
+  function isFuel(it){
+    const n = String(it?.name||'').toLowerCase();
+    if (String(it?.rarity||'').toLowerCase()==='fuel') return true;
+    return n==='coal' || n==='gunpowder' || n==='flame';
+  }
+  function isUnique(it){ return String(it?.rarity||'').toLowerCase()==='unique'; }
+  function isPotion(it){ return String(it?.rarity||'').toLowerCase()==='potion'; }
+
+  function renderBrewSlots(){
+    $('#brewFuel').innerHTML   = brewSlots.fuel   ? `<img src="${brewSlots.fuel.svg}" alt="${brewSlots.fuel.name}">` : '';
+    $('#brewUnique').innerHTML = brewSlots.unique ? `<img src="${brewSlots.unique.svg}" alt="${brewSlots.unique.name}">` : '';
+    $('#brewOther').innerHTML  = brewSlots.other  ? `<img src="${brewSlots.other.svg}" alt="${brewSlots.other.name}">` : '';
+    updateBrewButton();
+  }
+
+  // Clicking a slot either places currently selected inventory item OR returns item to inventory
+  function attachSlotHandlers(){
+    function grab(uid){
+      try{
+        const idx = (state.inventory||[]).findIndex(x=>x && x.uid===uid);
+        if(idx>=0) return state.inventory.splice(idx,1)[0];
+      }catch(e){}
+      return null;
+    }
+    $('#brewFuel').onclick = ()=>{
+      const sel = state.selectedItemUid;
+      if (sel){
+        const obj = (state.inventory||[]).find(x=>x && x.uid===sel);
+        if (obj && isFuel(obj)){
+          if (brewSlots.fuel) state.inventory.push(brewSlots.fuel);
+          brewSlots.fuel = grab(sel) || obj;
+          state.selectedItemUid = null;
+          if(typeof renderInventory==='function') renderInventory();
+          renderBrewSlots();
+        }
+      }else if(brewSlots.fuel){
+        state.inventory.push(brewSlots.fuel); brewSlots.fuel=null; renderInventory(); renderBrewSlots();
+      }
+    };
+    $('#brewUnique').onclick = ()=>{
+      const sel = state.selectedItemUid;
+      if (sel){
+        const obj = (state.inventory||[]).find(x=>x && x.uid===sel);
+        if (obj && isUnique(obj)){
+          if (brewSlots.unique) state.inventory.push(brewSlots.unique);
+          brewSlots.unique = grab(sel) || obj;
+          state.selectedItemUid = null;
+          if(typeof renderInventory==='function') renderInventory();
+          renderBrewSlots();
+        }
+      }else if(brewSlots.unique){
+        state.inventory.push(brewSlots.unique); brewSlots.unique=null; renderInventory(); renderBrewSlots();
+      }
+    };
+    $('#brewOther').onclick = ()=>{
+      const sel = state.selectedItemUid;
+      if (sel){
+        const obj = (state.inventory||[]).find(x=>x && x.uid===sel);
+        const rk = String(obj?.rarity||'').toLowerCase();
+        const ok = rk==='legendary' || rk==='legacy' || rk==='exotic' || rk==='crypto' || (rk==='potion' && /multiplier x[24] potion/i.test(String(obj?.name||'')));
+        if (obj && ok){
+          if (brewSlots.other) state.inventory.push(brewSlots.other);
+          brewSlots.other = grab(sel) || obj;
+          state.selectedItemUid = null;
+          if(typeof renderInventory==='function') renderInventory();
+          renderBrewSlots();
+        }
+      }else if(brewSlots.other){
+        state.inventory.push(brewSlots.other); brewSlots.other=null; renderInventory(); renderBrewSlots();
+      }
+    };
+  }
+
+  function brewResultFor(fuel, unique, other){
+    if(!fuel || !unique || !other) return null;
+    const rk = String(other.rarity||'').toLowerCase();
+    const name = String(other.name||'');
+    if (rk==='legendary') return { name:'Multiplier x2 Potion', icon:'potions/multiplier_x2_potion.png', type:'potion', minutes:5, kind:'mult', factor:2 };
+    if (rk==='potion' && /multiplier x2 potion/i.test(name)) return { name:'Multiplier x4 Potion', icon:'potions/multiplier_x4_potion.png', type:'potion', minutes:7, kind:'mult', factor:4 };
+    if (rk==='potion' && /multiplier x4 potion/i.test(name)) return { name:'Multiplier x6 Potion', icon:'potions/multiplier_x6_potion.png', type:'potion', minutes:10, kind:'mult', factor:6 };
+    if (rk==='legacy') return { name:'Shop Luck Potion', icon:'potions/shop_luck_potion.png', type:'potion', minutes:5, kind:'luck' };
+    if (rk==='exotic') return { name:'Fast Hatch Potion', icon:'potions/fast_hatch_potion.png', type:'potion', minutes:15, kind:'hatch' };
+    if (rk==='crypto') return { name:'Shop Refresh Potion', icon:'potions/shop_refresh_potion.png', type:'potion', minutes:0, kind:'refresh' };
+    return null;
+  }
+
+  const FUEL_TIME = {
+    'coal': 2*60 + 30,      // 2:30
+    'gunpowder': 2*60,      // 2:00
+    'flame': 60             // 1:00
+  };
+  function getFuelSeconds(f){
+    const k = String((f?.name||'').toLowerCase());
+    return FUEL_TIME[k] || 120;
+  }
+
+  function updateBrewButton(){
+    const r = brewResultFor(brewSlots.fuel, brewSlots.unique, brewSlots.other);
+    const btn = $('#brewStart');
+    btn.disabled = !r || !!state.brewer.active;
+    btn.title = r ? ('Brew ' + r.name) : 'Select a valid recipe';
+  }
+
+  function renderBrew(){
+    attachSlotHandlers();
+    renderBrewSlots();
+    renderBrewProgress();
+  }
+
+  function startBrew(){
+    const res = brewResultFor(brewSlots.fuel, brewSlots.unique, brewSlots.other);
+    if(!res) return;
+    const sec = getFuelSeconds(brewSlots.fuel);
+    // consume inputs
+    brewSlots = { fuel:null, unique:null, other:null };
+    // create active brew
+    const now = Date.now();
+    state.brewer.active = {
+      result: res,
+      startedAt: now,
+      endsAt: now + sec*1000,
+      duration: sec*1000
+    };
+    if(typeof renderInventory==='function') renderInventory();
+    if(typeof save==='function') save();
+    renderBrewProgress();
+  }
+  $('#brewStart').addEventListener('click', startBrew);
+
+  function renderBrewProgress(){
+    const prog = $('#brewBar > span');
+    const timer = $('#brewTimer');
+    const act = state.brewer.active;
+    if(!act){
+      prog.style.width = '0%';
+      timer.textContent = '0:00';
+      updateBrewButton();
+      return;
+    }
+    const now = Date.now();
+    const left = Math.max(0, act.endsAt - now);
+    const pct = Math.min(100, Math.round(100 * (1 - left / act.duration)));
+    prog.style.width = pct + '%';
+    const s = Math.ceil(left/1000); const m = Math.floor(s/60); const ss = String(s%60).padStart(2,'0');
+    timer.textContent = `${m}:${ss}`;
+    updateBrewButton();
+  }
+
+  // Global tick for brewer + potions
+  setInterval(()=>{
+    try{
+      // Brewer tick
+      if(state.brewer && state.brewer.active){
+        if(Date.now() >= state.brewer.active.endsAt){
+          const res = state.brewer.active.result;
+          state.brewer.active = null;
+          // give item
+          state.inventory.push({ uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name: res.name, rarity:'potion', price:0, baseIdx:-1, svg: res.icon });
+          if(typeof renderInventory==='function') renderInventory();
+          if(typeof save==='function') save();
+          showToast(`${res.name} is complete!`);
+        }
+      }
+      renderBrewProgress();
+
+      // Potion timers HUD
+      updatePotionBadges();
+
+      // Hatch speed hook
+if (typeof window !== 'undefined') {
+  const fast = (typeof isFastHatchActive === 'function') ? isFastHatchActive() : false;
+
+  // Base durations (when no potion is active)
+  const base = (typeof HATCH_DURATION !== 'undefined') ? HATCH_DURATION : (10*60*1000);
+  const base3 = (typeof THIRD_HATCH_DURATION !== 'undefined') ? THIRD_HATCH_DURATION : (5*60*1000);
+  const base4 = (typeof FOURTH_HATCH_DURATION !== 'undefined') ? FOURTH_HATCH_DURATION : (2*60*1000);
+
+  // Only when the Fast Hatch potion is active:
+  // - Pedestals 1 & 2 use 5:00
+  // - Pedestal 3 uses 2:50
+  // - Pedestal 4 uses 1:00
+  window.HATCH_DURATION = Math.floor(fast ? (5*60*1000) : base);
+  window.THIRD_HATCH_DURATION = Math.floor(fast ? (170*1000) : base3);
+  window.FOURTH_HATCH_DURATION = Math.floor(fast ? (60*1000) : base4);
+}
+
+    }catch(e){ /* no-op */ }
+  }, 200);
+
+  // ---- HUD next to multiplier ----
+  function ensurePotionBadgesHost(){
+    if(!$('#potionBadges')){
+      const mult = $('#multBadge');
+      const host = document.createElement('div');
+      host.id = 'potionBadges';
+      mult?.parentNode?.insertBefore(host, mult.nextSibling);
+    }
+  }
+  function updatePotionBadges(){
+    ensurePotionBadgesHost();
+    const host = $('#potionBadges');
+    if(!host) return;
+    const parts = [];
+    // multiplier
+    const mm = getActivePotionMultiplier();
+    if (mm > 1){
+      const left = Math.max(0, (state.activePotions?.multiplier?.until||0) - Date.now());
+      const s = Math.ceil(left/1000); const m = Math.floor(s/60); const ss = String(s%60).padStart(2,'0');
+      parts.push(`<span class="pBadge">x${mm} ${m}:${ss}</span>`);
+    }
+    if (isShopLuckActive()){
+      const left = Math.max(0, (state.activePotions.shopLuckUntil||0) - Date.now());
+      const s = Math.ceil(left/1000); const m = Math.floor(s/60); const ss = String(s%60).padStart(2,'0');
+      parts.push(`<span class="pBadge">Luck ${m}:${ss}</span>`);
+    }
+    if (isFastHatchActive()){
+      const left = Math.max(0, (state.activePotions.fastHatchUntil||0) - Date.now());
+      const s = Math.ceil(left/1000); const m = Math.floor(s/60); const ss = String(s%60).padStart(2,'0');
+      parts.push(`<span class="pBadge">Hatch ${m}:${ss}</span>`);
+    }
+    host.innerHTML = parts.join('');
+  }
+
+  function showToast(msg){
+    try{
+      let el = document.getElementById('toast');
+      if(!el){
+        el = document.createElement('div'); el.id='toast'; el.setAttribute('aria-live','polite'); document.body.appendChild(el);
+      }
+      el.textContent = msg;
+      el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#111;color:#fff;padding:10px 16px;border-radius:12px;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,.35)';
+      el.style.opacity = '1';
+      setTimeout(()=>{ el.style.transition='opacity .6s ease'; el.style.opacity='0'; }, 1200);
+    }catch(e){}
+  }
+
+  // ---- Use potions from inventory (double-click) ----
+  function usePotion(obj){
+    if(!obj || String(obj.rarity).toLowerCase()!=='potion') return;
+    const name = String(obj.name||'');
+    const now = Date.now();
+    if (/^Multiplier x2 Potion/i.test(name)){ state.activePotions.multiplier = { until: now + 5*60*1000, factor: 2 }; }
+    else if (/^Multiplier x4 Potion/i.test(name)){ state.activePotions.multiplier = { until: now + 7*60*1000, factor: 4 }; }
+    else if (/^Multiplier x6 Potion/i.test(name)){ state.activePotions.multiplier = { until: now + 10*60*1000, factor: 6 }; }
+    else if (/^Shop Luck Potion/i.test(name)){ state.activePotions.shopLuckUntil = now + 5*60*1000; }
+    else if (/^Fast Hatch Potion/i.test(name)){
+  const wasActive = (state.activePotions?.fastHatchUntil||0) > now;
+  state.activePotions.fastHatchUntil = now + 15*60*1000;
+  try{
+    if (!wasActive && Array.isArray(state.petTimers)){
+      for (let i=0;i<state.petTimers.length;i++){
+        const end = state.petTimers[i];
+        if (typeof end === 'number' && end > now){
+          const remaining = end - now;
+          state.petTimers[i] = now + Math.ceil(remaining / 2);
+        }
+      }
+      if (typeof renderStands==='function') renderStands();
+    }
+  }catch(e){}
+}
+    else if (/^Shop Refresh Potion/i.test(name)){ try{ if(typeof refreshShopNow==='function') refreshShopNow(); }catch(e){} try{ showToast && showToast('Shop refreshed! Timer reset to 1:30'); }catch(_e){} }
+    // consume the potion
+    state.inventory = state.inventory.filter(x => x.uid !== obj.uid);
+    if(typeof renderInventory==='function') renderInventory();
+    if(typeof save==='function') save();
+    updatePotionBadges();
+  }
+
+  // Patch renderInventory to attach dblclick handler for potions
+  try{
+    const _ri = window.renderInventory;
+    window.renderInventory = function(){
+      _ri.apply(this, arguments);
+      try{
+        $$('#inventory .slot').forEach(el => {
+          const uid = el.getAttribute('data-uid');
+          const it = (state.inventory||[]).find(x=>x && String(x.uid)===String(uid));
+          if(it && String(it.rarity||'').toLowerCase()==='potion'){
+            el.addEventListener('dblclick', ()=>usePotion(it));
+            el.title = 'Double‑click to use';
+          }
+        });
+      }catch(e){}
+    };
+  }catch(e){}
+
+  // Multiplier hook for potions
+  window.getActivePotionMultiplier = function(){
+    try{
+      const m = state.activePotions?.multiplier;
+      if(m && (m.until||0) > Date.now()) return Number(m.factor||1) || 1;
+    }catch(e){}
+    return 1;
+  };
+
+  // Adjust EPS pipeline to include potion multiplier
+  try{
+    if (typeof recalcEPS === 'function'){
+      const _re = recalcEPS;
+      window.recalcEPS = function(){
+        _re.apply(this, arguments);
+        try{
+          // Recompute with potion multiplier applied (non-destructive)
+          state.eps = Math.floor(state.eps * getActivePotionMultiplier());
+          if (typeof updateTop==='function') updateTop();
+        }catch(e){}
+      };
+    }
+  }catch(e){}
+
+  // Shop luck hook: override weightedPick slightly while active
+  try{
+    if (typeof weightedPick === 'function'){
+      const _wp = weightedPick;
+      window.isShopLuckActive = function(){ return (state.activePotions?.shopLuckUntil||0) > Date.now(); };
+window.weightedPick = function(){
+  if (!isShopLuckActive()) return _wp();
+  // When Shop Luck is active, match the same luck as having ONE Flexicorn on a pedestal.
+  // We mimic currentShopWeights() with count=1: { common:50, rare:12, epic:23, legendary:6, legacy:5, unique:4 }
+  const w = { common:50, rare:12, epic:23, legendary:6, legacy:5, unique:4 };
+  const order = ['unique','legacy','legendary','epic','rare','common'];
+  const r = Math.random() * 100;
+  let acc = 0;
+  for (const k of order){
+    acc += (w[k]||0);
+    if (r < acc) return k;
+  }
+  return 'common';
+};
+    }
+  }catch(e){}
+
+  // Fast hatch helpers
+  window.isFastHatchActive = function(){ return (state.activePotions?.fastHatchUntil||0) > Date.now(); };
+
+  // ---- Fuels appear in Shop (occupy one of the 4 slots) ----
+  try{
+    if (typeof makeShopItems === 'function'){
+      const _mk = makeShopItems;
+      window.makeShopItems = function(){
+        const items = _mk();
+        try{
+          // 35% chance to replace a random slot with a fuel (Coal / Gunpowder / Flame)
+          if (Math.random() < 0.35){
+            const i = Math.floor(Math.random()*items.length);
+            const fuels = [
+              { name:'Coal', svg:'potions/fuels/coal.png' },
+              { name:'Gunpowder', svg:'potions/fuels/gunpowder.png' },
+              { name:'Flame', svg:'potions/fuels/flame.png' }
+            ];
+            const f = fuels[Math.floor(Math.random()*fuels.length)];
+            items[i] = { uid: (Math.random().toString(36).slice(2)+Date.now().toString(36)), name: f.name, rarity:'fuel', price: Math.floor(2_500_000 + Math.random() * (3_500_000 - 2_500_000)), svg: f.svg, baseIdx:-1, purchased:false };
+          }
+        }catch(e){}
+        return items;
+      };
+    }
+  }catch(e){}
+
+  // ---- Mount on load ----
+  window.addEventListener('load', ()=>{
+    insertBrewerCard();
+    showBrewButton();
+    ensurePotionBadgesHost();
+  });
+})();
+</script>
+
+<!-- ===== POTION BREWER: Overlay Centering + No Blur + Drag & Drop (v1.91) ===== -->
+<style>
+  /* Transparent background, no blur, and non-interactive backdrop so you can drag from inventory */
+  #brewOverlay{ background:transparent !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; pointer-events:none !important; }
+  #brewOverlay.show{ display:block !important; }
+  #brewOverlay .sheet{ background:transparent !important; pointer-events:none !important; }
+  /* Hard center the panel and keep it interactive */
+  #brewOverlay .panel{
+    position:fixed !important; top:50% !important; left:50% !important; transform:translate(-50%,-50%) !important;
+    pointer-events:auto !important;
+  }
+  /* Drag-over highlight */
+  .brew-slot.drop-ok{ outline: 6px dashed rgba(255,255,255,.9); outline-offset: -6px; }
+  .brew-slot.drop-bad{ outline: 6px dashed rgba(255,77,77,.95); outline-offset: -6px; }
+</style>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+
+  function enableInventoryDragging(){
+    try{
+      $$('#inventory .slot').forEach(el => {
+        const uid = el.getAttribute('data-uid');
+        if (!uid) return;
+        el.setAttribute('draggable','true');
+        if (!el._dragInit){
+          el.addEventListener('dragstart', ev => {
+            ev.dataTransfer.setData('text/flex-uid', uid);
+            ev.dataTransfer.setData('text/plain', uid);
+            ev.dataTransfer.effectAllowed = 'copyMove';
+          });
+          el._dragInit = true;
+        }
+      });
+    }catch(e){}
+  }
+
+  function setupDropZone(el, acceptFn, assign){
+    if (!el) return;
+    ['dragenter','dragover'].forEach(type => {
+      el.addEventListener(type, ev => {
+        const uid = ev.dataTransfer?.getData('text/flex-uid') || ev.dataTransfer?.getData('text/plain');
+        if (!uid){ el.classList.remove('drop-ok','drop-bad'); return; }
+        const it = (state.inventory||[]).find(x=>x && String(x.uid)===String(uid));
+        if (acceptFn(it)){
+          ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy';
+          el.classList.add('drop-ok'); el.classList.remove('drop-bad');
+        } else {
+          el.classList.remove('drop-ok'); el.classList.add('drop-bad');
+        }
+      });
+    });
+    ['dragleave','drop'].forEach(type => {
+      el.addEventListener(type, ev => { el.classList.remove('drop-ok','drop-bad'); });
+    });
+    el.addEventListener('drop', ev => {
+      const uid = ev.dataTransfer?.getData('text/flex-uid') || ev.dataTransfer?.getData('text/plain');
+      const idx = (state.inventory||[]).findIndex(x=>x && String(x.uid)===String(uid));
+      if (idx<0) return;
+      const it = state.inventory[idx];
+      if (!acceptFn(it)) return;
+      // Remove + assign
+      state.inventory.splice(idx,1);
+      window.brewSlots = window.brewSlots || { fuel:null, unique:null, other:null };
+      assign(it);
+      if (typeof renderInventory==='function') renderInventory();
+      if (typeof renderBrewSlots==='function') renderBrewSlots();
+    });
+  }
+
+  function isFuel(it){
+    if(!it) return false;
+    const n = String(it.name||'').toLowerCase();
+    const r = String(it.rarity||'').toLowerCase();
+    return r==='fuel' || n==='coal' || n==='gunpowder' || n==='flame';
+  }
+  function isUnique(it){ return it && String(it.rarity||'').toLowerCase()==='unique'; }
+  function acceptOther(it){
+    if(!it) return false;
+    const rk = String(it.rarity||'').toLowerCase();
+    const nm = String(it.name||'');
+    return rk==='legendary' || rk==='legacy' || rk==='exotic' || rk==='crypto' ||
+      (rk==='potion' && /multiplier x[24] potion/i.test(nm));
+  }
+
+  function attachDrops(){
+    setupDropZone(document.getElementById('brewFuel'), isFuel, it => { window.brewSlots.fuel = it; });
+    setupDropZone(document.getElementById('brewUnique'), isUnique, it => { window.brewSlots.unique = it; });
+    setupDropZone(document.getElementById('brewOther'), acceptOther, it => { window.brewSlots.other = it; });
+  }
+
+  // Hook inventory renderer to ensure draggable
+  try{
+    const _ri = window.renderInventory;
+    window.renderInventory = function(){
+      _ri.apply(this, arguments);
+      enableInventoryDragging();
+    };
+  }catch(e){}
+
+  window.addEventListener('load', () => {
+    enableInventoryDragging();
+    attachDrops();
+    document.getElementById('brewOpenBtn')?.addEventListener('click', () => setTimeout(attachDrops, 0));
+  });
+})();
+</script>
+
+<!-- ===== POTION BREWER: Persistent Ownership Save (v1.92) ===== -->
+<script>
+(function(){
+  const LS_KEY = 'flex_brewer_owned';
+  function readOwned(){
+    try{ return localStorage.getItem(LS_KEY) === '1'; }catch(e){ return false; }
+  }
+  
+  function __writeBackupNow(){
+    try{
+      const __now = Date.now();
+      const payload = (typeof buildSavePayload==='function') ? buildSavePayload(__now) : (function(){
+        // fallback: build minimal payload for backup that includes brewer
+        const p = {};
+        try{
+          p.money = state.money;
+          p.eps = state.eps;
+          p.inventory = Array.isArray(state.inventory) ? state.inventory : [];
+          p.stands = state.stands;
+          p.shop = state.shop;
+          p.fastMode = state.fastMode;
+          p.placed = state.placed || {};
+          p.petPedestalsPurchased = state.petPedestalsPurchased;
+          p.petStands = state.petStands || {};
+          p.petTimers = state.petTimers || {};
+          p.permanentPetMultiplier = state.permanentPetMultiplier || 1;
+          p.petDex = state.petDex || {};
+          p.rebirthLevel = state.rebirthLevel || 0;
+          p.unlockedBackgrounds = state.unlockedBackgrounds || {};
+          p.selectedBackground = state.selectedBackground || 'default';
+          p.ach = state.ach || { questsDone:{} };
+          p.pedestalSkins = state.pedestalSkins || { default:true };
+          p.selectedPedestalSkin = state.selectedPedestalSkin || 'default';
+          p.upsideDown = !!state.upsideDown;
+          p.inventoryFilters = state.inventoryFilters || {};
+          p.centerGifts = state.centerGifts || {};
+          p.brewer = state.brewer || { owned:false, active:null };
+          p.__ts = __now;
+        }catch(e){}
+        return p;
+      })();
+      try {
+        const cur = localStorage.getItem(LOCAL_BACKUP_KEY);
+        if (cur) { try { localStorage.setItem(LOCAL_BACKUP_PREV, cur); } catch(e){} }
+      } catch(e){}
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: payload.__ts, data: payload }));
+    }catch(_){}
+  }
+function writeOwned(forceTrue){
+    try{
+      const prev = localStorage.getItem(lsKey());
+      const nowFlag = !!(window.state && state.brewer && state.brewer.owned);
+      const owned = forceTrue ? true : (nowFlag || prev === '1');
+      localStorage.setItem(lsKey(), owned ? '1' : '0');
+    }catch(e){}
+  }
+
+  function refreshBuyButton(){
+    const btn = document.getElementById('buyBrewer');
+    const check = document.getElementById('brewLvlCheck');
+    const hasLvl = (state.rebirthLevel||0) >= 5;
+    const hasMoney = (state.money||0) >= COST;
+
+    if (check){
+      check.textContent = hasLvl ? '✓' : '✖';
+      check.style.background = hasLvl ? '#2ecc71' : '#e74c3c';
+    }
+    if (!btn) return;
+    if (state.brewer?.owned){
+      btn.disabled = true;
+      btn.textContent = 'Purchased!';
+      btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+    } else {
+      btn.disabled = !(hasLvl && hasMoney);
+      btn.textContent = 'Purchase';
+      btn.style.background = '';
+    }
+  }
+
+  function ensureGearPolling(){
+    if (window.__brewGearPoll) return;
+    window.__brewGearPoll = setInterval(()=>{
+      try{ refreshBuyButton(); }catch(e){}
+    }, 200);
+  }
+
+  window.addEventListener('load', ()=>{
+    window.state = window.state || {};
+    state.brewer = state.brewer || { owned:false, active:null };
+    if (readOwned()) state.brewer.owned = true;
+    try{ if (typeof showBrewButton==='function') showBrewButton(); }catch(e){}
+    ensureGearPolling();
+    refreshBuyButton();
+  });
+
+  document.addEventListener('click', (ev)=>{
+    if (ev.target && ev.target.id === 'buyBrewer'){
+      setTimeout(()=>{
+        writeOwned();
+        refreshBuyButton();
+        try{ if (typeof showBrewButton==='function') showBrewButton(); }catch(e){}
+        try{ if (typeof save==='function') save(); }catch(e){}
+      }, 0);
+    }
+  });
+
+  try{
+    const _save = window.save;
+    window.save = function(){
+      try{ writeOwned(); }catch(e){}
+      return _save ? _save.apply(this, arguments) : undefined;
+    };
+  }catch(e){}
+
+  window.addEventListener('beforeunload', ()=>writeOwned());
 })();
 </script>
