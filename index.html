@@ -2351,6 +2351,42 @@ body.bg-winter{ background: url('background_files/winter_wonderland.png') center
 /* === End GPT patch === */
 
 </style>
+
+<style>
+
+/* === Injected: Advanced Announcement UI (v2.1) === */
+#flexRichAnn{
+  position:fixed; left:50%; transform:translateX(-50%);
+  z-index:99999; display:none;
+  max-width:min(1200px, 96vw);
+  color:#fff; border-radius:14px; padding:14px 16px;
+  box-shadow:0 12px 28px rgba(0,0,0,.35);
+  border:1px solid rgba(255,255,255,.08);
+}
+#flexRichAnn.show{ display:block; }
+#flexRichAnn .inner{
+  display:flex; align-items:center; justify-content:center; gap:.6rem;
+  font:700 28px/1.1 'Inter', system-ui, sans-serif; text-align:center;
+  text-transform:none; letter-spacing:0; white-space:pre-wrap;
+}
+#flexRichAnn .icon{ font-size:1.1em; line-height:1; }
+#flexRichAnn.top{ top:14px; }
+#flexRichAnn.center{ top:50%; transform:translate(-50%,-50%); }
+#flexRichAnn.bottom{ bottom:14px; }
+#flexRichAnn.toast{ min-width: 320px; }
+#flexRichAnn.banner{ width:100%; }
+#flexRichAnn.fade{ animation: fra-fade .25s ease-out both; }
+#flexRichAnn.slide{ animation: fra-slide .28s ease-out both; }
+#flexRichAnn.pop{ animation: fra-pop .2s ease-out both; }
+@keyframes fra-fade{ from{ opacity:0; transform: translateX(-50%) translateY(4px);} to{opacity:1; transform: translateX(-50%) translateY(0);} }
+@keyframes fra-slide{ from{ opacity:0; transform: translateX(-50%) translateY(-12px);} to{opacity:1; transform: translateX(-50%) translateY(0);} }
+@keyframes fra-pop{ from{ opacity:0; transform: translateX(-50%) scale(.98);} to{opacity:1; transform: translateX(-50%) scale(1);} }
+
+/* Hide legacy banner while advanced is visible */
+body.flex-hide-legacy-banner #adminMsgBanner{ display:none !important; }
+/* === /Injected === */
+
+</style>
 </head>
 <body>
 <!-- Rising Tides XP UI -->
@@ -10813,6 +10849,186 @@ function MaxLevelAnimation(){
     }catch(_){} }); }catch(_){}
   }catch(_){/* No-op to avoid breaking the game if anything here fails */}
 })();
+</script>
+
+
+
+<script>
+// === Injected: Advanced Announcement UI wire-up (v2.1) ===
+(function(){
+  // Fonts for nicer headings if available
+  const g1=document.createElement('link'); g1.rel='preconnect'; g1.href='https://fonts.googleapis.com';
+  const g2=document.createElement('link'); g2.rel='stylesheet';
+  g2.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Poppins:wght@600;700;800&family=Bebas+Neue&display=swap';
+  document.head.appendChild(g1); document.head.appendChild(g2);
+
+  // Element
+  function ensureEl(){
+    let el = document.getElementById('flexRichAnn');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'flexRichAnn';
+    el.innerHTML = '<div class="inner"><span class="icon"></span><span class="text"></span></div>';
+    document.body.appendChild(el);
+    return el;
+  }
+
+  // Gradient presets
+  const GRADS = {
+    blueGold: ['#3b82f6','#f59e0b'],
+    ocean: ['#2563eb','#06b6d4'],
+    sunset: ['#f97316','#f43f5e'],
+    grape: ['#7c3aed','#ec4899'],
+    emerald: ['#10b981','#22d3ee'],
+    steel: ['#64748b','#0f172a']
+  };
+
+  function applyShadow(el, type){
+    const map = {
+      none: 'none',
+      soft: '0 12px 28px rgba(0,0,0,.35)',
+      hard: '0 16px 0 rgba(0,0,0,.25)',
+      glow: '0 0 36px rgba(255,255,255,.25), 0 12px 28px rgba(0,0,0,.35)'
+    };
+    el.style.boxShadow = map[type] || map.soft;
+  }
+
+  function setBG(el, ui){
+    // Prefer gradient preset if provided
+    if (ui.gradient && ui.gradient !== 'none' && GRADS[ui.gradient]){
+      const [a,b] = GRADS[ui.gradient];
+      el.style.background = `linear-gradient(90deg, ${a}, ${b})`;
+      return;
+    }
+    // solid color fallback
+    el.style.background = ui.bg || '#111';
+  }
+
+  function showAdvanced(msg){
+    if (!msg || !msg.ui) return false;
+    const ui = msg.ui || {};
+    const el = ensureEl();
+    document.body.classList.add('flex-hide-legacy-banner');
+
+    // Variant + position
+    el.className = '';
+    el.classList.add(ui.variant||'toast');
+    el.classList.add(ui.position||'top');
+    el.classList.add('show');
+    // animation
+    el.classList.remove('fade','slide','pop');
+    if (ui.anim && ui.anim !== 'none') el.classList.add(ui.anim);
+
+    // Styles
+    el.style.borderRadius = (ui.radius!=null?ui.radius:14) + 'px';
+    el.style.padding = (ui.padding!=null?ui.padding:14) + 'px';
+    setBG(el, ui);
+    applyShadow(el, ui.shadow||'soft');
+
+    const inner = el.querySelector('.inner');
+    inner.style.fontFamily = ui.fontFamily || "'Inter',system-ui,sans-serif";
+    inner.style.fontWeight = String(ui.fontWeight||800);
+    inner.style.fontSize = (ui.fontSize!=null?ui.fontSize:28) + 'px';
+    inner.style.textTransform = (ui.case==='upper') ? 'uppercase' : 'none';
+    inner.style.letterSpacing = (ui.letterSpacing!=null?ui.letterSpacing:0) + 'px';
+    inner.style.lineHeight = String(ui.lineHeight || 1.15);
+    inner.style.textAlign = ui.align || 'center';
+    inner.style.color = ui.color || '#fff';
+    inner.style.webkitTextStroke = (ui.strokePx? (ui.strokePx+'px rgba(0,0,0,.65)') : '0');
+
+    const icon = el.querySelector('.icon');
+    const text = el.querySelector('.text');
+    icon.textContent = ui.icon || '';
+    text.textContent = String(msg.text||'');
+
+    const ms = Math.max(1500, Math.min(30000, Math.round((ui.duration!=null?ui.duration:6)*1000)));
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(()=>{
+      el.classList.remove('show');
+      document.body.classList.remove('flex-hide-legacy-banner');
+    }, ms);
+    return true;
+  }
+
+  // --- Poll the same server feed the legacy banner uses, but only consume messages with `ui` ---
+  let uiLastG = Number(localStorage.getItem('flex_ui_lastG')||0);
+  let uiLastU = Number(localStorage.getItem('flex_ui_lastU')||0);
+  let USER_ID = (window.USER_ID || localStorage.getItem('USER_ID') || 'guest');
+
+  async function fetchJson(u){
+    try{ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) return null; return await r.json(); }
+    catch(e){ return null; }
+  }
+  async function prime(){
+    try{
+      const g0 = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__broadcast')}&t=${Date.now()}`) || {};
+      const gl = Array.isArray(g0.list) ? g0.list : [];
+      if (gl.length) uiLastG = Math.max(0, ...gl.map(m=>m&&m.ts||0));
+      const u0 = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__inbox_'+USER_ID)}&t=${Date.now()}`) || {};
+      const ul = Array.isArray(u0.list) ? u0.list : [];
+      if (ul.length) uiLastU = Math.max(0, ...ul.map(m=>m&&m.ts||0));
+      localStorage.setItem('flex_ui_lastG', String(uiLastG||0));
+      localStorage.setItem('flex_ui_lastU', String(uiLastU||0));
+    }catch(e){/*no-op*/}
+  }
+
+  async function poll(){
+    try{
+      const g = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__broadcast')}&t=${Date.now()}`) || {};
+      const gl = Array.isArray(g.list) ? g.list : [];
+      for (const m of gl){
+        if ((m.ts||0) > uiLastG){
+          if (m && m.ui && showAdvanced(m)){
+            // mark also for the legacy poller to avoid duplicate
+            localStorage.setItem('flex_msg_lastG', String(m.ts||0));
+          }
+          uiLastG = Math.max(uiLastG, m.ts||0);
+        }
+      }
+      const u = await fetchJson(`${SERVER_BASE}/rawsave?user=${encodeURIComponent('__inbox_'+USER_ID)}&t=${Date.now()}`) || {};
+      const ul = Array.isArray(u.list) ? u.list : [];
+      for (const m of ul){
+        if ((m.ts||0) > uiLastU){
+          if (m && m.ui && showAdvanced(m)){
+            localStorage.setItem('flex_msg_lastU', String(m.ts||0));
+          }
+          uiLastU = Math.max(uiLastU, m.ts||0);
+        }
+      }
+      localStorage.setItem('flex_ui_lastG', String(uiLastG||0));
+      localStorage.setItem('flex_ui_lastU', String(uiLastU||0));
+    }catch(e){/*no-op*/}
+  }
+
+  // BroadcastChannel for instant local test
+  try{
+    if ('BroadcastChannel' in window){
+      const ch = new BroadcastChannel('flex:announcements:v2');
+      ch.addEventListener('message', (ev)=>{
+        const m = ev.data||{};
+        if (m && m.ui) showAdvanced(m);
+      });
+    }
+  }catch(e){/*no-op*/}
+
+  // localStorage fallback trigger
+  window.addEventListener('storage', (ev)=>{
+    if (ev && ev.key === 'flex:announcement:v2' && ev.newValue){
+      try{ const obj = JSON.parse(ev.newValue); if (obj && obj.msg) showAdvanced(obj.msg); }catch(e){}
+    }
+  });
+
+  // Boot
+  (async function(){
+    await prime();
+    poll();
+    setInterval(poll, 2500);
+  })();
+
+  // Expose for debugging
+  window.__showAdvancedAnnouncement = showAdvanced;
+})();
+// === /Injected ===
 </script>
 
 </body>
