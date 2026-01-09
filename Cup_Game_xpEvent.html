@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One Try Cup Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --primary-blue: #3b82f6;
+            --white: #ffffff;
+            --cup-width: 100px;
+            --cup-height: 120px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at center, #1e3a8a 0%, #0f172a 100%);
+            color: var(--white);
+            font-family: 'Bungee', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-shadow: 4px 4px 0px var(--primary-blue);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        #status {
+            font-size: 1.5rem;
+            color: #93c5fd;
+            margin-bottom: 50px;
+            min-height: 1.5em;
+            text-align: center;
+        }
+
+        .game-area {
+            position: relative;
+            width: 420px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* The Ball */
+        .ball {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle at 30% 30%, #ffffff, #3b82f6);
+            border-radius: 50%;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+            z-index: 1;
+            transition: opacity 0.3s;
+        }
+
+        /* The Cups */
+        .cup-container {
+            position: absolute;
+            bottom: 20px;
+            width: var(--cup-width);
+            height: var(--cup-height);
+            cursor: default; /* Not clickable by default */
+            z-index: 10;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            left: 50%; 
+            margin-left: -50px;
+        }
+
+        .cup-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0px 10px 10px rgba(0,0,0,0.5));
+            transition: transform 0.4s ease;
+        }
+
+        /* Hover effect only when interactive */
+        .cup-container.interactive {
+            cursor: pointer;
+        }
+        .cup-container.interactive:hover .cup-svg {
+            transform: translateY(-15px);
+        }
+
+        /* Lifted State (revealing contents) */
+        .cup-container.lifted .cup-svg {
+            transform: translateY(-70px);
+        }
+
+        /* Button Styling */
+        button {
+            margin-top: 60px;
+            padding: 15px 40px;
+            font-family: 'Bungee', cursive;
+            font-size: 1.2rem;
+            background-color: var(--white);
+            color: var(--bg-color);
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 6px 6px 0px var(--primary-blue);
+        }
+
+        button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 4px 4px 0px var(--primary-blue);
+        }
+
+        /* Utility class to hide elements */
+        .hidden {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>ONE TRY.</h1>
+    <div id="status">Keep your eye on the ball...</div>
+
+    <div class="game-area">
+        <div class="ball" id="ball"></div>
+
+        <div class="cup-container lifted" id="cup-0" onclick="handleCupClick(0)">
+            <svg class="cup-svg" viewBox="0 0 100 120">
+                <path d="M20 120 L5 20 L95 20 L80 120 Z" fill="white"/>
+                <rect x="5" y="10" width="90" height="10" rx="2" fill="white"/>
+                <path d="M12 70 L88 70 L86 85 L14 85 Z" fill="#3b82f6"/>
+            </svg>
+        </div>
+
+        <div class="cup-container lifted" id="cup-1" onclick="handleCupClick(1)">
+            <svg class="cup-svg" viewBox="0 0 100 120">
+                <path d="M20 120 L5 20 L95 20 L80 120 Z" fill="white"/>
+                <rect x="5" y="10" width="90" height="10" rx="2" fill="white"/>
+                <path d="M12 70 L88 70 L86 85 L14 85 Z" fill="#3b82f6"/>
+            </svg>
+        </div>
+
+        <div class="cup-container lifted" id="cup-2" onclick="handleCupClick(2)">
+            <svg class="cup-svg" viewBox="0 0 100 120">
+                <path d="M20 120 L5 20 L95 20 L80 120 Z" fill="white"/>
+                <rect x="5" y="10" width="90" height="10" rx="2" fill="white"/>
+                <path d="M12 70 L88 70 L86 85 L14 85 Z" fill="#3b82f6"/>
+            </svg>
+        </div>
+    </div>
+
+    <button id="startBtn" onclick="startGame()">START GAME</button>
+
+    <script>
+        const SHUFFLE_SPEED = 350;
+        const SHUFFLE_COUNT = 12;
+        const POSITIONS = [-140, 0, 140]; // Left, Center, Right (pixels)
+
+        // Game State
+        let ballLocation = 1; // Start in Center (index 1)
+        let cupOrder = [0, 1, 2]; // Cup IDs: 0, 1, 2
+        let isPlaying = false;
+        let isShuffling = false;
+
+        const ballEl = document.getElementById('ball');
+        const cups = [
+            document.getElementById('cup-0'),
+            document.getElementById('cup-1'),
+            document.getElementById('cup-2')
+        ];
+        const statusEl = document.getElementById('status');
+        const btnEl = document.getElementById('startBtn');
+
+        // Initial Layout
+        function init() {
+            updateCupPositions();
+            updateBallPosition();
+        }
+
+        function updateCupPositions() {
+            for(let i=0; i<3; i++) {
+                const cupId = cupOrder[i];
+                cups[cupId].style.transform = `translateX(${POSITIONS[i]}px)`;
+            }
+        }
+
+        function updateBallPosition() {
+            // Move ball to wherever 'ballLocation' points to
+            const xPos = POSITIONS[ballLocation];
+            ballEl.style.transform = `translateX(calc(-50% + ${xPos}px))`;
+        }
+
+        async function startGame() {
+            if(isShuffling) return;
+            
+            // 1. Remove Button (One try only, no restart unless refresh)
+            btnEl.style.display = 'none';
+            statusEl.innerText = "Here we go...";
+            
+            // 2. Lower the cups (Animation Step 1)
+            cups.forEach(c => c.classList.remove('lifted'));
+
+            // Wait for cups to drop fully
+            await wait(600);
+
+            // 3. Hide ball (opacity 0) so we don't see it sliding under cups during shuffle
+            ballEl.style.opacity = '0';
+            
+            isShuffling = true;
+            statusEl.innerText = "Shuffling...";
+
+            let moves = 0;
+            let lastSwap = -1;
+
+            const shuffleInterval = setInterval(() => {
+                if(moves >= SHUFFLE_COUNT) {
+                    clearInterval(shuffleInterval);
+                    finishShuffle();
+                    return;
+                }
+
+                // Random Swap Logic
+                let posA = Math.floor(Math.random() * 3);
+                let posB = Math.floor(Math.random() * 3);
+                while (posA === posB || (posA + posB === lastSwap)) {
+                    posB = Math.floor(Math.random() * 3);
+                }
+                
+                swapPositions(posA, posB);
+                moves++;
+            }, SHUFFLE_SPEED);
+        }
+
+        function swapPositions(indexA, indexB) {
+            // Swap Cup IDs
+            const tempCup = cupOrder[indexA];
+            cupOrder[indexA] = cupOrder[indexB];
+            cupOrder[indexB] = tempCup;
+
+            // Update Ball Logic
+            if (ballLocation === indexA) ballLocation = indexB;
+            else if (ballLocation === indexB) ballLocation = indexA;
+
+            updateCupPositions();
+        }
+
+        function finishShuffle() {
+            isShuffling = false;
+            isPlaying = true;
+            statusEl.innerText = "Pick a cup. One try only.";
+            
+            // Move the hidden ball to its final destination
+            updateBallPosition();
+
+            // Enable clicks
+            cups.forEach(c => c.classList.add('interactive'));
+        }
+
+        function handleCupClick(id){
+            // Integration: report result to parent after outcome is shown
+        
+            if (!isPlaying || isShuffling) return;
+
+            isPlaying = false; // Stop game immediately
+            
+            // Disable interactions visually
+            cups.forEach(c => c.classList.remove('interactive'));
+
+            const currentPosIndex = cupOrder.indexOf(id);
+
+            // Reveal the clicked cup
+            cups[id].classList.add('lifted');
+
+            if (currentPosIndex === ballLocation) {
+                // WIN
+        
+                // --- WIN ---
+                ballEl.style.opacity = '1';
+                statusEl.innerHTML = "<span style='color:#4ade80; font-size:2rem'>YOU FOUND IT!</span>";
+                // give a beat for the reveal then notify parent (if embedded)
+                setTimeout(()=>{
+                    try{ window.parent && window.parent.postMessage({ type:'cupshuffle:result', result:'win' }, '*'); }catch(_){}
+                }, 900);
+            } else {
+                // --- LOSE ---
+                statusEl.innerHTML = "<span style='color:#f87171; font-size:2rem'>GAME OVER</span>";
+                
+                // Wait a split second, then reveal where the ball actually was
+                setTimeout(() => {
+                    // Find the cup ID that is currently at the ballLocation
+                    const correctCupId = cupOrder[ballLocation];
+                    
+                    // Reveal the ball
+                    ballEl.style.opacity = '1';
+                    // Lift the correct cup
+                    cups[correctCupId].classList.add('lifted');
+                }, 500);
+                // after we reveal where the ball was, notify parent (if embedded)
+                setTimeout(()=>{
+                    try{ window.parent && window.parent.postMessage({ type:'cupshuffle:result', result:'lose' }, '*'); }catch(_){}
+                }, 1200);
+            }
+        }
+
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
