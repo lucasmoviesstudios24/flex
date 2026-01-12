@@ -1213,33 +1213,6 @@ body.sandy-pedestals .pedestal{
   color: #111 !important;
   border-radius: 12px;
 }
-
-
-/* === Cup Shuffle overlay (integrated XP event) === */
-#cupshuffle-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 999999999; /* big so it floats above everything */
-}
-#cupshuffle-overlay .cup-wrap {
-  width: min(95vw, 560px);
-  height: min(90vh, 520px);
-  background: #0f172a; /* fallback in case iframe fails */
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.45);
-  border: 2px solid rgba(255,255,255,.1);
-}
-#cupshuffle-overlay iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
-}
 </style>
 
     <!-- Disable Winter Gifts and Stranger Things events -->
@@ -2421,13 +2394,6 @@ body.flex-hide-legacy-banner #adminMsgBanner{ display:none !important; }
   <div class="timer">Time left: <span id="rtxp-eta">60</span>s</div>
 </div>
 <div id="rtxp-layer"></div>
-<!-- Cup Shuffle Overlay (XP Event) -->
-<div id="cupshuffle-overlay" aria-modal="true" role="dialog">
-  <div class="cup-wrap">
-    <iframe src="Cup_Game_xpEvent.html" title="Cup Shuffle"></iframe>
-  </div>
-</div>
-
 <div class="event-row" id="eventRow"></div>
 <div class="game">
 <div class="topbar">
@@ -10375,44 +10341,10 @@ window.FLEX_PETS = window.FLEX_PETS || [];
   }
 
   // Kickoff: schedule an event every 10 minutes (first one after 10 minutes)
+  setInterval(()=> { if(!active) { startEvent(); } }, COOLDOWN_MS);
+  window.__rtxpStartNow = startEvent; window.__rtxpStopNow = stopEvent;
+
   
-  // === Cup Shuffle as an XP Event (50 XP on win) ===
-  let csActive = false;
-  function startCupShuffleEvent(){
-    try{
-      if (csActive) return;
-      csActive = true;
-      // show overlay
-      const ov = document.getElementById('cupshuffle-overlay');
-      if (ov) ov.style.display = 'flex';
-
-      // message handler from iframe
-      function onCupMsg(e){
-        try{
-          const d = e && e.data;
-          if (!d || d.type !== 'cupshuffle:result') return;
-          // award on win
-          if (String(d.result) === 'win'){
-            try{ getAddXP()(50, 'cupshuffle'); }catch(_){}
-          }
-        }catch(_){}
-        // cleanup & hide overlay
-        try{
-          window.removeEventListener('message', onCupMsg);
-        }catch(_){}
-        try{
-          const ov2 = document.getElementById('cupshuffle-overlay');
-          if (ov2) ov2.style.display = 'none';
-        }catch(_){}
-        csActive = false;
-      }
-      window.addEventListener('message', onCupMsg);
-    }catch(_){ csActive = false; }
-  }
-setInterval(()=> { if(!active && !csActive) { (Math.random() < 0.5 ? startEvent : startCupShuffleEvent)(); } }, COOLDOWN_MS);
-  // Optional: if devs want an immediate first event when opening debug console:
-  window.__rtxpStartNow = startEvent; window.__rtxpStopNow = stopEvent; window.__startCupShuffleNow = startCupShuffleEvent;
-
   // Responsive cleanup
   window.addEventListener('blur', ()=>{
     // if tab hidden long enough to surpass duration, end event
