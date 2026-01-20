@@ -3613,6 +3613,8 @@ async function save(){
 }
 
 async function load() {
+  try{ window.__isFirstTimePlayer = false; }catch(e){}
+
   // Local backup candidate (mirrors how achievements/backgrounds persist)
   let __localCandidate = null;
   try {
@@ -3708,6 +3710,8 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     __ts: Date.now()
   };
   dat = fresh;
+  try{ window.__isFirstTimePlayer = true; }catch(e){}
+
   try {
     localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ ts: fresh.__ts, data: fresh }));
   } catch(e) {}
@@ -11888,6 +11892,123 @@ function checkUnlocks(){
       }catch(e){}
     };
   }catch(e){}
+})();
+</script>
+
+<!-- v2.10 Update Notes (Flexwood) - show once for returning players -->
+<style id="v210UpdateNotesStyle">
+  #v210UpdateNotesOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2147483600;display:none;align-items:center;justify-content:center;}
+  #v210UpdateNotesOverlay.show{display:flex;}
+  #v210UpdateNotes{max-width:min(720px,92vw);background:#111;color:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;font-family:'Lexend',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+  #v210UpdateNotes header{padding:18px 20px;background:linear-gradient(135deg,#c62828,#d84315);display:flex;align-items:center;gap:12px;}
+  #v210UpdateNotes header img{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));}
+  #v210UpdateNotes header h2{margin:0;font-size:20px;letter-spacing:.4px;font-weight:800;}
+  #v210UpdateNotes .body{padding:18px 20px;line-height:1.45;font-size:15px;}
+  #v210UpdateNotes .body ul{margin:10px 0 0 0;padding-left:18px;}
+  #v210UpdateNotes .body li{margin:6px 0;}
+  #v210UpdateNotes footer{display:flex;justify-content:flex-end;gap:12px;padding:16px 20px;background:#0c0c0c;}
+  #v210UpdateNotes button{padding:10px 16px;border:0;border-radius:10px;font-weight:700;cursor:pointer}
+  #v210UpdateNotes .btn-close{background:#fff;color:#111}
+</style>
+<script>
+(function(){
+  // Ensure only added once
+  if(window.__v210UpdateNotesInstalled) return; window.__v210UpdateNotesInstalled = true;
+
+  const VERSION_TAG = 'v2_10'; // used in localStorage key
+  function keyFor(user){ return 'flex_patchnotes_seen__' + VERSION_TAG + '__' + (user || 'nouser'); }
+
+  function buildOverlay(){
+    const ov = document.createElement('div');
+    ov.id = 'v210UpdateNotesOverlay';
+    ov.innerHTML = [
+      '<div id="v210UpdateNotes">',
+        '<header>',
+          '<img alt="Flexwood" src="icons/flexwood_icon.png"/>',
+          '<h2>Flexwood Update — Flex_v2.10</h2>',
+        '</header>',
+        '<div class="body">',
+          '<p>Welcome back! Here\'s what\'s new:</p>',
+          '<ul>',
+            '<li>Flexwood event now Live &amp; ready (6 slots incl. Clapper Board, Hollywood Sign, Flexwood Background).</li>',
+            '<li>New Hollywood morph adds +$35,000 EPS when applied to an item.</li>',
+            '<li>Flexwood Background &amp; Red Carpet Pedestal.</li>',
+            '<li>General stability &amp; saving hardening.</li>',
+          '</ul>',
+        '</div>',
+        '<footer>',
+          '<button class="btn-close" id="v210Close">Close</button>',
+        '</footer>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(ov);
+    ov.addEventListener('click', (e)=>{ if(e.target === ov){ hideAndRemember(); } });
+    document.getElementById('v210Close').addEventListener('click', hideAndRemember);
+    document.addEventListener('keydown', function esc(e){ if(e.key === 'Escape'){ hideAndRemember(); }});
+    return ov;
+  }
+
+  function showFor(user){
+    const ov = document.getElementById('v210UpdateNotesOverlay') || buildOverlay();
+    ov.classList.add('show');
+    // Prevent background scroll while open
+    try{ document.documentElement.style.overflow = 'hidden'; }catch(_){}
+  }
+  function hideAndRemember(){
+    try{ document.getElementById('v210UpdateNotesOverlay')?.classList.remove('show'); }catch(_){}
+    try{ document.documentElement.style.overflow = ''; }catch(_){}
+    try{
+      const u = (window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid') || 'nouser');
+      localStorage.setItem(keyFor(u), '1');
+    }catch(_){}
+  }
+
+  function maybeShow(){
+    try{
+      const user = (window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid') || '');
+      if(!user) return; // not logged in yet
+      // Skip if player is brand new this session
+      if(window.__isFirstTimePlayer === true) return;
+      const k = keyFor(user);
+      if(localStorage.getItem(k) === '1') return; // already dismissed
+      showFor(user);
+    }catch(_){}
+  }
+
+  // Wait until the game has finished loading: USER_ID + __loadComplete
+  
+  function readyNow(){
+    try{
+      const hasUser = !!(window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid'));
+      const loaded = (typeof window.__loadComplete === 'undefined') ? true : !!window.__loadComplete;
+      return hasUser && loaded;
+    }catch(_){ return false; }
+  }
+
+  function boot(){ 
+    // Try repeatedly until ready, then attempt once.
+    const tick = setInterval(()=>{
+      if(readyNow()){
+        clearInterval(tick);
+        setTimeout(maybeShow, 250);
+      }
+    }, 250);
+
+    // Safety: after 60s, if user exists but load flag never flips, still try once.
+    setTimeout(()=>{
+      try{
+        if(!readyNow() && (window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid'))){
+          maybeShow();
+        }
+      }catch(_){}
+    }, 60000);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot, { once:true });
+  }else{
+    boot();
+  }
 })();
 </script>
 </body>
