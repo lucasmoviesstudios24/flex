@@ -2076,7 +2076,7 @@ body.snowy-pedestals .pedestal::after{
 }
 /* Claimed state: red, disabled look */
 .flex-reward .claim.claimed{  background: linear-gradient(180deg,#ff6b6b,#e63946);  color:#fff; cursor:default; box-shadow:0 0 0 rgba(0,0,0,0);}
-.flex-reward .claim:disabled{ cursor:default; }
+.flex-reward .claim:disabled{ cursor:default; pointer-events:none; }
 
 .flex-reward.locked{ opacity:.6; filter:grayscale(0.1) saturate(.7); }
 .flex-row.row2 .flex-reward{ background: linear-gradient(180deg,#ff9da0,#ff7aa6); }
@@ -12696,6 +12696,9 @@ try{
   }
 
   function claimReward(r){
+    // Guard against auto-click or stale UI: only allow if eligible
+    try { if (typeof canClaim === 'function') { if (!canClaim(r)) { return; } } } catch (e) { /* no-op */ }
+
     // mark first to avoid double-claim race
     state.flexPass.claimed['L'+r.level] = true;
     try{ save(); }catch(e){}
@@ -12744,7 +12747,10 @@ if(__claimed){
 
       b.addEventListener('click', ()=>{
         try{ if(r && r.type==='money'){ var __imgEl = el && el.querySelector ? el.querySelector('.img img') : null; if(__imgEl){ __imgEl.classList.add('money-spin'); setTimeout(function(){ __imgEl.classList.remove('money-spin'); }, 1200); }} }catch(_){ } el.classList.add('crate-pop');
-        setTimeout(()=>{
+        
+          // Hard gate: if not eligible, do nothing (prevents auto-click exploits)
+          try{ if(typeof canClaim==='function' && !canClaim(r)){ el.classList.remove('crate-pop'); return; } }catch(_){ el.classList.remove('crate-pop'); return; }
+setTimeout(()=>{
           claimReward(r);
         }, 500);
       });
