@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Baseball Hitting Game</title>
+  <style>
+    :root {
+      --bg: #0b1830;
+      --panel: rgba(7, 20, 42, 0.82);
+      --line: rgba(255,255,255,0.16);
+      --text: #f4f8ff;
+      --accent: #ffd45e;
+      --good: #67dd72;
+      --warn: #ffb64a;
+      --bad: #f16868;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #173867 0%, #0d1e3c 45%, #081225 100%);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+
+    #wrap {
+      position: relative;
+      width: min(1120px, 100vw);
+      aspect-ratio: 1024 / 683;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 22px 50px rgba(0,0,0,0.35);
+      background: #16253f;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #8dcdf6;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .topbar {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 14px;
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+      backdrop-filter: blur(4px);
+    }
+
+    .scorebox {
+      display: flex;
+      gap: 18px;
+      padding: 12px 16px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: clamp(12px, 1.4vw, 15px);
+      min-width: min(780px, calc(100% - 32px));
+    }
+
+    .scorebox b {
+      color: var(--accent);
+      font-size: 1.2em;
+    }
+
+    .result {
+      position: absolute;
+      left: 50%;
+      top: 84px;
+      transform: translateX(-50%);
+      min-width: min(420px, calc(100% - 32px));
+      text-align: center;
+      padding: 14px 18px;
+      font-size: clamp(20px, 2.6vw, 34px);
+      font-weight: 1000;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(8, 21, 42, 0.78);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      text-shadow: 0 6px 18px rgba(0,0,0,0.28);
+    }
+
+    .result.good { color: var(--good); }
+    .result.warn { color: var(--warn); }
+    .result.bad { color: var(--bad); }
+
+    
+      display: none;
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      width: min(760px, calc(100% - 28px));
+      text-align: center;
+      padding: 12px 16px;
+      font-size: clamp(13px, 1.5vw, 16px);
+      line-height: 1.35;
+      background: rgba(8, 21, 42, 0.76);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="1024" height="683"></canvas>
+
+    <div class="hud">
+      <div class="topbar">
+        <div class="card scorebox">
+          <span>1B <b id="singleCount">0</b></span>
+          <span>2B <b id="doubleCount">0</b></span>
+          <span>3B <b id="tripleCount">0</b></span>
+          <span>HR <b id="hrCount">0</b></span>
+          <span>Strikes Left <b id="strikesLeft">3</b></span>
+        </div>
+      </div>
+
+      <div id="result" class="card result warn">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const ui = {
+      singleCount: document.getElementById('singleCount'),
+      doubleCount: document.getElementById('doubleCount'),
+      tripleCount: document.getElementById('tripleCount'),
+      hrCount: document.getElementById('hrCount'),
+      strikesLeft: document.getElementById('strikesLeft'),
+      result: document.getElementById('result')
+    };
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+    const game = {
+      started: false,
+      loading: true,
+      over: false,
+      nextPitchAt: 0,
+      gameStartTime: 0,
+      gameDuration: 60000,
+      batterFrame: 1,
+      batterSwingResetAt: 0,
+      pitch: null,
+      hitBall: null,
+      stats: {
+        strikesUsed: 0,
+        single: 0,
+        double: 0,
+        triple: 0,
+        hr: 0
+      }
+    };
+
+    const positions = {
+      batter: { x: W * 0.66, y: H * 0.93, height: H * 0.42 },
+      pitcher: { x: W * 0.50, y: H * 0.57, height: H * 0.186 },
+      ballStart: { x: W * 0.50, y: H * 0.50 },
+      ballContact: { x: W * 0.50, y: H * 0.735 },
+      ballEnd: { x: W * 0.50, y: H * 0.94 }
+    };
+
+    const assets = {};
+
+    function setResult(text, tone = 'warn') {
+      ui.result.textContent = text;
+      ui.result.className = `card result ${tone}`;
+    }
+
+    function updateStatsUI() {
+      ui.singleCount.textContent = game.stats.single;
+      ui.doubleCount.textContent = game.stats.double;
+      ui.tripleCount.textContent = game.stats.triple;
+      ui.hrCount.textContent = game.stats.hr;
+      ui.strikesLeft.textContent = Math.max(0, 3 - game.stats.strikesUsed);
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Failed to load ${src}`));
+        img.src = src;
+      });
+    }
+
+    function trimCanvas(source) {
+      const sctx = source.getContext('2d');
+      const { width, height } = source;
+      const data = sctx.getImageData(0, 0, width, height).data;
+      let minX = width, minY = height, maxX = -1, maxY = -1;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          if (data[i + 3] > 8) {
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (maxX === -1) return source;
+
+      const out = document.createElement('canvas');
+      out.width = maxX - minX + 1;
+      out.height = maxY - minY + 1;
+      const octx = out.getContext('2d');
+      octx.drawImage(source, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+      return out;
+    }
+
+    function stripBlackBackground(img) {
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.width;
+        c.height = img.height;
+        const cctx = c.getContext('2d');
+        cctx.drawImage(img, 0, 0);
+
+        const imageData = cctx.getImageData(0, 0, c.width, c.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const a = data[i + 3];
+          if (a === 0) continue;
+          if (r < 12 && g < 12 && b < 12) data[i + 3] = 0;
+        }
+
+        cctx.putImageData(imageData, 0, 0);
+        return trimCanvas(c);
+      } catch (err) {
+        console.warn('Background stripping skipped for', img.src, err);
+        return img;
+      }
+    }
+
+    async function loadAssets() {
+      const [bg, batter1, batter2, pitcher1, pitcher2] = await Promise.all([
+        loadImage('images/baseball_bg.png'),
+        loadImage('images/batter1.png'),
+        loadImage('images/batter2.png'),
+        loadImage('images/pitcher1.png'),
+        loadImage('images/pitcher2.png')
+      ]);
+
+      assets.bg = bg;
+      assets.batter1 = stripBlackBackground(batter1);
+      assets.batter2 = stripBlackBackground(batter2);
+      assets.pitcher1 = stripBlackBackground(pitcher1);
+      assets.pitcher2 = stripBlackBackground(pitcher2);
+    }
+
+    function drawSprite(sprite, anchorX, anchorY, targetHeight) {
+      const ratio = sprite.width / sprite.height;
+      const targetWidth = targetHeight * ratio;
+      const x = anchorX - targetWidth / 2;
+      const y = anchorY - targetHeight;
+      ctx.drawImage(sprite, x, y, targetWidth, targetHeight);
+    }
+
+    function drawBackground() {
+      ctx.drawImage(assets.bg, 0, 0, W, H);
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function easeOutQuad(t) {
+      return 1 - Math.pow(1 - t, 2);
+    }
+
+    function easeInQuad(t) {
+      return t * t;
+    }
+
+    function pitchProfiles() {
+      return [
+        {
+          name: 'Fastball',
+          releaseDelay: 250,
+          totalTime: 2150,
+          contactT: 0.31,
+          path(progress) {
+            if (progress <= this.contactT) {
+              const u = progress / this.contactT;
+              return {
+                x: positions.ballStart.x,
+                y: lerp(positions.ballStart.y, positions.ballContact.y, u)
+              };
+            }
+            const u = (progress - this.contactT) / (1 - this.contactT);
+            return {
+              x: positions.ballContact.x,
+              y: lerp(positions.ballContact.y, positions.ballEnd.y, Math.pow(u, 0.92))
+            };
+          }
+        },
+        {
+          name: 'Slow Pitch',
+          releaseDelay: 340,
+          totalTime: 3150,
+          contactT: 0.34,
+          path(progress) {
+            if (progress <= this.contactT) {
+              const u = progress / this.contactT;
+              const drift = Math.sin(u * Math.PI) * (W * 0.02);
+              return {
+                x: positions.ballStart.x + drift,
+                y: lerp(positions.ballStart.y, positions.ballContact.y, u)
+              };
+            }
+            const u = (progress - this.contactT) / (1 - this.contactT);
+            const drift = Math.sin(u * Math.PI) * (W * -0.012);
+            return {
+              x: positions.ballContact.x + drift,
+              y: lerp(positions.ballContact.y, positions.ballEnd.y, Math.pow(u, 0.92))
+            };
+          }
+        },
+        {
+          name: 'Curveball',
+          releaseDelay: 300,
+          totalTime: 2600,
+          contactT: 0.325,
+          path(progress) {
+            if (progress <= this.contactT) {
+              const u = progress / this.contactT;
+              const curve = Math.sin(u * Math.PI) * (W * 0.085);
+              return {
+                x: positions.ballStart.x + curve,
+                y: lerp(positions.ballStart.y, positions.ballContact.y, u)
+              };
+            }
+            const u = (progress - this.contactT) / (1 - this.contactT);
+            const tail = Math.sin(u * Math.PI) * (W * -0.03);
+            return {
+              x: positions.ballContact.x + tail,
+              y: lerp(positions.ballContact.y, positions.ballEnd.y, Math.pow(u, 0.92))
+            };
+          }
+        },
+        {
+          name: 'Drop Pitch',
+          releaseDelay: 320,
+          totalTime: 2750,
+          contactT: 0.335,
+          path(progress) {
+            if (progress <= this.contactT) {
+              const u = progress / this.contactT;
+              const hump = Math.sin(u * Math.PI) * (H * 0.08);
+              return {
+                x: positions.ballStart.x,
+                y: lerp(positions.ballStart.y, positions.ballContact.y, u) - hump
+              };
+            }
+            const u = (progress - this.contactT) / (1 - this.contactT);
+            return {
+              x: positions.ballContact.x,
+              y: lerp(positions.ballContact.y, positions.ballEnd.y, Math.pow(u, 0.92))
+            };
+          }
+        }
+      ];
+    }
+
+    function choosePitchProfile() {
+      const profiles = pitchProfiles();
+      return profiles[Math.floor(Math.random() * profiles.length)];
+    }
+
+    function startGame(now) {
+      game.started = true;
+      game.over = false;
+      game.gameStartTime = now;
+      game.nextPitchAt = now + 550;
+      setResult('Swing as it enters the zone!', 'warn');
+    }
+
+    function endGame(message) {
+      if (game.over) return;
+      game.over = true;
+      game.pitch = null;
+      game.hitBall = null;
+      game.nextPitchAt = Infinity;
+      setResult(message, 'bad');
+    }
+
+    function beginPitch(now) {
+      const profile = choosePitchProfile();
+      game.pitch = {
+        startTime: now,
+        releaseDelay: profile.releaseDelay,
+        totalTime: profile.totalTime,
+        contactT: profile.contactT,
+        profile,
+        swung: false,
+        resolved: false,
+        resultGiven: false
+      };
+      setResult(profile.name + ' coming...', 'warn');
+    }
+
+    function scheduleNextPitch(now, delay = 950) {
+      if (game.over) return;
+      game.nextPitchAt = now + delay;
+      game.pitch = null;
+    }
+
+    function getBallFlight(now) {
+      if (!game.pitch) return null;
+      const elapsed = now - game.pitch.startTime;
+      if (elapsed < game.pitch.releaseDelay) return null;
+
+      const progress = Math.min(1, (elapsed - game.pitch.releaseDelay) / (game.pitch.totalTime - game.pitch.releaseDelay));
+      const point = game.pitch.profile.path(progress);
+      const radius = 5 + 8 * progress;
+      return {
+        progress,
+        t: progress,
+        contactT: game.pitch.contactT,
+        x: point.x,
+        y: point.y,
+        radius
+      };
+    }
+
+    function registerHit(type, now, contactBall) {
+      if (type === 'Single') game.stats.single += 1;
+      if (type === 'Double') game.stats.double += 1;
+      if (type === 'Triple') game.stats.triple += 1;
+      if (type === 'Home Run') game.stats.hr += 1;
+      updateStatsUI();
+
+      setResult(type + '!', type === 'Home Run' ? 'good' : 'warn');
+
+      const hitTargets = {
+        Single:   { x: W * 0.72, y: H * 0.54, dur: 550 },
+        Double:   { x: W * 0.83, y: H * 0.34, dur: 760 },
+        Triple:   { x: W * 0.18, y: H * 0.25, dur: 980 },
+        'Home Run': { x: W * 0.54, y: H * 0.10, dur: 1150 }
+      };
+
+      const target = hitTargets[type];
+      game.hitBall = {
+        startTime: now,
+        duration: target.dur,
+        startX: contactBall ? contactBall.x : positions.ballEnd.x,
+        startY: contactBall ? contactBall.y : positions.ballEnd.y,
+        endX: target.x,
+        endY: target.y,
+        startR: contactBall ? contactBall.radius : 11,
+        endR: 5
+      };
+
+      if (game.pitch) {
+        game.pitch.resolved = true;
+        game.pitch.resultGiven = true;
+      }
+
+      scheduleNextPitch(now, target.dur + 450);
+    }
+
+    function registerStrike(reason, now) {
+      game.stats.strikesUsed += 1;
+      updateStatsUI();
+
+      if (game.pitch) {
+        game.pitch.resolved = true;
+        game.pitch.resultGiven = true;
+      }
+
+      if (game.stats.strikesUsed >= 3) {
+        endGame('Game Over - 3 Strikes');
+        return;
+      }
+
+      setResult(`${reason} - ${3 - game.stats.strikesUsed} left`, 'bad');
+      scheduleNextPitch(now, 1000);
+    }
+
+    function swing(now) {
+      if (!game.started || game.loading || game.over) return;
+
+      game.batterFrame = 2;
+      game.batterSwingResetAt = now + 180;
+
+      if (!game.pitch || game.pitch.resolved || game.pitch.swung) return;
+
+      game.pitch.swung = true;
+      const ball = getBallFlight(now);
+
+      if (!ball) {
+        registerStrike('Too early', now);
+        return;
+      }
+
+      const sweetSpot = game.pitch.contactT;
+      const diff = Math.abs(ball.progress - sweetSpot);
+      const fastPitch = game.pitch.profile.name === 'Fastball';
+      // Make singles and doubles much more common, while keeping triples and home runs tighter.
+      const perfectWindow = fastPitch ? 0.018 : 0.022;
+      const tripleWindow = fastPitch ? 0.042 : 0.052;
+      const doubleWindow = fastPitch ? 0.115 : 0.135;
+      const singleWindow = fastPitch ? 0.30 : 0.34;
+
+      if (diff <= perfectWindow) {
+        registerHit('Home Run', now, ball);
+      } else if (diff <= tripleWindow) {
+        registerHit('Triple', now, ball);
+      } else if (diff <= doubleWindow) {
+        registerHit('Double', now, ball);
+      } else if (diff <= singleWindow) {
+        registerHit('Single', now, ball);
+      } else {
+        registerStrike(ball.progress < sweetSpot ? 'Too early' : 'Too late', now);
+      }
+    }
+
+    function update(now) {
+      if (!game.started || game.loading) return;
+
+      if (game.batterFrame === 2 && now >= game.batterSwingResetAt) {
+        game.batterFrame = 1;
+      }
+
+      if (game.over) return;
+
+      if (now - game.gameStartTime >= game.gameDuration) {
+        endGame('Time Up!');
+        return;
+      }
+
+      if (!game.pitch && !game.hitBall && now >= game.nextPitchAt) {
+        beginPitch(now);
+      }
+
+      if (game.pitch) {
+        const elapsed = now - game.pitch.startTime;
+        if (elapsed >= game.pitch.totalTime && !game.pitch.resultGiven) {
+          registerStrike(game.pitch.profile.name + ' - strike looking', now);
+        }
+      }
+
+      if (game.hitBall) {
+        const elapsed = now - game.hitBall.startTime;
+        if (elapsed >= game.hitBall.duration) {
+          game.hitBall = null;
+        }
+      }
+    }
+
+    function drawPitcher(now) {
+      const sprite = (!game.pitch || (now - game.pitch.startTime) < Math.min(200, game.pitch.releaseDelay)) ? assets.pitcher1 : assets.pitcher2;
+      drawSprite(sprite, positions.pitcher.x, positions.pitcher.y, positions.pitcher.height);
+    }
+
+    function drawBatter() {
+      const sprite = game.batterFrame === 1 ? assets.batter1 : assets.batter2;
+      drawSprite(sprite, positions.batter.x, positions.batter.y, positions.batter.height);
+    }
+
+    function drawPitchBall(now) {
+      const ball = getBallFlight(now);
+      if (!ball || !game.pitch || game.pitch.resolved) return;
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#d94848';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawHitBall(now) {
+      if (!game.hitBall) return;
+      const hb = game.hitBall;
+      const t = Math.min(1, (now - hb.startTime) / hb.duration);
+      const ease = 1 - Math.pow(1 - t, 2);
+      const x = hb.startX + (hb.endX - hb.startX) * ease;
+      const y = hb.startY + (hb.endY - hb.startY) * ease - Math.sin(t * Math.PI) * 90;
+      const r = hb.startR + (hb.endR - hb.startR) * ease;
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#d94848';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function render(now) {
+      if (game.loading) {
+        ctx.fillStyle = '#112645';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 36px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Loading...', W / 2, H / 2);
+        return;
+      }
+
+      drawBackground();
+      drawPitcher(now);
+      drawPitchBall(now);
+      drawHitBall(now);
+      drawBatter();
+    }
+
+    function frame(now) {
+      update(now);
+      render(now);
+      requestAnimationFrame(frame);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        swing(performance.now());
+      }
+    }, { passive: false });
+
+    loadAssets()
+      .then(() => {
+        game.loading = false;
+        updateStatsUI();
+        startGame(performance.now());
+        requestAnimationFrame(frame);
+      })
+      .catch((err) => {
+        console.error(err);
+        game.loading = false;
+        ctx.fillStyle = '#0d1e3c';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Could not load image files from the images folder.', W / 2, H / 2 - 10);
+        ctx.font = '16px Inter, sans-serif';
+        ctx.fillText('Make sure baseball_bg.png, batter1.png, batter2.png, pitcher1.png, and pitcher2.png are in images/.', W / 2, H / 2 + 22);
+        ctx.fillText('If you opened the HTML directly, try running it from a tiny local web server too.', W / 2, H / 2 + 46);
+      });
+  </script>
+</body>
+</html>
