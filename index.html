@@ -405,6 +405,21 @@ body.redblue::after {
 @keyframes rainbowShift{ 0%{ background-position: 0% 50%; } 100%{ background-position: 100% 50%; } }
 @keyframes goldShimmer{ 0%{ background-position: 0% 50%; } 100%{ background-position: 200% 50%; } }
 
+/* === RELIC category (Star Shard) === */
+.t-relic {
+  background: linear-gradient(90deg, #a855f7, #ffd700, #f472b6, #a855f7);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: relicShimmer 3s linear infinite;
+  font-weight: 900;
+}
+@keyframes relicShimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
 .price{ font-weight:900; font-size:22px; }
 .buy{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer; background:linear-gradient(var(--ui-blue), var(--ui-blue-dark)); color:#fff; box-shadow:var(--shadow); }
 .upgrade{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer;
@@ -864,6 +879,23 @@ body.money-red .cash{
 .inv-filter-sheet .opt-event{ --c: var(--c-event); }
 .inv-filter-sheet .opt-event span{ color: var(--c-event); }
 .inv-filter-sheet .opt-event{ animation: opt-glow 1.8s ease-in-out infinite; }
+
+/* Relic (purple-gold shimmer) */
+.inv-filter-sheet .opt-relic{ --c: #a855f7;
+  background-image: linear-gradient(90deg, rgba(168,85,247,.12), rgba(255,215,0,.08) 50%, rgba(168,85,247,.12));
+  background-size: 200% 100%; animation: opt-shine 2.8s linear infinite;
+  box-shadow: inset 0 0 0 1px rgba(168,85,247,.3);
+}
+.inv-filter-sheet .opt-relic span{
+  background: linear-gradient(90deg, #a855f7, #ffd700, #f472b6);
+  background-size: 300% auto;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: opt-gradmove 3s linear infinite;
+}
+
+/* Potions (purple soft glow) */
+.inv-filter-sheet .opt-potions{ --c: #d6a8ff; }
+.inv-filter-sheet .opt-potions span{ color: #d6a8ff; }
 
 /* === Remove Dodgers Event UI (button & overlay only) — keep items/data intact === */
 .event-row{ display:none !important; }
@@ -2682,6 +2714,197 @@ body.flex-hide-legacy-banner #adminMsgBanner{ display:none !important; }
   box-shadow:0 0 6px rgba(255,140,40,.45), inset 0 0 3px rgba(255,180,90,.3);
 }
 
+/* ===== SHOP MORPH TAGS ===== */
+/* Rainbow morph tag: animated rainbow gradient */
+.rainbow-tag{
+  display:inline-block;
+  margin-left:4px;
+  margin-top:2px;
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  background: linear-gradient(90deg, #ff004c, #ff7a00, #ffd400, #18e300, #00e7ff, #3a31ff, #ff31ff, #ff004c);
+  background-size: 400% 100%;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  animation: rainbowTagShift 2s linear infinite;
+  box-shadow: 0 0 6px rgba(255,120,0,.5);
+}
+@keyframes rainbowTagShift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+/* Gold morph tag: static gold — no animation */
+.gold-morph-tag{
+  display:inline-block;
+  margin-left:4px;
+  margin-top:2px;
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  background: linear-gradient(90deg, #ffd700, #fff0a0, #ffb200);
+  color: #5a3a00;
+  text-shadow: 0 1px 0 rgba(255,255,255,.4);
+  box-shadow: 0 0 6px rgba(255,200,0,.45), inset 0 0 2px rgba(255,255,200,.3);
+}
+/* Magical morph tag: static pink/green gradient — no animation */
+.magical-tag{
+  display:inline-block;
+  margin-left:4px;
+  margin-top:2px;
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  background: linear-gradient(90deg, #1fff8a, #ff69d8);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.5);
+  box-shadow: 0 0 5px rgba(180,0,255,.35);
+}
+
+/* ===== RAINBOW MORPH ITEM ANIMATION ===== */
+/* Rainbow morph: the arc ring does the visual work — no filter flicker on the item itself */
+.rainbow-morph {
+  /* intentionally no animation here — the rainbow-ring overlay provides the effect */
+}
+/* Rainbow arc overlay on the item wrapper */
+.img-wrap .rainbow-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: conic-gradient(from 180deg,
+    rgba(255,0,76,0.0)   0deg,
+    rgba(255,0,76,0.75)  30deg,
+    rgba(255,122,0,0.75) 60deg,
+    rgba(255,212,0,0.75) 90deg,
+    rgba(24,227,0,0.75)  120deg,
+    rgba(0,231,255,0.75) 150deg,
+    rgba(58,49,255,0.75) 180deg,
+    rgba(255,49,255,0.75)210deg,
+    rgba(255,0,76,0.0)   240deg,
+    rgba(0,0,0,0.0)      360deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 63%);
+  mask: radial-gradient(circle, transparent 60%, #000 63%);
+  animation: rainbowArcSpin 4s linear infinite;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(150,80,255,0.5);
+}
+@keyframes rainbowArcSpin { to { transform: rotate(360deg); } }
+
+/* ===== GOLD MORPH ITEM ANIMATION ===== */
+.gold-morph {
+  animation: goldItemShimmer 2s ease-in-out infinite;
+}
+@keyframes goldItemShimmer {
+  0%,100% { filter: sepia(0.4) saturate(1.6) brightness(1.05) drop-shadow(0 0 8px rgba(255,200,0,0.6)); }
+  50%      { filter: sepia(0.7) saturate(2.2) brightness(1.18) drop-shadow(0 0 18px rgba(255,220,0,1)); }
+}
+/* Gold shimmer ring */
+.img-wrap .gold-morph-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 16px;
+  background: conic-gradient(from 0deg, rgba(255,215,0,0.0), rgba(255,215,0,0.8), rgba(255,247,160,0.9), rgba(255,215,0,0.0));
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 65%);
+  mask: radial-gradient(circle, transparent 62%, #000 65%);
+  animation: goldRingSpin 1.6s linear infinite;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(255,200,0,0.7), inset 0 0 10px rgba(255,200,0,0.35);
+}
+@keyframes goldRingSpin { to { transform: rotate(360deg); } }
+
+/* ===== MAGICAL MORPH ITEM ANIMATION ===== */
+.magical-morph {
+  animation: magicalItemGlow 2.5s ease-in-out infinite;
+}
+@keyframes magicalItemGlow {
+  0%,100% { filter: drop-shadow(0 0 6px rgba(50,255,150,0.6)) drop-shadow(0 0 10px rgba(255,100,220,0.3)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(255,100,220,0.9)) drop-shadow(0 0 20px rgba(50,255,150,0.6)); }
+}
+
+/* ===== SVG BUTTERFLY PARTICLES ===== */
+.img-wrap .butterfly-svg {
+  position: absolute;
+  width: 20px;
+  height: 16px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(200,100,255,.8));
+  overflow: visible;
+}
+/* Wing-flap: left wing and right wing scale in X from their outer edges */
+.img-wrap .butterfly-svg .wing-l {
+  transform-origin: right center;
+  animation: wingFlapL 0.55s ease-in-out infinite alternate;
+}
+.img-wrap .butterfly-svg .wing-r {
+  transform-origin: left center;
+  animation: wingFlapR 0.55s ease-in-out infinite alternate;
+}
+@keyframes wingFlapL {
+  from { transform: scaleX(1);   }
+  to   { transform: scaleX(0.15); }
+}
+@keyframes wingFlapR {
+  from { transform: scaleX(1);   }
+  to   { transform: scaleX(0.15); }
+}
+/* Float paths for each butterfly */
+.img-wrap .butterfly-svg.bf1 {
+  top: -16px; left: 6%;
+  animation: bfFloat1 3.2s ease-in-out infinite;
+}
+.img-wrap .butterfly-svg.bf2 {
+  top: -12px; right: 6%;
+  animation: bfFloat2 2.8s ease-in-out infinite;
+  animation-delay: -1.1s;
+}
+.img-wrap .butterfly-svg.bf3 {
+  bottom: -14px; left: 14%;
+  animation: bfFloat3 3.6s ease-in-out infinite;
+  animation-delay: -0.5s;
+}
+.img-wrap .butterfly-svg.bf4 {
+  bottom: -10px; right: 10%;
+  animation: bfFloat4 3.0s ease-in-out infinite;
+  animation-delay: -1.9s;
+}
+/* Each butterfly drifts in a small unique oval path */
+@keyframes bfFloat1 {
+  0%   { transform: translate(0px,  0px) rotate(-5deg);  opacity:.85; }
+  25%  { transform: translate(9px, -8px) rotate( 8deg);  opacity:1;   }
+  50%  { transform: translate(16px, 1px) rotate(-4deg);  opacity:.75; }
+  75%  { transform: translate(6px,  7px) rotate( 10deg); opacity:1;   }
+  100% { transform: translate(0px,  0px) rotate(-5deg);  opacity:.85; }
+}
+@keyframes bfFloat2 {
+  0%   { transform: translate(0px,  0px) rotate( 5deg);  opacity:.80; }
+  25%  { transform: translate(-8px,-7px) rotate(-8deg);  opacity:1;   }
+  50%  { transform: translate(-15px,2px) rotate( 5deg);  opacity:.70; }
+  75%  { transform: translate(-5px, 8px) rotate(-10deg); opacity:1;   }
+  100% { transform: translate(0px,  0px) rotate( 5deg);  opacity:.80; }
+}
+@keyframes bfFloat3 {
+  0%   { transform: translate(0px,  0px) rotate(-3deg);  opacity:.85; }
+  30%  { transform: translate(10px,-6px) rotate( 6deg);  opacity:1;   }
+  60%  { transform: translate(18px, 3px) rotate(-6deg);  opacity:.70; }
+  80%  { transform: translate(8px,  6px) rotate( 8deg);  opacity:1;   }
+  100% { transform: translate(0px,  0px) rotate(-3deg);  opacity:.85; }
+}
+@keyframes bfFloat4 {
+  0%   { transform: translate(0px,  0px) rotate( 4deg);  opacity:.80; }
+  30%  { transform: translate(-7px,-9px) rotate(-7deg);  opacity:1;   }
+  60%  { transform: translate(-14px,2px) rotate( 4deg);  opacity:.70; }
+  80%  { transform: translate(-4px, 7px) rotate(-9deg);  opacity:1;   }
+  100% { transform: translate(0px,  0px) rotate( 4deg);  opacity:.80; }
+}
+/* Magical ring: REMOVED — butterflies are the magical effect */
+
 /* Demon morph ring: swirling crimson energy around the item */
 .img-wrap .demon-ring{
   position:absolute;
@@ -3364,6 +3587,15 @@ body.flex-hide-legacy-banner #adminMsgBanner{ display:none !important; }
 </div>
 <button class="buy" id="toggleRedMoney" style="display:none;background:linear-gradient(#ff6b6b,#8b0000);">Disable</button>
 </div>
+<!-- Shop Morphs -->
+<div class="card" id="shopMorphsCard">
+<h3>Shop Morphs</h3>
+<div style="font-size:18px; opacity:0.85;">Unlocks morphs to appear in the shop. Future shop refreshes may grant Rainbow, Gold, or Magical morphs to items, boosting their EPS.</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div class="price">$3,000,000,000,000</div>
+<button class="buy" id="buyShopMorphs">Purchase</button>
+</div>
+</div>
 <div class="overlay hidden" id="settingsOverlay">
 <h2>Settings</h2>
 <div>
@@ -3446,7 +3678,8 @@ body.flex-hide-legacy-banner #adminMsgBanner{ display:none !important; }
     mythic:{ label:'MYTHIC', color:'var(--c-mythic)', income: 20000, price:[0,0], prob: 0 },
     unique:  { label:'UNIQUE', color:'navy', income: 10000, price:[2_500_000,4_000_000], prob: 0.003 },
     exotic:  { label:'EXOTIC', color:'cyan', income: 15000, price:[0,0], prob: 0 },
-     crypto:  { label:'CRYPTO', color:'#ff62d5', income: 50000, price:[0,0], prob: 0 }
+     crypto:  { label:'CRYPTO', color:'#ff62d5', income: 50000, price:[0,0], prob: 0 },
+    relic:   { label:'RELIC',  color:'#a855f7', income: 0,     price:[0,0], prob: 0 }
   };
 
   const ITEM_NAMES = [
@@ -3710,7 +3943,8 @@ function getPetSvg(petName, seed){
     petStands: [null,null],             // each entry: null or { uid,name,isEgg,eggType,petType,petEps,svg,baseIdx }
     petTimers: {},                      // map index -> timestamp (ms) when hatch will happen
     permanentPetMultiplier: 1,
-    rebirthLevel: 0           // becomes 5 if Flex T-Rex hatched
+    rebirthLevel: 0,           // becomes 5 if Flex T-Rex hatched
+    shopMorphsOwned: false     // true after Shop Morphs gear item is purchased
   };
   // Guard: only allow saving after a full load
   let __loadComplete = false;
@@ -4077,6 +4311,10 @@ async function save(){
       hollywood: !!it.hollywood,
       aqua: !!it.aqua,
       demon: !!it.demon,
+      rainbow: !!it.rainbow,
+      goldMorph: !!it.goldMorph,
+      magical: !!it.magical,
+      isRelic: !!it.isRelic,
     })),
     stands: state.stands,
     shop: state.shop,
@@ -4108,6 +4346,7 @@ async function save(){
     winterGifts: (state.winterGifts || {forge:0,hatch:0,legacyPurchases:0,uniquePurchases:0,gift:{},blizzardActive:false,pendingRewards:[]}),
     brewer: (state.brewer || { owned:false, active:null }),
     activePotions: (state.activePotions || { multiplier: { until:0, factor:1 }, shopLuckUntil: 0, fastHatchUntil: 0, hatTrickUntil: 0 }),
+    shopMorphsOwned: !!state.shopMorphsOwned,
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -4123,6 +4362,9 @@ async function save(){
         hollywood: !!it.hollywood,
         aqua: !!it.aqua,
         sweaty: !!it.sweaty,
+        rainbow: !!it.rainbow,
+        goldMorph: !!it.goldMorph,
+        magical: !!it.magical,
         svg: it.svg
       };
     }
@@ -4155,6 +4397,9 @@ async function save(){
           row.aqua      = !!(src && src.aqua);
           row.demon     = !!(src && src.demon);
           row.sweaty    = !!(src && src.sweaty);
+          row.rainbow   = !!(src && src.rainbow);
+          row.goldMorph = !!(src && src.goldMorph);
+          row.magical   = !!(src && src.magical);
         });
       }
       if(payload.placed && state.placed){
@@ -4165,6 +4410,9 @@ async function save(){
             payload.placed[k].aqua      = !!src.aqua;
             payload.placed[k].demon     = !!src.demon;
             payload.placed[k].sweaty    = !!src.sweaty;
+            payload.placed[k].rainbow   = !!src.rainbow;
+            payload.placed[k].goldMorph = !!src.goldMorph;
+            payload.placed[k].magical   = !!src.magical;
           }
         }
       }
@@ -4395,6 +4643,9 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
           if(row.aqua)      state.inventory[idx].aqua      = !!row.aqua;
           if(row.demon)     state.inventory[idx].demon     = !!row.demon;
           if(row.sweaty)    state.inventory[idx].sweaty    = !!row.sweaty;
+          if(row.rainbow)   state.inventory[idx].rainbow   = !!row.rainbow;
+          if(row.goldMorph) state.inventory[idx].goldMorph = !!row.goldMorph;
+          if(row.magical)   state.inventory[idx].magical   = !!row.magical;
         }
       });
     }catch(e){}
@@ -4473,6 +4724,9 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
             if(r.aqua)      state.placed[k].aqua      = !!r.aqua;
             if(r.demon)     state.placed[k].demon     = !!r.demon;
             if(r.sweaty)    state.placed[k].sweaty    = !!r.sweaty;
+            if(r.rainbow)   state.placed[k].rainbow   = !!r.rainbow;
+            if(r.goldMorph) state.placed[k].goldMorph = !!r.goldMorph;
+            if(r.magical)   state.placed[k].magical   = !!r.magical;
           }
         }
       }catch(e){}
@@ -4505,6 +4759,9 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
           if(it.aqua)      state.placed[k].aqua      = !!it.aqua;
           if(it.demon)     state.placed[k].demon     = !!it.demon;
           if(it.sweaty)    state.placed[k].sweaty    = !!it.sweaty;
+          if(it.rainbow)   state.placed[k].rainbow   = !!it.rainbow;
+          if(it.goldMorph) state.placed[k].goldMorph = !!it.goldMorph;
+          if(it.magical)   state.placed[k].magical   = !!it.magical;
         }
       }
     }
@@ -4529,6 +4786,7 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     state.petTimers = dat.petTimers ?? state.petTimers;
     state.permanentPetMultiplier = dat.permanentPetMultiplier ?? state.permanentPetMultiplier;
     state.rebirthLevel = dat.rebirthLevel || 0;
+    state.shopMorphsOwned = !!(dat.shopMorphsOwned);
     // PetDex (owned pets across eggs)
     state.petDex = dat.petDex || state.petDex || {};
 // --- Potion Brewer ownership + potion timers (persisted) ---
@@ -4553,6 +4811,7 @@ try {
 } catch (e) {}
 // Reflect UI (disable purchase button / show open button) after load
 try { if (state.brewer && state.brewer.owned){ try{ ensureBrewButtonVisible(); }catch(e){} try{ showBrewButton(); }catch(e){} } } catch (e) {}
+try { if (typeof updateShopMorphsCard === 'function') updateShopMorphsCard(); } catch (e) {}
 try { if (typeof refreshBuyButton === 'function') refreshBuyButton(); } catch (e) {}
 
     state.unlockedBackgrounds = dat.unlockedBackgrounds || state.unlockedBackgrounds || { default:true };
@@ -4658,7 +4917,11 @@ function recalcEPS(){
     const incomeVal = (RARITY[key] && Number(RARITY[key].income)) ? Number(RARITY[key].income) : 0;
     if(!RARITY[key]) console.warn('recalcEPS: unknown rarity for item', it.name, 'rarity:', it.rarity);
     baseTotal += incomeVal;
-  try{ if(it && it.hollywood){ baseTotal += 35000; } }catch(e){} });
+  try{ if(it && it.hollywood){ baseTotal += 35000; } }catch(e){}
+  try{ if(it && it.rainbow)  { baseTotal += 30000; } }catch(e){}
+  try{ if(it && it.goldMorph){ baseTotal += 10000; } }catch(e){}
+  try{ if(it && it.magical)  { baseTotal += 15000; } }catch(e){}
+  });
 
   // Sum pet EPS (unchanged but coerced to number)
   let petTotal = 0;
@@ -4910,12 +5173,18 @@ function rarityBadge(r){
         if(it && it.aqua){ p.classList.add('aqua-morph'); }
         if(it && it.demon){ p.classList.add('demonized'); }
         if(it && it.sweaty){ p.classList.add('sweaty-active'); }
+        if(it && it.rainbow)   p.classList.add('rainbow-morph');
+        if(it && it.goldMorph) p.classList.add('gold-morph');
+        if(it && it.magical)   p.classList.add('magical-morph');
         // Build morph tags based on item properties.  Multiple morph tags stack vertically.
         const tags = [];
         if(it && it.hollywood) tags.push(`<span class="hollywood-tag">Hollywood</span>`);
         if(it && it.aqua) tags.push(`<span class="aqua-tag">Aqua</span>`);
         if(it && it.demon) tags.push(`<span class="demon-tag">Demon</span>`);
         if(it && it.sweaty) tags.push(`<span class="sweaty-tag">Sweaty</span>`);
+        if(it && it.rainbow)   tags.push(`<span class="rainbow-tag">Rainbow</span>`);
+        if(it && it.goldMorph) tags.push(`<span class="gold-morph-tag">Gold</span>`);
+        if(it && it.magical)   tags.push(`<span class="magical-tag">Magical</span>`);
         const tagsHtml = tags.length ? `<br>` + tags.join('<br>') : '';
         // Build the inner HTML with the optional morph tags appended after the rarity badge
         p.innerHTML =
@@ -4959,6 +5228,88 @@ function rarityBadge(r){
                   const drop = document.createElement('span');
                   drop.className = 'sweat-drop ' + cls;
                   wrap.appendChild(drop);
+                });
+              }
+              // --- Shop morph rings ---
+              if (it && it.rainbow) {
+                const rr = document.createElement('span');
+                rr.className = 'rainbow-ring';
+                wrap.appendChild(rr);
+              }
+              if (it && it.goldMorph) {
+                const gr = document.createElement('span');
+                gr.className = 'gold-morph-ring';
+                wrap.appendChild(gr);
+              }
+              if (it && it.magical) {
+                // No rotating ring — butterflies are the magical visual
+                // Generate 4 SVG butterflies with wing-flap animation
+                const bfColors = [
+                  ['#ff69d8','#c020a0'],  // pink
+                  ['#7b2fff','#c060ff'],  // purple
+                  ['#1fff8a','#00b86b'],  // green
+                  ['#ff69d8','#7b2fff'],  // pink-purple
+                ];
+                ['bf1','bf2','bf3','bf4'].forEach((cls, i) => {
+                  const [fill, stroke] = bfColors[i];
+                  const ns = 'http://www.w3.org/2000/svg';
+                  const svgEl = document.createElementNS(ns, 'svg');
+                  svgEl.setAttribute('viewBox', '0 0 24 18');
+                  svgEl.setAttribute('width', '20');
+                  svgEl.setAttribute('height', '15');
+                  svgEl.classList.add('butterfly-svg', cls);
+                  svgEl.setAttribute('xmlns', ns);
+                  // Left wing group
+                  const gl = document.createElementNS(ns, 'g');
+                  gl.classList.add('wing-l');
+                  gl.style.animationDelay = `${i * 0.12}s`;
+                  const wl = document.createElementNS(ns, 'ellipse');
+                  wl.setAttribute('cx','7'); wl.setAttribute('cy','8');
+                  wl.setAttribute('rx','6'); wl.setAttribute('ry','4.5');
+                  wl.setAttribute('fill', fill); wl.setAttribute('stroke', stroke);
+                  wl.setAttribute('stroke-width','0.8'); wl.setAttribute('opacity','0.92');
+                  // Upper left petal
+                  const ul = document.createElementNS(ns, 'ellipse');
+                  ul.setAttribute('cx','7'); ul.setAttribute('cy','5');
+                  ul.setAttribute('rx','4.5'); ul.setAttribute('ry','3');
+                  ul.setAttribute('fill', fill); ul.setAttribute('stroke', stroke);
+                  ul.setAttribute('stroke-width','0.6'); ul.setAttribute('opacity','0.75');
+                  gl.appendChild(ul); gl.appendChild(wl);
+                  // Right wing group
+                  const gr = document.createElementNS(ns, 'g');
+                  gr.classList.add('wing-r');
+                  gr.style.animationDelay = `${i * 0.12}s`;
+                  const wr = document.createElementNS(ns, 'ellipse');
+                  wr.setAttribute('cx','17'); wr.setAttribute('cy','8');
+                  wr.setAttribute('rx','6'); wr.setAttribute('ry','4.5');
+                  wr.setAttribute('fill', fill); wr.setAttribute('stroke', stroke);
+                  wr.setAttribute('stroke-width','0.8'); wr.setAttribute('opacity','0.92');
+                  const ur = document.createElementNS(ns, 'ellipse');
+                  ur.setAttribute('cx','17'); ur.setAttribute('cy','5');
+                  ur.setAttribute('rx','4.5'); ur.setAttribute('ry','3');
+                  ur.setAttribute('fill', fill); ur.setAttribute('stroke', stroke);
+                  ur.setAttribute('stroke-width','0.6'); ur.setAttribute('opacity','0.75');
+                  gr.appendChild(ur); gr.appendChild(wr);
+                  // Body
+                  const body = document.createElementNS(ns, 'ellipse');
+                  body.setAttribute('cx','12'); body.setAttribute('cy','8.5');
+                  body.setAttribute('rx','1.2'); body.setAttribute('ry','4');
+                  body.setAttribute('fill','#3a0060'); body.setAttribute('opacity','0.9');
+                  // Antennae
+                  const a1 = document.createElementNS(ns, 'line');
+                  a1.setAttribute('x1','11.2'); a1.setAttribute('y1','4.5');
+                  a1.setAttribute('x2','9'); a1.setAttribute('y2','1.5');
+                  a1.setAttribute('stroke','#3a0060'); a1.setAttribute('stroke-width','0.7');
+                  const a2 = document.createElementNS(ns, 'line');
+                  a2.setAttribute('x1','12.8'); a2.setAttribute('y1','4.5');
+                  a2.setAttribute('x2','15'); a2.setAttribute('y2','1.5');
+                  a2.setAttribute('stroke','#3a0060'); a2.setAttribute('stroke-width','0.7');
+                  svgEl.appendChild(gl);
+                  svgEl.appendChild(gr);
+                  svgEl.appendChild(body);
+                  svgEl.appendChild(a1);
+                  svgEl.appendChild(a2);
+                  wrap.appendChild(svgEl);
                 });
               }
             } catch(e){}
@@ -5046,6 +5397,12 @@ if (rkey === 'exotic') {
       // Place new item
       const newItem = state.inventory.find(it => it.uid === state.selectedItemUid);
       if (!newItem) return;
+
+      // Relics cannot be placed on pedestals — they belong in the Forge
+      if (newItem.rarity === 'relic' || newItem.isRelic) {
+        try { if(typeof banner === 'function') banner('Relics cannot be placed on pedestals — use them in the Forge!'); } catch(e){}
+        return;
+      }
 
       state.placed[newItem.uid] = newItem;
       state.stands[i] = newItem.uid;
@@ -5200,7 +5557,32 @@ function weightedPick(){
       const name = pool.splice(idx,1)[0];
       const rarity = weightedPick();
       const baseIdx = idx;
-      items.push({ uid: uid(), name, rarity, price: priceFor(rarity), svg: getItemSvg(name, baseIdx, rarity), baseIdx, purchased:false });
+      const item = { uid: uid(), name, rarity, price: priceFor(rarity), svg: getItemSvg(name, baseIdx, rarity), baseIdx, purchased:false };
+      // Apply shop morphs if unlocked — each morph rolls independently
+      if(state.shopMorphsOwned){
+        // Each morph rolls independently — single morphs are uncommon, multiples are rare, all 3 very rare.
+        // Rainbow: ~6%, Gold: ~14%, Magical: ~9%
+        // Chance of all 3 on one item ≈ 0.06 × 0.14 × 0.09 ≈ 0.076% (very rare)
+        // Chance of any morph on a given item ≈ 1 − (0.94×0.86×0.91) ≈ 26% per item, ~1 morph per refresh on average
+        if(Math.random() < 0.06) item.rainbow   = true;
+        if(Math.random() < 0.14) item.goldMorph = true;
+        if(Math.random() < 0.09) item.magical   = true;
+      }
+      items.push(item);
+    }
+    // Rare chance (~8% per shop refresh) for a Star Shard to appear
+    if(Math.random() < 0.08){
+      const shardSlot = Math.floor(Math.random() * items.length);
+      items[shardSlot] = {
+        uid: uid(),
+        name: 'Star Shard',
+        rarity: 'relic',
+        price: 10_000_000,
+        svg: 'icons/star_shard.png',
+        baseIdx: 0,
+        isRelic: true,
+        purchased: false
+      };
     }
     return items;
   }
@@ -5247,11 +5629,17 @@ function refreshShopNow(){
     state.shop.items.forEach((it, i)=>{
       const card = document.createElement('div');
       card.className='card';
+      // Build morph tag HTML for shop display
+      let morphTagsHtml = '';
+      if(it.rainbow)   morphTagsHtml += `<span class="rainbow-tag">Rainbow</span> `;
+      if(it.goldMorph) morphTagsHtml += `<span class="gold-morph-tag">Gold</span> `;
+      if(it.magical)   morphTagsHtml += `<span class="magical-tag">Magical</span> `;
       card.innerHTML = `<div style='display:flex;gap:12px;align-items:center'>
         <img src='${it.svg}' style='width:72px;height:72px;border-radius:10px;flex:0 0 72px' alt='${escapeXml(displayName(it.name))}' />
         <div>
           <h3>${escapeXml(displayName(it.name))}</h3>
           <div class="tag t-${it.rarity}">${RARITY[it.rarity].label}</div>
+          ${morphTagsHtml ? `<div style="margin-top:4px">${morphTagsHtml}</div>` : ''}
         </div>
       </div>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
@@ -5278,6 +5666,11 @@ function refreshShopNow(){
         if(state.money < it.price) return;
         state.money -= it.price;
         const inv = { uid: uid(), name: it.name, rarity: it.rarity, price: it.price, svg: it.svg, baseIdx: it.baseIdx };
+        // Carry morph flags from shop item to inventory item
+        if(it.rainbow)   inv.rainbow   = true;
+        if(it.goldMorph) inv.goldMorph = true;
+        if(it.magical)   inv.magical   = true;
+        if(it.isRelic)   inv.isRelic   = true;
         state.inventory.push(inv);
         try{ state.flexwood = state.flexwood || {top1:{purchases:0},bot1:{rarePurchases:0}}; state.flexwood.top1.purchases = (state.flexwood.top1.purchases||0)+1; if(String(it.rarity||'').toLowerCase()==='rare'){ state.flexwood.bot1.rarePurchases = (state.flexwood.bot1.rarePurchases||0)+1; } if(typeof save==='function') save(); if(typeof renderFlexwood==='function') renderFlexwood(); }catch(e){}
         it.purchased = true;
@@ -8342,7 +8735,9 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
     {key:'crypto', label:'Crypto'},
     {key:'pets', label:'Pets'},
     {key:'eggs', label:'Eggs'},
-    {key:'event', label:'Event'}
+    {key:'event', label:'Event'},
+    {key:'relic', label:'Relic'},
+    {key:'potions', label:'Potions'}
   ];
   const STORAGE_KEY = 'invFilterPrefsV1';
 
@@ -8439,7 +8834,25 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
         el.dataset.isEgg  = it.isEgg ? '1' : '';
         el.dataset.isPet  = (it.petType && !it.isEgg) ? '1' : '';
         const nm = String(it.name||'').toLowerCase();
-        el.dataset.isEvent = (it.event || /dodger|event|zite|coastal/.test(nm) || String(it.rarity||'').toLowerCase()==='coastal') ? '1' : '';
+        const rar = String(it.rarity||'').toLowerCase();
+        // Event: flag items from all event sources (dodger, coastal, stranger things, cosmic, hawkins)
+        el.dataset.isEvent = (
+          it.event ||
+          rar === 'coastal' || rar === 'dodger' || rar === 'cosmic' || rar === 'stranger' || rar === 'hawkins' ||
+          /dodger|coastal|zite|stranger|hawkins|cosmic/.test(nm) ||
+          String(it.svg||'').includes('dodger_items/') ||
+          String(it.svg||'').includes('stranger_things_items/') ||
+          String(it.svg||'').includes('hawkins_items/') ||
+          String(it.svg||'').includes('cosmic_items/')
+        ) ? '1' : '';
+        // Relic: Star Shard and any relic-rarity items
+        el.dataset.isRelic = (it.isRelic || rar === 'relic') ? '1' : '';
+        // Potions: potions and fuels (by rarity, type flag, or name)
+        el.dataset.isPotion = (
+          rar === 'potion' || rar === 'fuel' ||
+          it.isPotion || it.isFuel || it.type === 'potion' || it.type === 'fuel' ||
+          /potion|elixir|brew|fuel|flask|tonic/.test(nm)
+        ) ? '1' : '';
       }else{
         const rarEl = el.querySelector('.rar');
         if(rarEl){
@@ -8456,14 +8869,18 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
     const slots = document.querySelectorAll('#inventory .slot');
     slots.forEach(el => {
       const rar = (el.dataset.rarity||'').toLowerCase();
-      const isEgg = el.dataset.isEgg === '1';
-      const isPet = el.dataset.isPet === '1';
-      const isEvent = el.dataset.isEvent === '1';
+      const isEgg    = el.dataset.isEgg    === '1';
+      const isPet    = el.dataset.isPet    === '1';
+      const isEvent  = el.dataset.isEvent  === '1';
+      const isRelic  = el.dataset.isRelic  === '1';
+      const isPotion = el.dataset.isPotion === '1';
       let show = true;
-      if(isEgg) show = prefs.eggs;
-      else if(isPet) show = prefs.pets;
+      if(isRelic)       show = prefs.relic  !== false;
+      else if(isPotion) show = prefs.potions !== false;
+      else if(isEgg)    show = prefs.eggs;
+      else if(isPet)    show = prefs.pets;
+      else if(isEvent)  show = prefs.event;
       else if(rar && rar in prefs) show = prefs[rar];
-      if(isEvent) show = show && prefs.event;
       el.style.display = show ? '' : 'none';
     });
   };
@@ -8947,11 +9364,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   .forge-wrap{ display:grid; grid-template-columns:260px 1fr; gap:18px; }
   .forge-left{
-    background:#25252b; border:4px solid #111; border-radius:24px; padding:18px; color:#e8e8ee;
+    background:#25252b; border:4px solid #111; border-radius:24px; padding:12px 16px; color:#e8e8ee;
   }
-  .forge-left h3{ margin:0 0 6px; color:#ffd24a; font-size:32px; font-family:"Russo One"; }
-  .forge-left .rule{ margin:16px 0; font-weight:900; }
-  .forge-left .rule span{ display:block; opacity:.85; font-weight:700; }
+  .forge-left h3{ margin:0 0 2px; color:#ffd24a; font-size:22px; font-family:"Russo One"; }
+  .forge-left .rule{ margin:4px 0 10px; font-weight:900; font-size:14px; }
+  .forge-left .rule span{ display:block; opacity:.85; font-weight:700; font-size:13px; }
 
   .forge-grid{
     display:grid; grid-template-columns:1fr auto 1fr; gap:18px; align-items:center;
@@ -9009,12 +9426,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
 <div class="forge-wrap">
 <div class="forge-left">
 <h3>MYTHIC</h3>
-<div class="rule">4 LEGENDARY = <span>1 RANDOM MYTHIC</span></div>
+<div class="rule">4 LEGENDARY → <span>1 RANDOM MYTHIC</span></div>
 <h3 style="color:#7fefff">EXOTIC</h3>
-<div class="rule">4 LEGACY = <span>1 RANDOM EXOTIC</span></div>
+<div class="rule">4 LEGACY → <span>1 RANDOM EXOTIC</span></div>
 <h3 style="color:#ff62d5">CRYPTO</h3>
-<div class="rule">2 MYTHIC + 2 EXOTIC = <span>1 RANDOM CRYPTO</span></div>
-<div style="opacity:.7;margin-top:10px">Tip: click an inventory item, then click a slot to place it.</div>
+<div class="rule">2 MYTHIC + 2 EXOTIC → <span>1 RANDOM CRYPTO</span></div>
+<h3 style="background:linear-gradient(90deg,#a855f7,#ffd700,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent;animation:relicShimmer 3s linear infinite;background-size:300% auto;">MORPH FORGE</h3>
+<div class="rule">STAR SHARD + 2 MORPHED ITEMS → <span>HIGHER EPS ITEM + ALL MORPHS COMBINED</span></div>
+<div style="opacity:.6;font-size:12px;margin-top:6px;">Click inventory item, then click a slot to place it.</div>
 </div>
 <div class="forge-grid">
 <div class="grid-4">
@@ -9058,6 +9477,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   function canForge(){
     const items = forgeSlots.filter(Boolean);
+    // === Star Shard recipe: 1 Star Shard + 2 items that each have at least one morph ===
+    if(items.length === 3){
+      const shardItem  = items.find(x => x.rarity === 'relic' || x.isRelic);
+      const morphItems = items.filter(x => !(x.rarity === 'relic' || x.isRelic) &&
+        (x.rainbow || x.goldMorph || x.magical || x.aqua || x.demon || x.sweaty || x.hollywood));
+      if(shardItem && morphItems.length === 2) return 'shard_merge';
+    }
     if(items.length !== 4) return false;
     const rar = items.map(i => String(i.rarity||'').toLowerCase());
     rar.sort();
@@ -9073,7 +9499,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const r = canForge();
     const btn = $('#forgeGo');
     btn.disabled = !r;
-    btn.title = r ? ('Create ' + r.toUpperCase()) : 'Select a valid recipe';
+    if(r === 'shard_merge') btn.title = 'Merge Morphs (Star Shard)';
+    else btn.title = r ? ('Create ' + r.toUpperCase()) : 'Select a valid recipe';
   }
 
   function takeFromInventoryByUid(uid){
@@ -9182,6 +9609,13 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
 function doForge(){
     const outType = canForge();
     if(!outType) return;
+
+    // For shard_merge, capture the two morphed items before clearing slots
+    let shardMergeItems = null;
+    if(outType === 'shard_merge'){
+      shardMergeItems = forgeSlots.filter(x => x && !(x.rarity === 'relic' || x.isRelic));
+    }
+
     // consume inputs
     forgeSlots.forEach((it, i)=> forgeSlots[i]=null);
     // create result
@@ -9189,6 +9623,30 @@ function doForge(){
     if(outType==='mythic') res = makeRandomMythic();
     else if(outType==='exotic') res = makeRandomExotic();
     else if(outType==='crypto') res = makeRandomCrypto();
+    else if(outType==='shard_merge' && shardMergeItems && shardMergeItems.length === 2){
+      // Compare by actual EPS contribution (base income + morph bonuses) so the item
+      // with more earnings is always kept as the base, regardless of raw rarity tier.
+      function itemEPS(it){
+        try{
+          const key = String(it.rarity||'common').toLowerCase();
+          const base = (typeof RARITY !== 'undefined' && RARITY[key] && Number(RARITY[key].income)) ? Number(RARITY[key].income) : 0;
+          const morphBonus = (it.hollywood ? 35000 : 0) + (it.rainbow ? 30000 : 0) + (it.magical ? 15000 : 0) + (it.goldMorph ? 10000 : 0);
+          return base + morphBonus;
+        }catch(e){ return 0; }
+      }
+      // Sort highest EPS first so shardMergeItems[0] is always the better item
+      shardMergeItems.sort((a, b) => itemEPS(b) - itemEPS(a));
+      const base  = shardMergeItems[0]; // higher EPS item
+      const donor = shardMergeItems[1]; // lower EPS item (donates its morphs)
+      // Clone the base item with a fresh uid
+      res = Object.assign({}, base, {
+        uid: (Math.random().toString(36).slice(2) + Date.now().toString(36))
+      });
+      // Combine: any morph that either item has, the result gets
+      ['rainbow','goldMorph','magical','aqua','demon','sweaty','hollywood'].forEach(function(flag){
+        if(donor[flag]) res[flag] = true;
+      });
+    }
 
     if(res){
       const slot = document.getElementById('forgeResult');
@@ -10501,11 +10959,15 @@ window.__saveHawkinsProgress = function(){
       const isItem = !!rkey && !!(window.RARITY && RARITY[rkey] && typeof RARITY[rkey].income !== 'undefined');
       const isPetOrEgg = (!!sel.isEgg) || (!!sel.petType);
 
-      if (!isItem || isPetOrEgg) {
-        // Block the original place logic and route the player to pet pedestals
+      if (!isItem || isPetOrEgg || sel.rarity === 'relic' || sel.isRelic) {
+        // Block the original place logic and route the player appropriately
         ev.stopImmediatePropagation();
         ev.preventDefault();
-        try { if (typeof banner === 'function') banner('Use the PET pedestals for pets/eggs.'); } catch(e){}
+        if (sel.rarity === 'relic' || sel.isRelic) {
+          try { if (typeof banner === 'function') banner('Relics cannot be placed on pedestals — use them in the Forge!'); } catch(e){}
+        } else {
+          try { if (typeof banner === 'function') banner('Use the PET pedestals for pets/eggs.'); } catch(e){}
+        }
       }
       // else: let the original handler run
     }, true); // capture=true
@@ -10651,6 +11113,13 @@ window.__saveHawkinsProgress = function(){
         ev.stopImmediatePropagation();
         ev.preventDefault();
         try{ if(typeof banner==='function') banner('Use the PET pedestals for pets/eggs.'); }catch(e){}
+        return;
+      }
+      // Block Relic items (e.g. Star Shard) from main pedestals
+      if(sel.rarity === 'relic' || sel.isRelic){
+        ev.stopImmediatePropagation();
+        ev.preventDefault();
+        try{ if(typeof banner==='function') banner('Relics cannot be placed on pedestals — use them in the Forge!'); }catch(e){}
         return;
       }
       // Normalize rarity of the selected item before place handler runs,
@@ -12477,122 +12946,6 @@ function checkUnlocks(){
 })();
 </script>
 
-<!-- v2.10 Update Notes (Flexwood) - show once for returning players -->
-<style id="v210UpdateNotesStyle">
-  #v210UpdateNotesOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2147483600;display:none;align-items:center;justify-content:center;}
-  #v210UpdateNotesOverlay.show{display:flex;}
-  #v210UpdateNotes{max-width:min(720px,92vw);background:#111;color:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;font-family:'Lexend',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
-  #v210UpdateNotes header{padding:18px 20px;background:linear-gradient(135deg,#c62828,#d84315);display:flex;align-items:center;gap:12px;}
-  #v210UpdateNotes header img{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));}
-  #v210UpdateNotes header h2{margin:0;font-size:20px;letter-spacing:.4px;font-weight:800;}
-  #v210UpdateNotes .body{padding:18px 20px;line-height:1.45;font-size:15px;}
-  #v210UpdateNotes .body ul{margin:10px 0 0 0;padding-left:18px;}
-  #v210UpdateNotes .body li{margin:6px 0;}
-  #v210UpdateNotes footer{display:flex;justify-content:flex-end;gap:12px;padding:16px 20px;background:#0c0c0c;}
-  #v210UpdateNotes button{padding:10px 16px;border:0;border-radius:10px;font-weight:700;cursor:pointer}
-  #v210UpdateNotes .btn-close{background:#fff;color:#111}
-</style>
-<script>
-(function(){
-  // Ensure only added once
-  if(window.__v210UpdateNotesInstalled) return; window.__v210UpdateNotesInstalled = true;
-
-  const VERSION_TAG = 'v2_10'; // used in localStorage key
-  function keyFor(user){ return 'flex_patchnotes_seen__' + VERSION_TAG + '__' + (user || 'nouser'); }
-
-  function buildOverlay(){
-    const ov = document.createElement('div');
-    ov.id = 'v210UpdateNotesOverlay';
-    ov.innerHTML = [
-      '<div id="v210UpdateNotes">',
-        '<header>',
-          '<img alt="Flexwood" src="icons/flexwood_icon.png"/>',
-          '<h2>Flexwood Update — Flex_v2.10</h2>',
-        '</header>',
-        '<div class="body">',
-          '<p>Welcome back! Here\'s what\'s new:</p>',
-          '<ul>',
-            '<li>Flexwood event now Live &amp; ready (6 slots incl. Clapper Board, Hollywood Sign, Flexwood Background).</li>',
-            '<li>New Hollywood morph adds +$35,000 EPS when applied to an item.</li>',
-            '<li>Flexwood Background &amp; Red Carpet Pedestal.</li>',
-            '<li>General stability &amp; saving hardening.</li>',
-          '</ul>',
-        '</div>',
-        '<footer>',
-          '<button class="btn-close" id="v210Close">Close</button>',
-        '</footer>',
-      '</div>'
-    ].join('');
-    document.body.appendChild(ov);
-    ov.addEventListener('click', (e)=>{ if(e.target === ov){ hideAndRemember(); } });
-    document.getElementById('v210Close').addEventListener('click', hideAndRemember);
-    document.addEventListener('keydown', function esc(e){ if(e.key === 'Escape'){ hideAndRemember(); }});
-    return ov;
-  }
-
-  function showFor(user){
-    const ov = document.getElementById('v210UpdateNotesOverlay') || buildOverlay();
-    ov.classList.add('show');
-    // Prevent background scroll while open
-    try{ document.documentElement.style.overflow = 'hidden'; }catch(_){}
-  }
-  function hideAndRemember(){
-    try{ document.getElementById('v210UpdateNotesOverlay')?.classList.remove('show'); }catch(_){}
-    try{ document.documentElement.style.overflow = ''; }catch(_){}
-    try{
-      const u = (window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid') || 'nouser');
-      localStorage.setItem(keyFor(u), '1');
-    }catch(_){}
-  }
-
-  function maybeShow(){
-    try{
-      const user = (window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid') || '');
-      if(!user) return; // not logged in yet
-      // Skip if player is brand new this session
-      if(window.__isFirstTimePlayer === true) return;
-      const k = keyFor(user);
-      if(localStorage.getItem(k) === '1') return; // already dismissed
-      showFor(user);
-    }catch(_){}
-  }
-
-  // Wait until the game has finished loading: USER_ID + __loadComplete
-  
-  function readyNow(){
-    try{
-      const hasUser = !!(window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid'));
-      const loaded = (typeof window.__loadComplete === 'undefined') ? true : !!window.__loadComplete;
-      return hasUser && loaded;
-    }catch(_){ return false; }
-  }
-
-  function boot(){ 
-    // Try repeatedly until ready, then attempt once.
-    const tick = setInterval(()=>{
-      if(readyNow()){
-        clearInterval(tick);
-        setTimeout(maybeShow, 250);
-      }
-    }, 250);
-
-    // Safety: after 60s, if user exists but load flag never flips, still try once.
-    setTimeout(()=>{
-      try{
-        if(!readyNow() && (window.USER_ID || localStorage.getItem('flex-userid') || localStorage.getItem('userid'))){
-          maybeShow();
-        }
-      }catch(_){}
-    }, 60000);
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', boot, { once:true });
-  }else{
-    boot();
-  }
-})();
-</script>
 <script id="smooth-page-and-deletefx-script">
 (function(){
   function ensureDeleteFX(){
@@ -14718,6 +15071,53 @@ setTimeout(()=>{
     };
   }catch(e){}
 
+  // ===== SHOP MORPHS GEAR ITEM =====
+  const SHOP_MORPHS_COST = 3_000_000_000_000; // $3 trillion
+
+  function updateShopMorphsCard(){
+    try{
+      const btn = document.getElementById('buyShopMorphs');
+      if(!btn) return;
+      if(state.shopMorphsOwned){
+        btn.disabled = true;
+        btn.textContent = 'Purchased!';
+        btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+      } else {
+        btn.disabled = state.money < SHOP_MORPHS_COST;
+        btn.textContent = 'Purchase';
+        btn.style.background = '';
+      }
+    }catch(e){}
+  }
+
+  (function initShopMorphsBtn(){
+    const btn = document.getElementById('buyShopMorphs');
+    if(!btn) return;
+    btn.addEventListener('click', ()=>{
+      if(state.shopMorphsOwned) return;
+      if(state.money < SHOP_MORPHS_COST) return;
+      state.money -= SHOP_MORPHS_COST;
+      state.shopMorphsOwned = true;
+      if(typeof updateTop === 'function') updateTop();
+      if(typeof save === 'function') save();
+      updateShopMorphsCard();
+    });
+    updateShopMorphsCard();
+  })();
+
+  // Keep Shop Morphs card in sync whenever money changes
+  (function(){
+    const _u = window.updateTop;
+    if(typeof _u === 'function' && !_u.__shopMorphsPatch){
+      window.updateTop = function(){
+        const r = _u.apply(this, arguments);
+        try{ updateShopMorphsCard(); }catch(_){}
+        return r;
+      };
+      window.updateTop.__shopMorphsPatch = true;
+    }
+  })();
+
   // ---- Add Potion Brewer card to Gear overlay ----
   function insertBrewerCard(){
     const gear = $('#gearOverlay .grid');
@@ -16209,10 +16609,10 @@ function writeOwned(forceTrue){
 }
 .gd-shop-buy[disabled]{ filter:grayscale(1); cursor:default; opacity:.75; }
 
-#gameDayChoiceOverlay, #gameDayRewardOverlay, #gameDayEventOverlay, #gameDayIntroOverlay {
+#gameDayChoiceOverlay, #gameDayRewardOverlay, #gameDayEventOverlay {
   position:fixed; inset:0; z-index:15000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
 }
-#gameDayChoiceOverlay.show, #gameDayRewardOverlay.show, #gameDayEventOverlay.show, #gameDayIntroOverlay.show{ display:flex; }
+#gameDayChoiceOverlay.show, #gameDayRewardOverlay.show, #gameDayEventOverlay.show{ display:flex; }
 #gameDayEventOverlay{
   background:transparent;
   backdrop-filter:none;
@@ -16548,7 +16948,6 @@ body.money-baseball .cash::after{
 <div id="gameDayChoiceOverlay"></div>
 <div id="gameDayRewardOverlay"></div>
 <div id="gameDayEventOverlay"></div>
-<div id="gameDayIntroOverlay"></div>
 
 <script id="gameday-season2-addon">
 (function(){
@@ -17376,48 +17775,6 @@ body.money-baseball .cash::after{
     }
   });
 
-  function maybeShowIntro(){
-    // Resolve USER_ID at call-time (load is complete by now, so it is always the real value)
-    var uid = (window.USER_ID || localStorage.getItem('flex-userid') || 'guest');
-    var lsKey = 'flex_welcomeVideo_v2_43_' + uid;
-
-    // Primary guard: localStorage — survives refresh instantly, immune to season resets
-    try{ if(localStorage.getItem(lsKey) === '1') return; }catch(e){}
-
-    // Secondary guard: game-state flag (belt-and-suspenders for server-save tracking)
-    ensureState();
-    try{ if(state.flexPass && state.flexPass.introSeen) return; }catch(e){}
-
-    var ov = document.getElementById('gameDayIntroOverlay');
-    if(!ov) return;
-
-    ov.innerHTML = '<video id="gdIntroVid" style="width:min(980px,94vw);border:6px solid #111;border-radius:24px;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.45);" autoplay muted playsinline><source src="animations/welcome_to_game_day.mp4" type="video/mp4"></video>';
-    ov.classList.add('show');
-
-    // dismissed guard prevents double-fire from the ended event AND the setTimeout fallback
-    var dismissed = false;
-    function dismiss(){
-      if(dismissed) return;
-      dismissed = true;
-      ov.classList.remove('show');
-      ov.innerHTML = '';
-      // 1. Persist to localStorage immediately (survives refresh, no async delay)
-      try{ localStorage.setItem(lsKey, '1'); }catch(e){}
-      // 2. Persist to game-state so it is included in the next server save
-      try{ if(window.state && window.state.flexPass) window.state.flexPass.introSeen = true; }catch(e){}
-      // 3. Trigger the save chain via window.save (safe from inside a separate script tag)
-      try{ if(typeof window.save === 'function') window.save(); }catch(e){}
-    }
-
-    var vid = document.getElementById('gdIntroVid');
-    if(vid){
-      vid.addEventListener('ended', dismiss, {once:true});
-      // If the mp4 fails to load, dismiss cleanly rather than hanging
-      vid.addEventListener('error', function(){ setTimeout(dismiss, 400); }, {once:true});
-    }
-    // Hard fallback: exactly 8 seconds to match your video length
-    setTimeout(dismiss, 8000);
-  }
 
   window.__renderGameDayPass = renderGameDayPass;
   try{
@@ -17448,7 +17805,6 @@ body.money-baseball .cash::after{
     try{ renderInventory&&renderInventory(); renderStands&&renderStands(); recalcEPS&&recalcEPS(); }catch(e){}
     flexGoatWatcher();
     scheduleNextEvent();
-    setTimeout(maybeShowIntro, 1200);
   }
 
   function waitForLoad(){
@@ -18099,5 +18455,184 @@ body.money-baseball .cash{
 
   setTimeout(scheduleRepair, 300);
   setTimeout(scheduleRepair, 900);
+})();
+</script>
+
+
+<script id="sports-pedestal-singleton-fix">
+(function(){
+  const SPORT_KEYS = ['basketball', 'tennis'];
+  const SPORTS = {
+    basketball: {
+      bg: [
+        'radial-gradient(circle at 12% 28%, rgba(88,38,6,.20) 0 1.2px, transparent 1.7px)',
+        'radial-gradient(circle at 24% 58%, rgba(88,38,6,.18) 0 1.2px, transparent 1.7px)',
+        'radial-gradient(circle at 36% 22%, rgba(88,38,6,.18) 0 1.2px, transparent 1.7px)',
+        'radial-gradient(circle at 48% 64%, rgba(88,38,6,.16) 0 1.2px, transparent 1.7px)',
+        'radial-gradient(circle at 62% 24%, rgba(88,38,6,.18) 0 1.2px, transparent 1.7px)',
+        'radial-gradient(circle at 74% 56%, rgba(88,38,6,.18) 0 1.2px, transparent 1.7px)',
+        'radial-gradient(circle at 88% 34%, rgba(88,38,6,.20) 0 1.2px, transparent 1.7px)',
+        'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 120\' preserveAspectRatio=\'none\'><g fill=\'none\' stroke=\'rgba(66,28,0,0.78)\' stroke-width=\'7\' stroke-linecap=\'round\'><path d=\'M18 -18 C 62 18, 62 102, 18 138\'/><path d=\'M182 -18 C 138 18, 138 102, 182 138\'/><path d=\'M100 -10 L100 130\'/></g></svg>")',
+        'radial-gradient(120% 92% at 50% -14%, rgba(255,255,255,.34), rgba(255,255,255,0) 54%)',
+        'linear-gradient(180deg,#ffbf63 0%, #ef8a20 52%, #c86100 100%)'
+      ].join(', '),
+      size: 'auto, auto, auto, auto, auto, auto, auto, 100% 100%, auto, auto',
+      label: 'Basketball Pedestal'
+    },
+    tennis: {
+      bg: [
+        'radial-gradient(circle at 18% 22%, rgba(255,255,255,.14) 0 18%, transparent 19%)',
+        'radial-gradient(circle at 78% 70%, rgba(255,255,255,.10) 0 16%, transparent 17%)',
+        'repeating-radial-gradient(circle at 20% 20%, rgba(255,255,255,.06) 0 1px, rgba(0,0,0,.02) 1px 2px, transparent 2px 6px)',
+        'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 120\' preserveAspectRatio=\'none\'><path d=\'M84 -16 C 34 24, 34 96, 84 136\' fill=\'none\' stroke=\'rgba(255,255,255,0.98)\' stroke-width=\'9\' stroke-linecap=\'round\'/><path d=\'M116 -16 C 166 24, 166 96, 116 136\' fill=\'none\' stroke=\'rgba(255,255,255,0.98)\' stroke-width=\'9\' stroke-linecap=\'round\'/></svg>")',
+        'radial-gradient(120% 80% at 50% -12%, rgba(255,255,255,.30), rgba(255,255,255,0) 58%)',
+        'linear-gradient(180deg,#dfff75 0%, #acef35 54%, #71b31f 100%)'
+      ].join(', '),
+      size: 'auto, auto, auto, 100% 100%, auto, auto',
+      label: 'Tennis Pedestal'
+    }
+  };
+
+  let busy = false;
+  let queued = false;
+
+  function ensureState(){
+    window.state = window.state || {};
+    state.flexPass = state.flexPass || {};
+    state.flexPass.claimed = state.flexPass.claimed || {};
+    state.pedestalSkins = Object.assign({ default:true }, state.pedestalSkins || {});
+    if(state.flexPass.claimed.L120) state.pedestalSkins.basketball = true;
+    if(state.flexPass.claimed.L220) state.pedestalSkins.tennis = true;
+  }
+
+  function keyFor(tile){
+    if(!tile) return '';
+    const explicit = tile.getAttribute('data-reward-ped') || tile.getAttribute('data-sports-ped-final') || tile.getAttribute('data-gd-ped') || '';
+    if(SPORT_KEYS.indexOf(explicit) >= 0) return explicit;
+    const txt = String(tile.textContent || '').toLowerCase();
+    if(txt.indexOf('basketball pedestal') >= 0) return 'basketball';
+    if(txt.indexOf('tennis pedestal') >= 0) return 'tennis';
+    return '';
+  }
+
+  function rank(tile){
+    if(tile.hasAttribute('data-reward-ped')) return 0;
+    if(tile.hasAttribute('data-sports-ped-final')) return 1;
+    if(tile.hasAttribute('data-gd-ped')) return 2;
+    return 3;
+  }
+
+  function normalizeTile(tile, key){
+    const meta = SPORTS[key];
+    if(!tile || !meta) return;
+    const unlocked = !!((state.pedestalSkins || {})[key]);
+    const selected = String(state.selectedPedestalSkin || 'default') === key;
+
+    tile.classList.add('ped-tile');
+    tile.classList.toggle('locked', !unlocked);
+    tile.setAttribute('data-sports-ped-singleton', key);
+    tile.style.background = meta.bg;
+    tile.style.backgroundRepeat = 'no-repeat';
+    tile.style.backgroundSize = meta.size;
+    tile.style.display = 'flex';
+    tile.style.flexDirection = 'column';
+    tile.style.justifyContent = 'space-between';
+    tile.style.padding = '14px 14px 12px';
+    tile.style.overflow = 'hidden';
+
+    const preview = tile.querySelector('.sports-pedestal-preview');
+    if(preview) preview.remove();
+
+    let title = tile.querySelector('.sports-pedestal-title') || tile.querySelector('div');
+    if(!title){
+      title = document.createElement('div');
+      tile.insertBefore(title, tile.firstChild || null);
+    }
+    title.classList.add('sports-pedestal-title');
+    title.textContent = meta.label;
+    title.style.fontWeight = '900';
+    title.style.textShadow = '0 2px 0 rgba(0,0,0,.28)';
+    title.style.margin = '0 0 auto 0';
+
+    let btn = tile.querySelector('.ped-apply');
+    if(!btn){
+      btn = document.createElement('button');
+      btn.className = 'buy ped-apply';
+      tile.appendChild(btn);
+    }
+    btn.textContent = selected ? 'Equipped' : 'Equip';
+    btn.disabled = (!unlocked || selected);
+    if(btn.getAttribute('data-sports-ped-singleton-bound') !== key){
+      btn.setAttribute('data-sports-ped-singleton-bound', key);
+      btn.onclick = function(){
+        ensureState();
+        if(!((state.pedestalSkins || {})[key])) return;
+        state.selectedPedestalSkin = key;
+        try{ if(typeof window.applyPedestalSkin === 'function') window.applyPedestalSkin(); }catch(e){}
+        try{ if(typeof save === 'function') save(); }catch(e){}
+        try{ if(typeof window.__renderPedestalPage === 'function') window.__renderPedestalPage(); }catch(e){}
+      };
+    }
+  }
+
+  function dedupeSportsPedestals(){
+    if(busy) return;
+    busy = true;
+    try{
+      ensureState();
+      const host = document.getElementById('pedestalPage');
+      if(!host) return;
+      const grid = host.querySelector('.ped-grid') || host;
+      SPORT_KEYS.forEach(function(key){
+        const tiles = Array.from(grid.querySelectorAll('.ped-tile')).filter(function(tile){ return keyFor(tile) === key; });
+        if(!tiles.length) return;
+        tiles.sort(function(a,b){ return rank(a) - rank(b); });
+        const keep = tiles[0];
+        tiles.slice(1).forEach(function(tile){ try{ tile.remove(); }catch(e){} });
+        normalizeTile(keep, key);
+      });
+    }catch(e){}
+    busy = false;
+  }
+
+  function scheduleDedupe(){
+    if(queued) return;
+    queued = true;
+    setTimeout(function(){
+      queued = false;
+      dedupeSportsPedestals();
+    }, 0);
+  }
+
+  const previousRender = window.__renderPedestalPage;
+  window.__renderPedestalPage = function(){
+    try{ if(typeof previousRender === 'function') previousRender.apply(this, arguments); }catch(e){}
+    dedupeSportsPedestals();
+    setTimeout(dedupeSportsPedestals, 40);
+    setTimeout(dedupeSportsPedestals, 140);
+  };
+
+  document.addEventListener('click', function(ev){
+    const target = ev.target && ev.target.closest ? ev.target.closest('#openBgSelector, #bgSideTabs .bg-tab, #pedestalPage .ped-apply, .gd-claim-btn[data-claim]') : null;
+    if(target) scheduleDedupe();
+  }, true);
+
+  function observePage(){
+    const host = document.getElementById('pedestalPage');
+    if(!host || host.__sportsPedestalSingletonObserver) return;
+    host.__sportsPedestalSingletonObserver = true;
+    try{
+      new MutationObserver(scheduleDedupe).observe(host, { childList:true, subtree:true });
+    }catch(e){}
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ observePage(); scheduleDedupe(); }, {once:true});
+  } else {
+    observePage();
+    scheduleDedupe();
+  }
+  setTimeout(function(){ observePage(); dedupeSportsPedestals(); }, 300);
+  setTimeout(function(){ observePage(); dedupeSportsPedestals(); }, 900);
 })();
 </script>
