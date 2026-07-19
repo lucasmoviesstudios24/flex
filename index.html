@@ -3944,7 +3944,8 @@ function getPetSvg(petName, seed){
     petTimers: {},                      // map index -> timestamp (ms) when hatch will happen
     permanentPetMultiplier: 1,
     rebirthLevel: 0,           // becomes 5 if Flex T-Rex hatched
-    shopMorphsOwned: false     // true after Shop Morphs gear item is purchased
+    shopMorphsOwned: false,    // true after Shop Morphs gear item is purchased
+    starWars: { unlocked:false, introSeen:false, introEndsAt:0, gc:0 }
   };
   // Guard: only allow saving after a full load
   let __loadComplete = false;
@@ -4315,6 +4316,7 @@ async function save(){
       goldMorph: !!it.goldMorph,
       magical: !!it.magical,
       isRelic: !!it.isRelic,
+      event: !!it.event,
     })),
     stands: state.stands,
     shop: state.shop,
@@ -4347,6 +4349,15 @@ async function save(){
     brewer: (state.brewer || { owned:false, active:null }),
     activePotions: (state.activePotions || { multiplier: { until:0, factor:1 }, shopLuckUntil: 0, fastHatchUntil: 0, hatTrickUntil: 0 }),
     shopMorphsOwned: !!state.shopMorphsOwned,
+    // Star Wars: Starbirthday is a redeem-only event. Keep the unlock,
+    // completed intro state and Galactic Credits in the normal save payload
+    // so they follow the player across browsers just like the rest of Flex.
+    starWars: {
+      unlocked: !!(state.starWars && state.starWars.unlocked),
+      introSeen: !!(state.starWars && state.starWars.introSeen),
+      introEndsAt: Math.max(0, Math.floor(Number(state.starWars && state.starWars.introEndsAt) || 0)),
+      gc: Math.max(0, Math.floor(Number(state.starWars && state.starWars.gc) || 0))
+    },
   };
   for(const k in state.placed){
     const it = state.placed[k];
@@ -4365,6 +4376,7 @@ async function save(){
         rainbow: !!it.rainbow,
         goldMorph: !!it.goldMorph,
         magical: !!it.magical,
+        event: !!it.event,
         svg: it.svg
       };
     }
@@ -4538,6 +4550,7 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     rebirthLevel: 0,
     brewer: { owned:false, active:null },
     activePotions: { multiplier:{until:0, factor:1}, shopLuckUntil:0, fastHatchUntil:0, hatTrickUntil:0 },
+    starWars: { unlocked:false, introSeen:false, introEndsAt:0, gc:0 },
     __ts: Date.now()
   };
   dat = fresh;
@@ -4787,6 +4800,19 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     state.permanentPetMultiplier = dat.permanentPetMultiplier ?? state.permanentPetMultiplier;
     state.rebirthLevel = dat.rebirthLevel || 0;
     state.shopMorphsOwned = !!(dat.shopMorphsOwned);
+    // Restore the redeem-only Star Wars event and its currency. Coerce older
+    // or hand-edited saves to a safe shape without affecting other data.
+    try {
+      const sw = (dat.starWars && typeof dat.starWars === 'object') ? dat.starWars : {};
+      state.starWars = {
+        unlocked: !!sw.unlocked,
+        introSeen: !!sw.introSeen,
+        introEndsAt: Math.max(0, Math.floor(Number(sw.introEndsAt) || 0)),
+        gc: Math.max(0, Math.floor(Number(sw.gc) || 0))
+      };
+    } catch (e) {
+      state.starWars = { unlocked:false, introSeen:false, introEndsAt:0, gc:0 };
+    }
     // PetDex (owned pets across eggs)
     state.petDex = dat.petDex || state.petDex || {};
 // --- Potion Brewer ownership + potion timers (persisted) ---
@@ -6430,6 +6456,748 @@ initLoginAndBoot();
 })();
 
 </script>
+
+<!-- ===============================================================
+     STAR WARS: STARBIRTHDAY — redeem-only event
+     =============================================================== -->
+<style id="starWarsStarbirthdayCss">
+  #starWarsEventButton{
+    position:fixed;
+    left:96px;
+    top:24px;
+    z-index:9999;
+    width:72px;
+    height:72px;
+    padding:5px;
+    overflow:hidden;
+    border:3px solid rgba(255,255,255,.5);
+    border-radius:20px;
+    background:#000;
+    box-shadow:0 12px 28px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.14);
+    cursor:pointer;
+    transition:transform .16s ease, box-shadow .16s ease;
+  }
+  #starWarsEventButton:hover{ transform:translateY(-2px) scale(1.03); box-shadow:0 16px 34px rgba(0,0,0,.5),0 0 20px rgba(255,255,255,.28); }
+  #starWarsEventButton:active{ transform:translateY(1px) scale(.98); }
+  #starWarsEventButton img{ width:100%; height:100%; display:block; object-fit:contain; }
+
+  #starWarsUnlockIntro{
+    position:fixed;
+    inset:0;
+    z-index:2147483646;
+    display:none;
+    place-items:center;
+    overflow:hidden;
+    background:#000;
+  }
+  #starWarsUnlockIntro.show{ display:grid; }
+  #starWarsUnlockIntro video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  #starWarsUnlockIntro .sw-intro-vignette{ position:absolute; inset:0; pointer-events:none; box-shadow:inset 0 0 130px rgba(0,0,0,.78); }
+  #starWarsIntroSound{
+    position:absolute;
+    right:20px;
+    bottom:20px;
+    z-index:2;
+    display:none;
+    padding:10px 14px;
+    color:#fff;
+    font-weight:900;
+    border:1px solid rgba(255,255,255,.52);
+    border-radius:999px;
+    background:rgba(0,0,0,.74);
+    cursor:pointer;
+  }
+  #starWarsIntroStatus{
+    position:absolute;
+    left:50%;
+    bottom:22px;
+    z-index:2;
+    transform:translateX(-50%);
+    color:rgba(255,255,255,.78);
+    font:800 12px/1.2 system-ui,sans-serif;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    text-shadow:0 2px 8px #000;
+    pointer-events:none;
+  }
+
+  #starWarsEventOverlay{
+    position:fixed;
+    inset:0;
+    z-index:50000;
+    display:none;
+    overflow:auto;
+    color:#fff;
+    background:
+      radial-gradient(circle at 18% 20%,rgba(255,255,255,.12),transparent 25%),
+      linear-gradient(128deg,#000 0%,#0b0b0d 30%,#aeb2b8 72%,#fff 100%);
+  }
+  #starWarsEventOverlay.show{ display:block; }
+  #starWarsEventOverlay::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.28;
+    background-image:
+      radial-gradient(circle,#fff 0 1px,transparent 1.5px),
+      radial-gradient(circle,#fff 0 1px,transparent 1.5px);
+    background-position:0 0,37px 53px;
+    background-size:83px 83px,109px 109px;
+  }
+  .swb-shell{ position:relative; width:min(1180px,calc(100% - 30px)); min-height:100%; margin:0 auto; padding:26px 0 96px; }
+  .swb-close{
+    position:fixed;
+    right:20px;
+    top:18px;
+    z-index:3;
+    padding:9px 13px;
+    color:#fff;
+    font-weight:900;
+    border:1px solid rgba(255,255,255,.5);
+    border-radius:12px;
+    background:#050505;
+    cursor:pointer;
+  }
+  .swb-header{ display:flex; align-items:center; gap:20px; padding:10px 60px 22px 4px; }
+  .swb-header img{ width:clamp(150px,24vw,300px); height:105px; object-fit:contain; filter:drop-shadow(0 8px 18px rgba(0,0,0,.48)); }
+  .swb-kicker{ font-size:12px; font-weight:900; letter-spacing:.3em; text-transform:uppercase; color:#ffd86a; }
+  .swb-header h2{ margin:5px 0 0; color:#fff; font:900 clamp(27px,4vw,52px)/.95 "Russo One",system-ui,sans-serif; text-shadow:0 3px 0 #000,0 0 22px rgba(255,255,255,.28); }
+  .swb-grid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; }
+  .swb-panel{
+    position:relative;
+    min-height:430px;
+    overflow:hidden;
+    padding:24px;
+    border:2px solid rgba(255,255,255,.34);
+    border-radius:26px;
+    background:linear-gradient(145deg,rgba(0,0,0,.93),rgba(22,22,25,.84));
+    box-shadow:0 22px 60px rgba(0,0,0,.4),inset 0 0 30px rgba(255,255,255,.035);
+  }
+  .swb-panel h3{ margin:0 0 8px; font:900 30px/1 "Russo One",system-ui,sans-serif; }
+  .swb-panel p{ margin:0 0 18px; color:#d9dce2; font-size:17px; line-height:1.42; }
+  .swb-pack-visual{ display:grid; place-items:center; min-height:148px; margin:12px 0; perspective:800px; }
+  .swb-pack-box{
+    position:relative;
+    width:150px;
+    height:128px;
+    display:grid;
+    place-items:center;
+    padding:12px;
+    border:2px solid rgba(255,255,255,.55);
+    border-radius:20px;
+    background:linear-gradient(145deg,#1c1c20,#000 58%);
+    box-shadow:0 18px 35px rgba(0,0,0,.55),0 0 28px rgba(125,220,255,.18),inset 0 0 30px rgba(255,255,255,.06);
+    transform:rotateY(-8deg) rotateX(4deg);
+  }
+  .swb-pack-box::before,.swb-pack-box::after{ content:""; position:absolute; inset:-8px; border:1px solid rgba(120,225,255,.36); border-radius:25px; transform:translateZ(-20px); }
+  .swb-pack-box::after{ inset:-15px; opacity:.45; }
+  .swb-pack-box img{ width:100%; height:100%; object-fit:contain; }
+  .swb-item-strip{ display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin:13px 0 17px; }
+  .swb-item-strip img{ width:100%; aspect-ratio:1; object-fit:contain; border-radius:9px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); }
+  .swb-odds{ display:flex; flex-wrap:wrap; gap:7px; margin:0 0 16px; }
+  .swb-odds span{ padding:5px 8px; border-radius:999px; font-size:12px; font-weight:900; border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.08); }
+  .swb-action-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:auto; }
+  .swb-price{ color:#ffd86a; font-size:22px; font-weight:1000; white-space:nowrap; }
+  .swb-primary{
+    min-width:145px;
+    padding:12px 18px;
+    color:#050505;
+    font-weight:1000;
+    font-size:16px;
+    border:0;
+    border-radius:14px;
+    background:linear-gradient(180deg,#fff,#bec3c9);
+    box-shadow:0 8px 18px rgba(0,0,0,.35);
+    cursor:pointer;
+  }
+  .swb-primary:disabled{ opacity:.52; cursor:not-allowed; }
+  #starWarsPackMessage{ min-height:20px; margin-top:12px; color:#ffd86a; font-weight:800; }
+  .swb-game-art{ position:relative; min-height:245px; margin:20px 0; overflow:hidden; border-radius:20px; background:radial-gradient(circle at 50% 110%,#12517b 0,#061324 42%,#01040b 78%); }
+  .swb-game-art::before{ content:""; position:absolute; left:50%; bottom:-55px; width:220px; height:220px; transform:translateX(-50%); border-radius:50%; border:2px solid rgba(98,233,255,.28); box-shadow:0 0 55px rgba(98,233,255,.17); }
+  .swb-game-art::after{ content:"✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦"; position:absolute; inset:25px 0 auto; text-align:center; color:rgba(255,255,255,.72); letter-spacing:1.3em; white-space:nowrap; }
+  .swb-fighter{ position:absolute; left:50%; top:53%; transform:translate(-50%,-50%) rotate(-7deg); color:#fff; font-size:82px; text-shadow:0 0 26px #62e9ff; }
+  .swb-game-title{ position:absolute; left:0; right:0; bottom:20px; text-align:center; font-weight:1000; letter-spacing:.16em; text-transform:uppercase; }
+  .swb-credit-bar{
+    position:fixed;
+    left:50%;
+    bottom:18px;
+    z-index:2;
+    transform:translateX(-50%);
+    min-width:min(460px,calc(100% - 30px));
+    padding:13px 22px;
+    text-align:center;
+    color:#fff;
+    font-size:18px;
+    font-weight:900;
+    border:2px solid rgba(255,255,255,.44);
+    border-radius:999px;
+    background:rgba(0,0,0,.88);
+    box-shadow:0 12px 30px rgba(0,0,0,.46);
+    backdrop-filter:blur(12px);
+  }
+  .swb-credit-bar b{ color:#ffd86a; font-size:22px; }
+
+  #starWarsPackReveal{
+    position:fixed;
+    inset:0;
+    z-index:52000;
+    display:none;
+    place-items:center;
+    overflow:hidden;
+    background:radial-gradient(circle at center,#153852 0,#030711 38%,#000 80%);
+  }
+  #starWarsPackReveal.show{ display:grid; }
+  #starWarsPackReveal::before{
+    content:"";
+    position:absolute;
+    width:180vmax;
+    height:180vmax;
+    opacity:0;
+    background:repeating-conic-gradient(from 0deg,rgba(130,230,255,.42) 0deg 1deg,transparent 1deg 9deg);
+  }
+  #starWarsPackReveal.opening::before{ animation:swbHyperspace 1.35s ease-in forwards; }
+  @keyframes swbHyperspace{ 0%{opacity:0;transform:scale(.08) rotate(0)} 20%{opacity:.7} 88%{opacity:1;transform:scale(1.05) rotate(28deg)} 100%{opacity:0;transform:scale(1.8) rotate(34deg)} }
+  .swb-reveal-pack{ position:relative; z-index:2; width:190px; height:165px; display:grid; place-items:center; padding:14px; border:3px solid #fff; border-radius:24px; background:#000; box-shadow:0 0 65px rgba(128,226,255,.62); }
+  .swb-reveal-pack img{ width:100%; height:100%; object-fit:contain; }
+  #starWarsPackReveal.opening .swb-reveal-pack{ animation:swbPackRip 1.35s cubic-bezier(.2,.75,.25,1) forwards; }
+  @keyframes swbPackRip{ 0%{transform:scale(.65) rotateY(0);filter:brightness(.65)} 45%{transform:scale(1.13) rotateY(540deg);filter:brightness(1.4)} 82%{transform:scale(.84) rotateY(850deg);filter:brightness(2.5)} 100%{transform:scale(4);opacity:0;filter:brightness(5)} }
+  .swb-reward-card{ position:absolute; z-index:3; width:min(360px,calc(100% - 36px)); padding:24px; text-align:center; opacity:0; transform:scale(.5) translateY(35px); border:3px solid rgba(255,255,255,.72); border-radius:26px; background:linear-gradient(160deg,#25282e,#050506 70%); box-shadow:0 25px 80px rgba(0,0,0,.6),0 0 45px rgba(129,221,255,.36); }
+  #starWarsPackReveal.reward .swb-reveal-pack{ display:none; }
+  #starWarsPackReveal.reward .swb-reward-card{ animation:swbRewardIn .65s cubic-bezier(.17,.84,.24,1.24) forwards; }
+  @keyframes swbRewardIn{ to{opacity:1;transform:scale(1) translateY(0)} }
+  .swb-reward-card .swb-you-got{ color:#b9f3ff; font-size:12px; font-weight:900; letter-spacing:.28em; text-transform:uppercase; }
+  .swb-reward-card img{ width:190px; height:190px; object-fit:contain; margin:12px auto; border-radius:20px; background:rgba(255,255,255,.06); }
+  #starWarsRewardName{ font:900 27px/1.05 "Russo One",system-ui,sans-serif; }
+  #starWarsRewardRarity{ display:inline-block; margin:10px 0 16px; padding:7px 12px; border-radius:12px; }
+  #starWarsRevealContinue{ display:none; margin:0 auto; }
+  #starWarsPackReveal.reward #starWarsRevealContinue{ display:block; }
+
+  #starWarsGameModal{
+    position:fixed;
+    inset:0;
+    z-index:53000;
+    display:none;
+    place-items:center;
+    padding:16px;
+    background:rgba(0,0,0,.88);
+    backdrop-filter:blur(9px);
+  }
+  #starWarsGameModal.show{ display:grid; }
+  .swb-game-frame{ position:relative; width:min(1220px,100%); height:min(820px,calc(100vh - 32px)); overflow:hidden; border:2px solid rgba(131,228,255,.5); border-radius:24px; background:#02050d; box-shadow:0 25px 90px #000,0 0 36px rgba(98,233,255,.17); }
+  #starWarsGameFrame{ width:100%; height:100%; display:block; border:0; background:#02050d; }
+  #starWarsGameClose{ position:absolute; z-index:4; right:14px; top:14px; padding:9px 12px; color:#fff; font-weight:900; border:1px solid rgba(255,255,255,.45); border-radius:10px; background:rgba(0,0,0,.78); cursor:pointer; }
+  #starWarsGameWallet{ position:absolute; z-index:4; left:14px; bottom:14px; padding:8px 12px; color:#ffd86a; font-weight:900; border:1px solid rgba(255,216,106,.42); border-radius:10px; background:rgba(0,0,0,.76); pointer-events:none; }
+  #starWarsGameOverClose{ position:absolute; z-index:5; left:50%; bottom:28px; display:none; transform:translateX(-50%); min-width:220px; }
+  #starWarsGameOverClose.show{ display:block; }
+
+  @media(max-width:800px){
+    .swb-shell{ width:min(100% - 20px,680px); padding-top:18px; }
+    .swb-grid{ grid-template-columns:1fr; }
+    .swb-header{ display:block; text-align:center; padding-right:48px; }
+    .swb-header img{ height:80px; }
+    .swb-item-strip{ grid-template-columns:repeat(4,1fr); }
+    .swb-panel{ min-height:0; padding:18px; }
+    #starWarsEventButton{ left:94px; }
+  }
+  @media(prefers-reduced-motion:reduce){
+    #starWarsPackReveal.opening::before,#starWarsPackReveal.opening .swb-reveal-pack,#starWarsPackReveal.reward .swb-reward-card{ animation-duration:.01ms !important; }
+  }
+</style>
+
+<div id="starWarsUnlockIntro" aria-hidden="true">
+  <video id="starWarsIntroVideo" playsinline preload="auto"></video>
+  <div class="sw-intro-vignette"></div>
+  <button id="starWarsIntroSound" type="button">Enable sound</button>
+  <div id="starWarsIntroStatus">Star Wars: Starbirthday transmission</div>
+</div>
+
+<div id="starWarsEventOverlay" aria-hidden="true">
+  <div class="swb-shell">
+    <button class="swb-close" id="starWarsEventClose" type="button" aria-label="Close Star Wars event">Close ✕</button>
+    <header class="swb-header">
+      <img src="star_wars/star_wars_event_logo.png" alt="Star Wars" />
+      <div>
+        <div class="swb-kicker">Redeem-only event</div>
+        <h2>Star Wars: Starbirthday</h2>
+      </div>
+    </header>
+    <div class="swb-grid">
+      <section class="swb-panel" aria-labelledby="starPackTitle">
+        <h3 id="starPackTitle">Star Pack</h3>
+        <p>Open one pack to receive a random Star Wars item. Every item can drop as Legendary, Mythic, Exotic, or the rarest rarity: Cosmic.</p>
+        <div class="swb-pack-visual"><div class="swb-pack-box"><img src="star_wars/star_wars_event_logo.png" alt="Star Pack" /></div></div>
+        <div class="swb-item-strip" aria-label="Possible Star Pack items">
+          <img src="star_wars/baby_yoda.png" alt="Baby Yoda" title="Baby Yoda" />
+          <img src="star_wars/boba_fett.png" alt="Boba Fett" title="Boba Fett" />
+          <img src="star_wars/c_3po.png" alt="C-3PO" title="C-3PO" />
+          <img src="star_wars/darth_vader.png" alt="Darth Vader" title="Darth Vader" />
+          <img src="star_wars/lightsaber.png" alt="Lightsaber" title="Lightsaber" />
+          <img src="star_wars/mandalorian.png" alt="Mandalorian" title="Mandalorian" />
+          <img src="star_wars/princess_leia.png" alt="Princess Leia" title="Princess Leia" />
+          <img src="star_wars/rtd2.png" alt="RTD2" title="RTD2" />
+        </div>
+        <div class="swb-odds" aria-label="Rarity odds">
+          <span>Legendary 55%</span><span>Mythic 27%</span><span>Exotic 14%</span><span>Cosmic 4%</span>
+        </div>
+        <div class="swb-action-row">
+          <div class="swb-price">15 GC</div>
+          <button class="swb-primary" id="buyStarPack" type="button">Purchase</button>
+        </div>
+        <div id="starWarsPackMessage" role="status"></div>
+      </section>
+      <section class="swb-panel" aria-labelledby="defendGalaxyTitle">
+        <h3 id="defendGalaxyTitle">Defend the Galaxy</h3>
+        <p>Launch your starfighter, defeat enemies, and collect Galactic Credits. Every GC earned in the game is added to your saved event balance.</p>
+        <div class="swb-game-art" aria-hidden="true"><div class="swb-fighter">➤</div><div class="swb-game-title">Outer Rim Assault</div></div>
+        <div class="swb-action-row">
+          <div class="swb-price">Earn GC</div>
+          <button class="swb-primary" id="playStarWarsGame" type="button">Play</button>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="swb-credit-bar">Galactic Credits: <b id="starWarsCreditTotal">0 GC</b></div>
+</div>
+
+<div id="starWarsPackReveal" aria-hidden="true">
+  <div class="swb-reveal-pack"><img src="star_wars/star_wars_event_logo.png" alt="Opening Star Pack" /></div>
+  <div class="swb-reward-card">
+    <div class="swb-you-got">You received</div>
+    <img id="starWarsRewardImage" alt="Star Pack reward" />
+    <div id="starWarsRewardName"></div>
+    <div class="rar" id="starWarsRewardRarity"></div>
+    <button class="swb-primary" id="starWarsRevealContinue" type="button">Continue to Inventory</button>
+  </div>
+</div>
+
+<div id="starWarsGameModal" aria-hidden="true">
+  <div class="swb-game-frame">
+    <iframe id="starWarsGameFrame" title="Defend the Galaxy" allow="autoplay"></iframe>
+    <button id="starWarsGameClose" type="button" aria-label="Close Defend the Galaxy">Close ✕</button>
+    <div id="starWarsGameWallet">Saved balance: 0 GC</div>
+    <button class="swb-primary" id="starWarsGameOverClose" type="button">Close Game &amp; Keep GC</button>
+  </div>
+</div>
+
+<script id="starWarsStarbirthdayScript">
+(function(){
+  'use strict';
+
+  const INTRO_MS = 102000;
+  const PACK_COST = 15;
+  const GAME_CHANNEL = 'flex-star-wars-v1';
+  const STAR_ITEMS = [
+    {name:'Baby Yoda', file:'baby_yoda.png'},
+    {name:'Boba Fett', file:'boba_fett.png'},
+    {name:'C-3PO', file:'c_3po.png'},
+    {name:'Darth Vader', file:'darth_vader.png'},
+    {name:'Lightsaber', file:'lightsaber.png'},
+    {name:'Mandalorian', file:'mandalorian.png'},
+    {name:'Princess Leia', file:'princess_leia.png'},
+    {name:'RTD2', file:'rtd2.png'}
+  ];
+  const STAR_RARITIES = [
+    {key:'legendary', weight:55},
+    {key:'mythic', weight:27},
+    {key:'exotic', weight:14},
+    {key:'cosmic', weight:4}
+  ];
+
+  window.ITEM_FILE_MAP = window.ITEM_FILE_MAP || {};
+  STAR_ITEMS.forEach(function(item){
+    ITEM_FILE_MAP[item.name] = 'star_wars/' + item.file;
+    ITEM_FILE_MAP[item.name.toLowerCase()] = 'star_wars/' + item.file;
+  });
+  // Keep compatibility with older saves or the wording used in the supplied filename.
+  ITEM_FILE_MAP.RTD2 = 'star_wars/rtd2.png';
+  ITEM_FILE_MAP.rtd2 = 'star_wars/rtd2.png';
+  ITEM_FILE_MAP['R2-D2'] = 'star_wars/rtd2.png';
+
+  try{
+    window.RARITY = window.RARITY || {};
+    if(!RARITY.cosmic) RARITY.cosmic = {label:'COSMIC',color:'#8fd0ff',income:35000,price:[0,0],prob:0};
+  }catch(e){}
+
+  const $ = function(id){ return document.getElementById(id); };
+  let introTimer = 0;
+  let introClock = 0;
+  let packTimer = 0;
+  let packCloseTimer = 0;
+  let packBusy = false;
+  let creditSaveTimer = 0;
+  let gamePollTimer = 0;
+  let gameFallbackTimer = 0;
+  let gameBridgeReady = false;
+  let lastPolledScore = 0;
+  let loadHandled = false;
+
+  function ensureStarWarsState(){
+    window.state = window.state || {};
+    const prior = (state.starWars && typeof state.starWars === 'object') ? state.starWars : {};
+    state.starWars = {
+      unlocked: !!prior.unlocked,
+      introSeen: !!prior.introSeen,
+      introEndsAt: Math.max(0,Math.floor(Number(prior.introEndsAt)||0)),
+      gc: Math.max(0,Math.floor(Number(prior.gc)||0))
+    };
+    return state.starWars;
+  }
+
+  function queueSave(delay){
+    clearTimeout(creditSaveTimer);
+    creditSaveTimer = setTimeout(function(){
+      try{ if(typeof save === 'function') save(); }catch(e){}
+    }, typeof delay === 'number' ? delay : 500);
+  }
+
+  function updateCreditDisplays(){
+    const sw = ensureStarWarsState();
+    const label = sw.gc.toLocaleString() + ' GC';
+    if($('starWarsCreditTotal')) $('starWarsCreditTotal').textContent = label;
+    if($('starWarsGameWallet')) $('starWarsGameWallet').textContent = 'Saved balance: ' + label;
+  }
+
+  function positionEventButton(btn){
+    if(!btn) return;
+    const flexwood = $('openFlexwood');
+    if(flexwood){
+      const left = parseFloat(flexwood.style.left) || 12;
+      const top = parseFloat(flexwood.style.top) || 24;
+      const width = flexwood.offsetWidth || 72;
+      btn.style.left = (left + width + 12) + 'px';
+      btn.style.top = top + 'px';
+    }
+  }
+
+  function ensureEventButton(){
+    const sw = ensureStarWarsState();
+    let btn = $('starWarsEventButton');
+    if(!sw.unlocked || !sw.introSeen){
+      if(btn) btn.remove();
+      return null;
+    }
+    if(!btn){
+      btn = document.createElement('button');
+      btn.id = 'starWarsEventButton';
+      btn.type = 'button';
+      btn.title = 'Star Wars: Starbirthday';
+      btn.setAttribute('aria-label','Open Star Wars: Starbirthday event');
+      btn.innerHTML = '<img src="star_wars/star_wars_event_logo.png" alt="" />';
+      btn.addEventListener('click',openEventPage);
+      document.body.appendChild(btn);
+    }
+    positionEventButton(btn);
+    return btn;
+  }
+
+  function openEventPage(){
+    const sw = ensureStarWarsState();
+    if(!sw.unlocked || !sw.introSeen) return;
+    updateCreditDisplays();
+    $('starWarsEventOverlay').classList.add('show');
+    $('starWarsEventOverlay').setAttribute('aria-hidden','false');
+  }
+
+  function closeEventPage(){
+    $('starWarsEventOverlay').classList.remove('show');
+    $('starWarsEventOverlay').setAttribute('aria-hidden','true');
+  }
+
+  function finishIntro(){
+    clearTimeout(introTimer);
+    clearInterval(introClock);
+    introTimer = introClock = 0;
+    const video = $('starWarsIntroVideo');
+    try{ video.pause(); }catch(e){}
+    $('starWarsUnlockIntro').classList.remove('show');
+    $('starWarsUnlockIntro').setAttribute('aria-hidden','true');
+    const sw = ensureStarWarsState();
+    sw.unlocked = true;
+    sw.introSeen = true;
+    sw.introEndsAt = 0;
+    ensureEventButton();
+    updateCreditDisplays();
+    try{ if(typeof save === 'function') save(); }catch(e){}
+  }
+
+  function beginIntro(){
+    const sw = ensureStarWarsState();
+    if(!sw.unlocked) return;
+    if(sw.introSeen){ ensureEventButton(); return; }
+    if(!sw.introEndsAt || sw.introEndsAt <= Date.now()){
+      sw.introEndsAt = Date.now() + INTRO_MS;
+      try{ if(typeof save === 'function') save(); }catch(e){}
+    }
+    const remaining = Math.max(0,sw.introEndsAt - Date.now());
+    if(remaining <= 0){ finishIntro(); return; }
+
+    const host = $('starWarsUnlockIntro');
+    const video = $('starWarsIntroVideo');
+    const sound = $('starWarsIntroSound');
+    const status = $('starWarsIntroStatus');
+    host.classList.add('show');
+    host.setAttribute('aria-hidden','false');
+    if($('starWarsEventButton')) $('starWarsEventButton').remove();
+    sound.style.display = 'none';
+
+    const candidates = [
+      'animations/Star Wars Flex Live Animation.mp4',
+      'animations/star_wars_animation.mp4'
+    ];
+    let candidateIndex = 0;
+    function loadCandidate(){
+      video.src = candidates[candidateIndex];
+      video.load();
+    }
+    video.onerror = function(){
+      if(candidateIndex + 1 < candidates.length){
+        candidateIndex += 1;
+        loadCandidate();
+        video.muted = true;
+      }
+      else status.textContent = 'Transmission active — event unlock incoming';
+    };
+    video.oncanplay = function(){
+      if(video.paused){ video.play().catch(function(){}); }
+    };
+    video.onloadedmetadata = function(){
+      try{
+        const wallElapsed = Math.max(0,INTRO_MS - Math.max(0,sw.introEndsAt - Date.now()));
+        const duration = Number(video.duration) || (INTRO_MS/1000);
+        video.playbackRate = duration / (INTRO_MS/1000);
+        video.currentTime = Math.min(Math.max(0,duration-.1), (wallElapsed/INTRO_MS)*duration);
+      }catch(e){}
+    };
+    loadCandidate();
+    video.muted = false;
+    const playAttempt = video.play();
+    if(playAttempt && typeof playAttempt.catch === 'function'){
+      playAttempt.catch(function(){
+        video.muted = true;
+        video.play().catch(function(){});
+        sound.style.display = 'block';
+      });
+    }
+
+    clearTimeout(introTimer);
+    introTimer = setTimeout(finishIntro,remaining);
+    clearInterval(introClock);
+    introClock = setInterval(function(){
+      const secs = Math.max(0,Math.ceil((sw.introEndsAt-Date.now())/1000));
+      status.textContent = 'Star Wars: Starbirthday transmission · ' + secs + 's';
+    },1000);
+  }
+
+  window.__flexUnlockStarWars = function(){
+    const sw = ensureStarWarsState();
+    sw.unlocked = true;
+    sw.introSeen = false;
+    // Start the 1:42 display window when the full-page animation actually
+    // opens (after the redeem request/code consumption finishes).
+    sw.introEndsAt = Date.now() + INTRO_MS;
+    try{ if(typeof save === 'function') save(); }catch(e){}
+    beginIntro();
+  };
+  window.__flexFinishStarWarsIntro = finishIntro;
+
+  function weightedRarity(){
+    let roll = Math.random() * STAR_RARITIES.reduce(function(sum,row){ return sum + row.weight; },0);
+    for(let i=0;i<STAR_RARITIES.length;i++){
+      roll -= STAR_RARITIES[i].weight;
+      if(roll <= 0) return STAR_RARITIES[i].key;
+    }
+    return 'cosmic';
+  }
+
+  function makeUid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+  function showReward(item){
+    const reveal = $('starWarsPackReveal');
+    $('starWarsRewardImage').src = item.svg;
+    $('starWarsRewardName').textContent = item.name;
+    const rarity = String(item.rarity||'legendary').toLowerCase();
+    const badge = $('starWarsRewardRarity');
+    badge.className = 'rar t-' + rarity;
+    badge.textContent = (window.RARITY && RARITY[rarity] && RARITY[rarity].label) || rarity.toUpperCase();
+    reveal.classList.remove('opening');
+    reveal.classList.add('reward');
+  }
+
+  function finishPackReveal(){
+    clearTimeout(packTimer);
+    clearTimeout(packCloseTimer);
+    const reveal = $('starWarsPackReveal');
+    reveal.classList.remove('show','opening','reward');
+    reveal.setAttribute('aria-hidden','true');
+    packBusy = false;
+    $('buyStarPack').disabled = false;
+    closeEventPage();
+    try{ if(typeof renderInventory === 'function') renderInventory(); }catch(e){}
+  }
+
+  function buyStarPack(){
+    if(packBusy) return;
+    const sw = ensureStarWarsState();
+    const msg = $('starWarsPackMessage');
+    if(sw.gc < PACK_COST){
+      msg.textContent = 'You need ' + (PACK_COST - sw.gc) + ' more GC to open a Star Pack.';
+      return;
+    }
+    packBusy = true;
+    $('buyStarPack').disabled = true;
+    msg.textContent = 'Opening Star Pack…';
+    sw.gc -= PACK_COST;
+    const picked = STAR_ITEMS[Math.floor(Math.random()*STAR_ITEMS.length)];
+    const reward = {
+      uid:makeUid(),
+      name:picked.name,
+      rarity:weightedRarity(),
+      price:0,
+      baseIdx:0,
+      svg:'star_wars/' + picked.file,
+      event:true
+    };
+    state.inventory = Array.isArray(state.inventory) ? state.inventory : [];
+    state.inventory.push(reward);
+    updateCreditDisplays();
+    try{ if(typeof renderInventory === 'function') renderInventory(); }catch(e){}
+    try{ if(typeof recalcEPS === 'function') recalcEPS(); }catch(e){}
+    try{ if(typeof save === 'function') save(); }catch(e){}
+
+    const reveal = $('starWarsPackReveal');
+    reveal.classList.remove('reward');
+    reveal.classList.add('show','opening');
+    reveal.setAttribute('aria-hidden','false');
+    packTimer = setTimeout(function(){ showReward(reward); },1380);
+    packCloseTimer = setTimeout(finishPackReveal,5200);
+  }
+
+  function addGameCredits(amount){
+    amount = Math.floor(Number(amount)||0);
+    if(amount <= 0 || amount > 1000) return;
+    const sw = ensureStarWarsState();
+    sw.gc += amount;
+    updateCreditDisplays();
+    queueSave(350);
+  }
+
+  function showGameOverClose(){
+    $('starWarsGameOverClose').classList.add('show');
+  }
+
+  function stopGamePolling(){
+    clearInterval(gamePollTimer);
+    clearTimeout(gameFallbackTimer);
+    gamePollTimer = gameFallbackTimer = 0;
+  }
+
+  function startFallbackPolling(){
+    stopGamePolling();
+    if(gameBridgeReady) return;
+    const frame = $('starWarsGameFrame');
+    gamePollTimer = setInterval(function(){
+      if(gameBridgeReady){ stopGamePolling(); return; }
+      try{
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        if(!doc) return;
+        const raw = String((doc.getElementById('score')||{}).textContent||'').replace(/[^0-9]/g,'');
+        const score = Math.max(0,parseInt(raw||'0',10)||0);
+        if(score < lastPolledScore){ lastPolledScore = score; }
+        else if(score > lastPolledScore){ addGameCredits(score-lastPolledScore); lastPolledScore = score; }
+        const over = doc.getElementById('gameOver');
+        if(over && over.classList.contains('visible')) showGameOverClose();
+      }catch(e){
+        // The updated helper uses postMessage. Access errors here are harmless.
+      }
+    },160);
+  }
+
+  function openGame(){
+    const modal = $('starWarsGameModal');
+    const frame = $('starWarsGameFrame');
+    stopGamePolling();
+    gameBridgeReady = false;
+    lastPolledScore = 0;
+    $('starWarsGameOverClose').classList.remove('show');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    frame.src = 'star_wars/star_wars_game.html';
+    frame.onload = function(){
+      gameFallbackTimer = setTimeout(startFallbackPolling,700);
+      try{ frame.contentWindow.focus(); }catch(e){}
+    };
+    updateCreditDisplays();
+  }
+
+  function closeGame(){
+    const modal = $('starWarsGameModal');
+    const frame = $('starWarsGameFrame');
+    stopGamePolling();
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+    $('starWarsGameOverClose').classList.remove('show');
+    try{ frame.src = 'about:blank'; }catch(e){}
+    queueSave(0);
+  }
+
+  window.addEventListener('message',function(event){
+    const frame = $('starWarsGameFrame');
+    if(!frame || event.source !== frame.contentWindow) return;
+    const data = event.data || {};
+    if(data.channel !== GAME_CHANNEL) return;
+    gameBridgeReady = true;
+    stopGamePolling();
+    if(data.type === 'credits-earned'){
+      const amount = Math.floor(Number(data.amount)||0);
+      if(amount === 5 || amount === 10 || amount === 15) addGameCredits(amount);
+    }else if(data.type === 'game-over'){
+      showGameOverClose();
+    }else if(data.type === 'close-game'){
+      closeGame();
+    }
+  });
+
+  function handleLoadedSave(){
+    if(loadHandled) return;
+    loadHandled = true;
+    const sw = ensureStarWarsState();
+    updateCreditDisplays();
+    if(!sw.unlocked) return;
+    if(sw.introSeen){ ensureEventButton(); return; }
+    if(sw.introEndsAt && sw.introEndsAt <= Date.now()) finishIntro();
+    else beginIntro();
+  }
+
+  $('starWarsIntroSound').addEventListener('click',function(){
+    const video = $('starWarsIntroVideo');
+    video.muted = false;
+    video.play().catch(function(){});
+    this.style.display = 'none';
+  });
+  $('starWarsEventClose').addEventListener('click',closeEventPage);
+  $('buyStarPack').addEventListener('click',buyStarPack);
+  $('starWarsRevealContinue').addEventListener('click',finishPackReveal);
+  $('playStarWarsGame').addEventListener('click',openGame);
+  $('starWarsGameClose').addEventListener('click',closeGame);
+  $('starWarsGameOverClose').addEventListener('click',closeGame);
+
+  // React after the normal Flex save has hydrated; also keep the button next
+  // to Flexwood if that event recreates or repositions its own button.
+  const readyPoll = setInterval(function(){
+    if(window.__loadComplete){ clearInterval(readyPoll); handleLoadedSave(); }
+  },120);
+  setInterval(function(){
+    const sw = ensureStarWarsState();
+    if(sw.unlocked && sw.introSeen) ensureEventButton();
+    updateCreditDisplays();
+  },1200);
+  window.addEventListener('pagehide',function(){
+    clearTimeout(creditSaveTimer);
+    try{ if(window.__loadComplete && typeof save === 'function') save(); }catch(e){}
+  });
+})();
+</script>
 <!-- Right-side buttons -->
 <div class="right-rail">
 
@@ -6457,12 +7225,6 @@ initLoginAndBoot();
 <line x1="10" x2="10" y1="11" y2="17"></line>
 <line x1="14" x2="14" y1="11" y2="17"></line>
 </svg>
-<!-- Inventory Filters (under Trash) -->
-<button aria-controls="invFilterSheet" aria-expanded="false" class="inv-filter-toggle" id="invFilterToggle" title="Quick inventory filters">
-<svg aria-hidden="true" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
-<polyline points="6 9 12 15 18 9"></polyline>
-</svg>
-</button>
 </button></div>
 
 <!-- FLEX PASS Overlay -->
@@ -8707,20 +9469,6 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
 })();
 
 </script>
-<!-- Inventory Filter Mini Sheet -->
-<div aria-hidden="true" aria-labelledby="invFilterTitle" class="inv-filter-sheet" id="invFilterSheet" role="dialog">
-<header>
-<div id="invFilterTitle">Show in inventory</div>
-<button aria-label="Close inventory filters" id="invFilterClose">Close</button>
-</header>
-<div class="opts" id="invFilterOptions">
-<!-- checkboxes will be injected by script -->
-</div>
-<div class="actions">
-<button class="all" id="invFilterAll">Select all</button>
-<button class="clear" id="invFilterClear">Clear</button>
-</div>
-</div>
 <script>
 (function(){
   const CATS = [
@@ -8753,76 +9501,8 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
     return out;
   }
 
-  // UI creation
-  const host = document.getElementById('invFilterOptions');
-  if(host){
-    const p = activePrefs();
-    host.innerHTML = CATS.map(c => `
-      <label class="opt opt-${c.key}">
-        <input type="checkbox" data-key="${c.key}" ${p[c.key] ? 'checked' : ''}/>
-        <span>${c.label}</span>
-      </label>
-    `).join('');
-  }
-
-  const toggle = document.getElementById('invFilterToggle');
-  const sheet  = document.getElementById('invFilterSheet');
-  const close  = document.getElementById('invFilterClose');
-  const btnAll = document.getElementById('invFilterAll');
-  const btnClr = document.getElementById('invFilterClear');
-
-  function openSheet(){
-    sheet.classList.add('show');
-    sheet.setAttribute('aria-hidden', 'false');
-    toggle.setAttribute('aria-expanded', 'true');
-  }
-  function closeSheet(){
-    sheet.classList.remove('show');
-    sheet.setAttribute('aria-hidden', 'true');
-    toggle.setAttribute('aria-expanded', 'false');
-  }
-
-  if(toggle){
-    toggle.addEventListener('click', ()=>{
-      if(sheet.classList.contains('show')) closeSheet();
-      else openSheet();
-    });
-  }
-  if(close) close.addEventListener('click', closeSheet);
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape' && sheet.classList.contains('show')) closeSheet();
-  });
-  document.addEventListener('click', (e)=>{
-    if(sheet.classList.contains('show')){
-      const within = e.target.closest('#invFilterSheet') || e.target.closest('#invFilterToggle');
-      if(!within) closeSheet();
-    }
-  });
-
-  // Preference changes
-  host?.addEventListener('change', (e)=>{
-    if(e.target && e.target.matches('input[type="checkbox"][data-key]')){
-      const p = getPrefs();
-      const k = e.target.getAttribute('data-key');
-      p[k] = e.target.checked;
-      setPrefs(p);
-      try { applyInventoryFilters(); } catch(err){ console.warn(err); }
-    }
-  });
-  btnAll?.addEventListener('click', ()=>{
-    const p = getPrefs();
-    CATS.forEach(c => p[c.key] = true);
-    setPrefs(p);
-    host.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-    try { applyInventoryFilters(); } catch(err){ console.warn(err); }
-  });
-  btnClr?.addEventListener('click', ()=>{
-    const p = getPrefs();
-    CATS.forEach(c => p[c.key] = false);
-    setPrefs(p);
-    host.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    try { applyInventoryFilters(); } catch(err){ console.warn(err); }
-  });
+  // The inventory selector button and mini-sheet were removed.
+  // Keep the underlying preferences and keyboard command behavior intact.
 
   function annotateInventorySlots(){
     const inv = (window.state && state.inventory) ? state.inventory : [];
@@ -8835,15 +9515,16 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
         el.dataset.isPet  = (it.petType && !it.isEgg) ? '1' : '';
         const nm = String(it.name||'').toLowerCase();
         const rar = String(it.rarity||'').toLowerCase();
-        // Event: flag items from all event sources (dodger, coastal, stranger things, cosmic, hawkins)
+        // Event: flag items from all event sources, including Star Wars: Starbirthday.
         el.dataset.isEvent = (
           it.event ||
           rar === 'coastal' || rar === 'dodger' || rar === 'cosmic' || rar === 'stranger' || rar === 'hawkins' ||
-          /dodger|coastal|zite|stranger|hawkins|cosmic/.test(nm) ||
+          /dodger|coastal|zite|stranger|hawkins|cosmic|star wars|baby yoda|boba fett|c-3po|darth vader|lightsaber|mandalorian|princess leia|rtd2/.test(nm) ||
           String(it.svg||'').includes('dodger_items/') ||
           String(it.svg||'').includes('stranger_things_items/') ||
           String(it.svg||'').includes('hawkins_items/') ||
-          String(it.svg||'').includes('cosmic_items/')
+          String(it.svg||'').includes('cosmic_items/') ||
+          String(it.svg||'').includes('star_wars/')
         ) ? '1' : '';
         // Relic: Star Shard and any relic-rarity items
         el.dataset.isRelic = (it.isRelic || rar === 'relic') ? '1' : '';
@@ -8921,9 +9602,6 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
       if(letter === 'a'){
         CATS.forEach(c => p[c.key] = show);
         setPrefs(p);
-        try{
-          host?.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb => cb.checked = show);
-        }catch(e){}
         try{ applyInventoryFilters(); }catch(e){}
         return (show ? 'Show' : 'Hide') + ' ALL';
       }
@@ -8931,12 +9609,6 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
       if(!keys.length) return null;
       keys.forEach(k => p[k] = show);
       setPrefs(p);
-      try{
-        host?.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb=>{
-          const kk = cb.getAttribute('data-key');
-          if(keys.includes(kk)) cb.checked = show;
-        });
-      }catch(e){}
       try{ applyInventoryFilters(); }catch(e){}
       return (show ? 'Show' : 'Hide') + ': ' + keys.join(', ');
     }
@@ -9050,6 +9722,7 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
     const codes = Array.isArray(data.codes) ? data.codes : [];
     const hit = codes.find(c => (c && c.active !== false && String(c.code) === raw));
     if(!hit){ msg.textContent = 'Invalid or inactive code.'; return; }
+    let startStarWarsIntro = false;
 
     if(hit.type === 'item'){
       try{
@@ -9153,6 +9826,33 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
           });
         } catch(e) { console.warn(e); }
       }catch(e){ console.warn(e); msg.textContent='Could not unlock background.'; return; }
+    } else if(hit.type === 'event'){
+      try{
+        const eventKey = String(hit.eventKey || '').toLowerCase();
+        if(eventKey !== 'star_wars_starbirthday'){
+          msg.textContent = 'This event code is not supported by this Flex version.';
+          return;
+        }
+        window.state = window.state || {};
+        const previous = (state.starWars && typeof state.starWars === 'object') ? state.starWars : {};
+        const wasUnlocked = !!previous.unlocked;
+        const previousCredits = Math.max(0, Math.floor(Number(previous.gc) || 0));
+        state.starWars = {
+          unlocked: true,
+          introSeen: wasUnlocked ? !!previous.introSeen : false,
+          introEndsAt: wasUnlocked ? Math.max(0,Math.floor(Number(previous.introEndsAt)||0)) : Date.now() + 102000,
+          gc: previousCredits
+        };
+        if(typeof save === 'function') await save();
+        banner(wasUnlocked ? 'Star Wars: Starbirthday is already unlocked.' : 'Redeemed! Star Wars: Starbirthday unlocked.');
+        try {
+          const nextCodes = codes.filter(x => String(x.code) !== String(raw));
+          await fetch(`${SERVER_BASE}/rawsave?user=${encodeURIComponent(BUCKET_USER)}`, {
+            method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ __ts: Date.now(), codes: nextCodes })
+          });
+        } catch(e) { console.warn(e); }
+        startStarWarsIntro = !state.starWars.introSeen;
+      }catch(e){ console.warn(e); msg.textContent='Could not unlock the Star Wars event.'; return; }
     } else {
       msg.textContent = 'Unknown reward type.'; return;
     }
@@ -9160,6 +9860,11 @@ return { uid: (Math.random().toString(36).slice(2) + Date.now().toString(36)), n
     hide(document.getElementById('redeemOverlay'));
     msg.textContent = '';
     if(inp) inp.value = '';
+    if(startStarWarsIntro){
+      setTimeout(function(){
+        try{ if(typeof window.__flexUnlockStarWars === 'function') window.__flexUnlockStarWars(); }catch(e){}
+      }, 80);
+    }
   } finally {
     if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); if (btn.dataset._label) btn.textContent = btn.dataset._label; }
     if (typeof __redeemBusy !== 'undefined') __redeemBusy = false;
