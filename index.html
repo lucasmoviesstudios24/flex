@@ -3942,6 +3942,7 @@ function getPetSvg(petName, seed){
     petPedestalsPurchased: 0,           // 0..2
     petStands: [null,null],             // each entry: null or { uid,name,isEgg,eggType,petType,petEps,svg,baseIdx }
     petTimers: {},                      // map index -> timestamp (ms) when hatch will happen
+    blueDogAbility: { timers:{} },      // uid -> { nextAt, activeUntil }
     permanentPetMultiplier: 1,
     rebirthLevel: 0,           // becomes 5 if Flex T-Rex hatched
     shopMorphsOwned: false,    // true after Shop Morphs gear item is purchased
@@ -4333,6 +4334,7 @@ async function save(){
     petPedestalsPurchased: state.petPedestalsPurchased,
     petStands: {}, // serialized by index
     petTimers: state.petTimers,
+    blueDogAbility: state.blueDogAbility || { timers:{} },
     permanentPetMultiplier: state.permanentPetMultiplier,
     petDex: (state.petDex || {}),
     rebirthLevel: state.rebirthLevel || 0,
@@ -4545,6 +4547,7 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
     petPedestalsPurchased: 0,
     petStands: {},
     petTimers: {},
+    blueDogAbility: { timers:{} },
     permanentPetMultiplier: 1,
     petDex: {},
     rebirthLevel: 0,
@@ -4797,6 +4800,8 @@ if (isEmpty && __localCandidate) dat = __localCandidate;
       }
     }
     state.petTimers = dat.petTimers ?? state.petTimers;
+    state.blueDogAbility = dat.blueDogAbility || state.blueDogAbility || { timers:{} };
+    state.blueDogAbility.timers = state.blueDogAbility.timers || {};
     state.permanentPetMultiplier = dat.permanentPetMultiplier ?? state.permanentPetMultiplier;
     state.rebirthLevel = dat.rebirthLevel || 0;
     state.shopMorphsOwned = !!(dat.shopMorphsOwned);
@@ -7196,6 +7201,253 @@ initLoginAndBoot();
     clearTimeout(creditSaveTimer);
     try{ if(window.__loadComplete && typeof save === 'function') save(); }catch(e){}
   });
+})();
+</script>
+
+<!-- Blue Dog redeem pet: 70,000 EPS, x6 pedestal multiplier, x12 boost every 10 minutes -->
+<style id="blue-dog-pet-style">
+  .pet-placed.blue-dog-boost{
+    position:relative;
+    overflow:visible !important;
+    isolation:isolate;
+  }
+  .pet-placed.blue-dog-boost > img{
+    position:relative;
+    z-index:2;
+    filter:drop-shadow(0 0 10px rgba(38,174,255,.95));
+  }
+  .blue-dog-aura{
+    position:absolute;
+    inset:-24px;
+    z-index:1;
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .blue-dog-aura::before,
+  .blue-dog-aura::after{
+    content:"";
+    position:absolute;
+    inset:8px;
+    border:4px solid rgba(50,183,255,.95);
+    border-radius:50%;
+    box-shadow:0 0 12px #22a8ff, 0 0 30px rgba(32,153,255,.8), inset 0 0 18px rgba(87,207,255,.55);
+    animation:blueDogRingPulse 1.35s ease-out infinite;
+  }
+  .blue-dog-aura::after{
+    animation-delay:.67s;
+  }
+  .blue-dog-particle{
+    position:absolute;
+    left:var(--left);
+    top:var(--top);
+    width:var(--size);
+    height:var(--size);
+    border-radius:50%;
+    background:#72ddff;
+    box-shadow:0 0 8px #21a8ff, 0 0 14px #087cff;
+    opacity:0;
+    animation:blueDogParticleDrift var(--duration) ease-out var(--delay) infinite;
+  }
+  @keyframes blueDogRingPulse{
+    0%{ transform:scale(.65); opacity:0; }
+    22%{ opacity:1; }
+    100%{ transform:scale(1.22); opacity:0; }
+  }
+  @keyframes blueDogParticleDrift{
+    0%{ transform:translate(0,12px) scale(.45); opacity:0; }
+    18%{ opacity:1; }
+    100%{ transform:translate(var(--drift-x),-62px) scale(1.15); opacity:0; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .blue-dog-aura::before,.blue-dog-aura::after,.blue-dog-particle{ animation-duration:3s; }
+  }
+</style>
+<script>
+(function installBlueDogPet(){
+  'use strict';
+  const PET_NAME = 'Blue Dog';
+  const PET_EPS = 70000;
+  const BASE_MULTIPLIER = 6;
+  const CYCLE_MS = 10 * 60 * 1000;
+  const BOOST_MS = 60 * 1000;
+
+  function petName(pet){
+    return String((pet && (pet.petType || pet.name)) || '').trim().toLowerCase();
+  }
+  function isBlueDog(pet){
+    return !!(pet && !pet.isEgg && petName(pet) === 'blue dog');
+  }
+  function placedBlueDogs(){
+    try{
+      return Array.from((window.state && state.petStands) || [])
+        .map(function(pet, index){ return {pet:pet, index:index, uid:String((pet && pet.uid) || ('slot-'+index))}; })
+        .filter(function(entry){ return isBlueDog(entry.pet); });
+    }catch(e){ return []; }
+  }
+  function ensureAbilityState(){
+    window.state = window.state || {};
+    state.blueDogAbility = state.blueDogAbility || {timers:{}};
+    state.blueDogAbility.timers = state.blueDogAbility.timers || {};
+    return state.blueDogAbility.timers;
+  }
+  function timerIsActive(uid, now){
+    const timer = ensureAbilityState()[uid];
+    return !!(timer && Number(timer.activeUntil) > (now || Date.now()));
+  }
+
+  // Make Blue Dog available to the redeem fallback lookup and to newer pet registries.
+  try{
+    if(typeof PET_TABLES === 'object' && PET_TABLES){
+      PET_TABLES.redeem = Array.isArray(PET_TABLES.redeem) ? PET_TABLES.redeem : [];
+      if(!PET_TABLES.redeem.some(function(p){ return p && p.name === PET_NAME; })){
+        PET_TABLES.redeem.push({name:PET_NAME, chance:1, eps:PET_EPS});
+      }
+    }
+  }catch(e){}
+  window.FLEX_PETS = window.FLEX_PETS || [];
+  if(!window.FLEX_PETS.some(function(p){ return p && p.id === 'blue_dog'; })){
+    window.FLEX_PETS.push({
+      id:'blue_dog', name:PET_NAME, icon:'pets/blue_dog.png', eps:PET_EPS,
+      multiplier:BASE_MULTIPLIER, boostedMultiplier:BASE_MULTIPLIER * 2,
+      boostEveryMs:CYCLE_MS, boostDurationMs:BOOST_MS, redeemOnly:true, special:true
+    });
+  }
+
+  // Extend the existing art resolver without disturbing any later event-pet mappings.
+  const previousGetPetSvg = window.getPetSvg;
+  window.getPetSvg = function(name, seed){
+    if(String(name || '').trim().toLowerCase() === 'blue dog') return 'pets/blue_dog.png';
+    return typeof previousGetPetSvg === 'function' ? previousGetPetSvg.apply(this, arguments) : 'pets/blue_dog.png';
+  };
+
+  // Preserve all existing event/permanent multipliers while adding Blue Dog to
+  // the game's established additive special-pet pedestal total.
+  const previousPedestalMultiplier = window.getActivePedestalMultiplier || function(){ return 1; };
+  window.getActivePedestalMultiplier = function(){
+    let previous = 1;
+    try{ previous = Number(previousPedestalMultiplier.apply(this, arguments)) || 1; }catch(e){ previous = 1; }
+    const dogs = placedBlueDogs();
+    if(!dogs.length) return previous;
+
+    let existingSpecialTotal = 0;
+    try{
+      Array.from(state.petStands || []).forEach(function(pet){
+        if(!pet || pet.isEgg) return;
+        const name = petName(pet);
+        if(name === 'flex t-rex' || name === 'flex dragon' || name === 'flexicorn') existingSpecialTotal += 5;
+        else if(name === 'rainbow flex t-rex' || name === 'rainbow flex dragon') existingSpecialTotal += 10;
+      });
+    }catch(e){}
+    const oldPedestalBase = existingSpecialTotal > 0 ? existingSpecialTotal : 1;
+    const now = Date.now();
+    let blueDogTotal = 0;
+    dogs.forEach(function(entry){
+      blueDogTotal += BASE_MULTIPLIER * (timerIsActive(entry.uid, now) ? 2 : 1);
+    });
+    return previous * ((existingSpecialTotal + blueDogTotal) / oldPedestalBase);
+  };
+
+  function addAura(host){
+    if(host.querySelector('.blue-dog-aura')) return;
+    const aura = document.createElement('div');
+    aura.className = 'blue-dog-aura';
+    for(let i=0; i<14; i++){
+      const particle = document.createElement('i');
+      particle.className = 'blue-dog-particle';
+      particle.style.setProperty('--left', (8 + Math.random()*84).toFixed(1) + '%');
+      particle.style.setProperty('--top', (30 + Math.random()*65).toFixed(1) + '%');
+      particle.style.setProperty('--size', (3 + Math.random()*6).toFixed(1) + 'px');
+      particle.style.setProperty('--drift-x', (-30 + Math.random()*60).toFixed(1) + 'px');
+      particle.style.setProperty('--duration', (1.5 + Math.random()*1.7).toFixed(2) + 's');
+      particle.style.setProperty('--delay', (-Math.random()*2.5).toFixed(2) + 's');
+      aura.appendChild(particle);
+    }
+    host.appendChild(aura);
+  }
+  function refreshAura(){
+    const dogs = placedBlueDogs();
+    const blueDogHosts = Array.from(document.querySelectorAll('.pet-placed')).filter(function(host){
+      const img = host.querySelector('img');
+      const src = String((img && (img.getAttribute('src') || img.src)) || '').toLowerCase();
+      return src.indexOf('blue_dog.png') !== -1 || String(host.textContent || '').trim().toLowerCase().indexOf('blue dog') !== -1;
+    });
+    const now = Date.now();
+    blueDogHosts.forEach(function(host, index){
+      const entry = dogs[index];
+      const active = !!(entry && timerIsActive(entry.uid, now));
+      host.classList.toggle('blue-dog-boost', active);
+      if(active) addAura(host);
+      else host.querySelectorAll('.blue-dog-aura').forEach(function(aura){ aura.remove(); });
+    });
+    document.querySelectorAll('.pet-placed.blue-dog-boost').forEach(function(host){
+      if(blueDogHosts.indexOf(host) === -1){
+        host.classList.remove('blue-dog-boost');
+        host.querySelectorAll('.blue-dog-aura').forEach(function(aura){ aura.remove(); });
+      }
+    });
+  }
+
+  let lastMultiplierSignature = '';
+  function tick(){
+    try{
+      const now = Date.now();
+      const dogs = placedBlueDogs();
+      const present = new Set(dogs.map(function(entry){ return entry.uid; }));
+      const timers = ensureAbilityState();
+      let shouldSave = false;
+      let epsChanged = false;
+
+      // Correct older or hand-authored Blue Dog rewards to the canonical EPS.
+      const allPets = Array.from((state && state.inventory) || []).concat(Array.from((state && state.petStands) || []));
+      allPets.forEach(function(pet){
+        if(isBlueDog(pet) && Number(pet.petEps) !== PET_EPS){ pet.petEps = PET_EPS; shouldSave = true; epsChanged = true; }
+      });
+
+      Object.keys(timers).forEach(function(uid){
+        if(!present.has(uid)){ delete timers[uid]; shouldSave = true; epsChanged = true; }
+      });
+      dogs.forEach(function(entry){
+        let timer = timers[entry.uid];
+        if(!timer){
+          timer = timers[entry.uid] = {nextAt:now + CYCLE_MS, activeUntil:0};
+          shouldSave = true;
+        }
+        timer.nextAt = Number(timer.nextAt) || (now + CYCLE_MS);
+        timer.activeUntil = Number(timer.activeUntil) || 0;
+        if(timer.activeUntil > 0 && now >= timer.activeUntil){
+          timer.activeUntil = 0;
+          shouldSave = true;
+          epsChanged = true;
+        }
+        if(timer.activeUntil <= now && now >= timer.nextAt){
+          timer.activeUntil = now + BOOST_MS;
+          timer.nextAt = now + CYCLE_MS;
+          shouldSave = true;
+          epsChanged = true;
+        }
+      });
+
+      const signature = dogs.map(function(entry){ return entry.uid + ':' + (timerIsActive(entry.uid, now) ? '12' : '6'); }).join('|');
+      if(signature !== lastMultiplierSignature){ lastMultiplierSignature = signature; epsChanged = true; }
+      if(epsChanged){
+        try{ if(typeof recalcEPS === 'function') recalcEPS(); }catch(e){}
+        try{ if(typeof updateMultiplierBadge === 'function') updateMultiplierBadge(); }catch(e){}
+        try{ if(typeof updateTop === 'function') updateTop(); }catch(e){}
+      }
+      if(shouldSave){ try{ if(typeof save === 'function') save(); }catch(e){} }
+      refreshAura();
+    }catch(e){ console.warn('Blue Dog ability update failed:', e); }
+  }
+
+  function start(){
+    tick();
+    setInterval(tick, 500);
+    try{
+      new MutationObserver(function(){ refreshAura(); }).observe(document.body, {childList:true, subtree:true});
+    }catch(e){}
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, {once:true});
+  else start();
 })();
 </script>
 <!-- Right-side buttons -->
@@ -19339,5 +19591,36 @@ body.money-baseball .cash{
   }
   setTimeout(function(){ observePage(); dedupeSportsPedestals(); }, 300);
   setTimeout(function(){ observePage(); dedupeSportsPedestals(); }, 900);
+})();
+</script>
+
+<script id="blue-dog-final-multiplier">
+(function(){
+  if(window.__blueDogFinalMultiplierInstalled) return;
+  window.__blueDogFinalMultiplierInstalled = true;
+  const previous = window.getActivePedestalMultiplier || function(){ return 1; };
+  window.getActivePedestalMultiplier = function(){
+    let oldValue = 1;
+    try{ oldValue = Number(previous.apply(this, arguments)) || 1; }catch(e){ oldValue = 1; }
+    try{
+      const stands = Array.from((window.state && state.petStands) || []);
+      let existingTotal = 0;
+      let blueTotal = 0;
+      const now = Date.now();
+      const timers = (((state || {}).blueDogAbility || {}).timers) || {};
+      stands.forEach(function(pet, index){
+        if(!pet || pet.isEgg) return;
+        const name = String(pet.petType || pet.name || '').trim().toLowerCase();
+        if(name === 'flex t-rex' || name === 'flex dragon' || name === 'flexicorn') existingTotal += 5;
+        else if(name === 'rainbow flex t-rex' || name === 'rainbow flex dragon') existingTotal += 10;
+        else if(name === 'blue dog'){
+          const uid = String(pet.uid || ('slot-' + index));
+          blueTotal += 6 * (timers[uid] && Number(timers[uid].activeUntil) > now ? 2 : 1);
+        }
+      });
+      if(!blueTotal) return oldValue;
+      return oldValue * ((existingTotal + blueTotal) / (existingTotal > 0 ? existingTotal : 1));
+    }catch(e){ return oldValue; }
+  };
 })();
 </script>
