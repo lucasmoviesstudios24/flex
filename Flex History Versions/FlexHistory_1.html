@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flex — Shop & Flex Game</title>
+  <!-- Fonts chosen to match the concept look -->
+  <link href="https://fonts.googleapis.com/css2?family=Bungee:wght@400&family=Russo+One&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ui-blue:#59a7ff;
+      --ui-blue-dark:#2973e3;
+      --ink:#0a0f1a;
+      --panel:#3a3a42;
+      --panel-2:#2b2b31;
+      --slot:#9aa0a6;
+      --success:#2ecc71;
+      --danger:#e74c3c;
+      --gold:#ffb200;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:28px;
+
+      /* rarity theme colors (stroke only used for outline look) */
+      --c-common:#6dff79;
+      --c-rare:#4cc4ff;
+      --c-epic:#b66bff;
+      --c-legendary:#ffd84a;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      background:#0b7;
+      overscroll-behavior:none;
+      color:#fff;
+      font-family:"Rajdhani", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      user-select:none;
+    }
+
+    /* Pixelly blue/green background using layered gradients */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background-image:
+        linear-gradient(0deg, rgba(0,0,0,.06), rgba(255,255,255,.06)),
+        repeating-linear-gradient(45deg, #1aa69e 0 12px, #1ca3d8 12px 24px, #1f7fb8 24px 36px),
+        repeating-linear-gradient(-45deg, #1dc79d 0 12px, #1ea9d0 12px 24px, #2b6ab8 24px 36px);
+      filter:contrast(115%) saturate(120%);
+      image-rendering:pixelated;
+      background-size: 100% 100%, 24px 24px, 24px 24px;
+      mix-blend-mode: normal;
+      z-index:-2;
+    }
+
+    body::after{
+      /* big pixelation blocks */
+      content:""; position:fixed; inset:0; z-index:-1;
+      background:linear-gradient(90deg, rgba(255,255,255,.05), rgba(0,0,0,.05));
+      backdrop-filter: blur(0px);
+      image-rendering: pixelated;
+      background-size: 8px 8px;
+      opacity:.45;
+    }
+
+    .game{
+      position:relative; min-height:100%; padding:20px; box-sizing:border-box;
+      display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+      gap:24px;
+    }
+
+    /* CASH BANNER */
+    .cash{
+      font-family:"Bungee", sans-serif;
+      font-size: clamp(28px, 5vw, 54px);
+      background: var(--ui-blue);
+      color:#000;
+      border:6px solid #0e2a4c;
+      border-radius: 28px;
+      padding: 6px 28px 8px;
+      box-shadow: var(--shadow);
+      letter-spacing:2px;
+      text-shadow: 0 2px 0 rgba(255,255,255,.35);
+    }
+
+    /* LEFT RAIL ICONS */
+    .left-rail{
+      position:fixed; left:16px; top:120px; display:flex; flex-direction:column; gap:16px; z-index:5;
+    }
+    .icon-btn{ width:96px; height:96px; border-radius:20px; display:grid; place-items:center; cursor:pointer; box-shadow:var(--shadow); border:4px solid rgba(0,0,0,.4);}
+    .icon-shop{ background:#57d85a; }
+    .icon-tools{ background:#8c8f95; }
+    .icon-btn svg{ width:64%; height:64%; }
+
+    /* STANDS */
+    .stands{ margin-top:24px; display:grid; grid-template-columns:repeat(4, 1fr); gap:40px; width:min(100%,1000px);}
+    .stand{ position:relative; height:120px; display:flex; align-items:flex-end; justify-content:center;}
+    .pedestal{
+      width: 200px; height: 48px; background: linear-gradient(#ffda66, #f0a800);
+      border-radius: 12px; box-shadow: inset 0 6px 0 rgba(255,255,255,.35), 0 10px 0 #bb7a00, 0 14px 18px rgba(0,0,0,.4);
+    }
+    .placed{
+      position:absolute; bottom:52px; display:flex; align-items:center; justify-content:center; width:160px; height:80px; border-radius:16px; background:rgba(0,0,0,.18); backdrop-filter: blur(1px); outline:4px solid rgba(0,0,0,.35);
+      transition:transform .15s ease;
+    }
+    .placed:hover{ transform:translateY(-3px) scale(1.02); }
+
+    /* INVENTORY */
+    .inventory-wrap{ width:min(1100px, 96%); }
+    .inventory{
+      display:flex; gap:12px; overflow-x:auto; padding:14px; background:rgba(0,0,0,.25); border-radius:20px; box-shadow:var(--shadow); border:4px solid rgba(0,0,0,.35);
+    }
+    .slot{
+      min-width:110px; height:92px; background: #b4b8bd; border-radius:18px; display:grid; place-items:center; color:#111; font-weight:700; border:4px solid #262a2f; position:relative; cursor:pointer;
+    }
+    .slot.selected{ outline:6px solid var(--ui-blue);}
+    .slot .rar{ position:absolute; right:6px; bottom:4px; font-size:11px; padding:2px 6px; border-radius:10px; background:rgba(0,0,0,.4); color:#fff; }
+
+    /* SHOP OVERLAY */
+    .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:10; }
+    .overlay.show{ display:flex; }
+    .shop{
+      width:min(1000px, 92%); background:#4a4a52; border-radius:30px; border:6px solid #212127; box-shadow:var(--shadow);
+      padding:24px; position:relative; color:#e8e8ee;
+    }
+    .shop h2{
+      text-align:center; margin:0 0 18px 0; font-family:"Russo One"; font-size:42px; letter-spacing:1px; color:#8aff8f; text-shadow:0 2px 0 #0f0f0f;
+    }
+    .refresh-note{ text-align:center; font-weight:700; opacity:.85; margin-top:10px; }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+
+    .card{ background:#33333b; border-radius:22px; border:4px solid #1a1a1f; padding:18px; display:flex; flex-direction:column; gap:8px; justify-content:space-between; min-height:160px; }
+    .card h3{ margin:0; font-size:30px; font-family:"Russo One"; letter-spacing:1px; color:#d7d9dd; }
+    .tag{ font-size:26px; font-family:"Bungee"; letter-spacing:1px; -webkit-text-stroke:2px #000; color:transparent; filter:drop-shadow(0 2px 0 rgba(0,0,0,.5)); }
+    .t-common{ color:var(--c-common); }
+    .t-rare{ color:var(--c-rare); }
+    .t-epic{ color:var(--c-epic); }
+    .t-legendary{ color:var(--c-legendary); }
+
+    .price{ font-weight:900; font-size:22px; }
+    .buy{ align-self:flex-end; padding:10px 16px; font-weight:900; border:none; border-radius:14px; cursor:pointer; background:linear-gradient(var(--ui-blue), var(--ui-blue-dark)); color:#fff; box-shadow:var(--shadow); }
+    .buy:disabled{ filter:grayscale(1) brightness(.7); cursor:not-allowed; }
+
+    .closeX{ position:absolute; right:12px; top:8px; font-size:28px; background:#222; color:#fff; border:none; border-radius:14px; width:44px; height:44px; cursor:pointer; }
+
+    .topbar{ display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; }
+    .eps{ padding:6px 12px; border-radius:12px; background:rgba(0,0,0,.35); font-weight:800; }
+
+    @media (max-width:800px){
+      .stands{ gap:22px; }
+      .pedestal{ width:150px;}
+      .placed{ width:130px; }
+      .icon-btn{ width:76px; height:76px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <div class="topbar">
+      <div class="cash" id="cash">$1,000,000</div>
+      <div class="eps" id="eps">+ $0 / sec</div>
+    </div>
+
+    <div class="left-rail">
+      <button class="icon-btn icon-shop" id="openShop" aria-label="Open shop" title="Shop">
+        <!-- cart icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="#e40000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1.8"></circle>
+          <circle cx="20" cy="21" r="1.8"></circle>
+          <path d="M1 2h3l3.6 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L23 6H6"></path>
+        </svg>
+      </button>
+      <button class="icon-btn icon-tools" id="toolsBtn" aria-label="Tools" title="Tools (toggle fast refresh)">
+        <!-- wrench icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22.7 19.3L13 9.6M16 3a5 5 0 0 0-6.2 6.2l-7.7 7.7a2.5 2.5 0 1 0 3.5 3.5l7.7-7.7A5 5 0 0 0 21 8"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="stands" id="stands">
+      <!-- Stands rendered by JS -->
+    </div>
+
+    <div class="inventory-wrap">
+      <div class="inventory" id="inventory"></div>
+    </div>
+  </div>
+
+  <!-- SHOP OVERLAY -->
+  <div class="overlay" id="shopOverlay" aria-hidden="true">
+    <div class="shop" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+      <button class="closeX" id="closeShop" aria-label="Close">✕</button>
+      <h2 id="shopTitle">Shop</h2>
+      <div class="grid" id="shopGrid"><!-- cards here --></div>
+      <div class="refresh-note" id="refreshNote">Shop refreshes every 5:00</div>
+    </div>
+  </div>
+
+  <script>
+    /*****************
+     * GAME CONSTANTS *
+     *****************/
+    const MONEY_START = 1_000_000;
+    const STAND_COUNT = 4;
+    const SHOP_SLOTS = 4; // as in concept
+
+    const RARITY = {
+      common:   { label:'COMMON', color:'var(--c-common)', income: 50,   price:[8_000, 40_000], prob: 0.60 },
+      rare:     { label:'RARE',   color:'var(--c-rare)',   income: 200,  price:[40_000, 150_000], prob: 0.25 },
+      epic:     { label:'EPIC',   color:'var(--c-epic)',   income: 800,  price:[150_000, 420_000], prob: 0.12 },
+      legendary:{ label:'LEGENDARY', color:'var(--c-legendary)', income: 3000, price:[420_000, 920_000], prob: 0.03 },
+    };
+
+    const ITEM_NAMES = [
+      '24 King Crown','Donut','3D Printer','Space Nathan','Photon Blade','Quantum Sneakers','Gilded Compass','Neon Koi','Retro Gameboy','Crystal Cube','Stormy Umbrella','Lava Lamp XL','Meteorite Pebble','Golden Spatula','Rainbow Headphones','Frostbite Skate','Turbo Toaster','Aqua Drone','Mystic Dice','Chrome Duck','Pixel Panda','Aurora Lamp','Pocket Portal','Glitch Sprite','Cyber Skateboard','Fusion Watch','Prism Lens','Velvet Cape','Comet Board','Void Speaker','Sapphire Ring','Electric Yo‑Yo','Starlit Guitar','Omega Keyboard','Arcade Token','Gravity Boots','Lucky Clover','Violet Camera','Emerald Mug','Cobalt Flask','Sunburst Cap','Micro Bot','Pastel Palette','Solar Charger','Thunder Mug','Bamboo Speaker','Dream Journal','Marble Chess','Jetpack Mini','Aurora Hoodie'
+    ];
+
+    // FALLBACK: ensure 50 unique names
+    while (ITEM_NAMES.length < 50) ITEM_NAMES.push('Item #' + (ITEM_NAMES.length+1));
+
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    const state = {
+      money: MONEY_START,
+      eps: 0, // earnings per second
+      inventory: [], // {id,name,rarity,price}
+      stands: [null,null,null,null], // references to inventory items (by uid)
+      selectedItemUid: null,
+      fastMode:false,
+      shop: { items:[], nextRefreshAt:0 }
+    };
+
+    function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+    /*****************
+     * SAVE / LOAD
+     *****************/
+    const LS_KEY = 'flex-save-v1';
+    function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+    function load(){
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return;
+      try{
+        const dat = JSON.parse(raw);
+        Object.assign(state, dat);
+      }catch(e){ console.warn('load failed',e); }
+    }
+
+    /*****************
+     * MONEY + EPS
+     *****************/
+    function fmt(n){
+      return n.toLocaleString(undefined,{maximumFractionDigits:0});
+    }
+    function updateTop(){
+      $('#cash').textContent = '$' + fmt(Math.max(0, Math.floor(state.money)));
+      $('#eps').textContent = '+ $' + fmt(state.eps) + ' / sec';
+    }
+
+    function recalcEPS(){
+      let total = 0;
+      state.stands.forEach(uid => {
+        if(!uid) return;
+        const it = state.inventory.find(x=>x.uid===uid);
+        if(!it) return;
+        total += RARITY[it.rarity].income;
+      });
+      state.eps = total; updateTop(); save();
+    }
+
+    // passive income ticker
+    let lastTick = performance.now();
+    function tick(now){
+      const dt = (now - lastTick)/1000; // seconds
+      lastTick = now;
+      if(state.eps>0){ state.money += state.eps * dt; updateTop(); }
+      requestAnimationFrame(tick);
+    }
+
+    /*****************
+     * INVENTORY UI
+     *****************/
+    function rarityBadge(r){
+      return `<span class="rar">${RARITY[r].label}</span>`;
+    }
+
+    function renderInventory(){
+      const wrap = $('#inventory'); wrap.innerHTML='';
+      state.inventory.forEach(it=>{
+        const el = document.createElement('div');
+        el.className = 'slot' + (state.selectedItemUid===it.uid?' selected':'');
+        el.innerHTML = `<div>${it.name}</div>${rarityBadge(it.rarity)}`;
+        el.style.setProperty('--rcolor', RARITY[it.rarity].color);
+        el.querySelector('.rar').style.border = '2px solid rgba(255,255,255,.25)';
+        el.querySelector('.rar').style.color = '#fff';
+        el.addEventListener('click',()=>{ state.selectedItemUid = (state.selectedItemUid===it.uid?null:it.uid); renderInventory(); });
+        wrap.appendChild(el);
+      });
+    }
+
+    /*****************
+     * STANDS UI
+     *****************/
+    function renderStands(){
+      const area = $('#stands'); area.innerHTML='';
+      for(let i=0;i<STAND_COUNT;i++){
+        const box = document.createElement('div'); box.className='stand';
+        const placedUid = state.stands[i];
+        const ped = document.createElement('div'); ped.className='pedestal';
+        box.appendChild(ped);
+        if(placedUid){
+          const it = state.inventory.find(x=>x.uid===placedUid);
+          const p = document.createElement('div'); p.className='placed'; p.innerHTML = `<strong>${it?.name||'?'}</strong><br><small>${RARITY[it.rarity].label} • +$${fmt(RARITY[it.rarity].income)}/s</small>`;
+          p.style.border = '4px solid rgba(0,0,0,.45)';
+          p.style.color = '#fff';
+          box.appendChild(p);
+        }
+        box.addEventListener('click',()=>{
+          if(!state.selectedItemUid) return; // nothing selected
+          state.stands[i] = state.selectedItemUid; recalcEPS(); renderStands();
+        });
+        area.appendChild(box);
+      }
+    }
+
+    /*****************
+     * SHOP
+     *****************/
+    function weightedPick(){
+      const r = Math.random();
+      if(r < RARITY.legendary.prob) return 'legendary';
+      if(r < RARITY.legendary.prob + RARITY.epic.prob) return 'epic';
+      if(r < RARITY.legendary.prob + RARITY.epic.prob + RARITY.rare.prob) return 'rare';
+      return 'common';
+    }
+
+    function priceFor(rarity){
+      const [a,b] = RARITY[rarity].price; return Math.floor(a + Math.random()*(b-a));
+    }
+
+    function makeShopItems(){
+      const items = [];
+      const pool = [...ITEM_NAMES];
+      for(let i=0;i<SHOP_SLOTS;i++){
+        const idx = Math.floor(Math.random()*pool.length);
+        const name = pool.splice(idx,1)[0];
+        const rarity = weightedPick();
+        items.push({ uid: uid(), name, rarity, price: priceFor(rarity) });
+      }
+      return items;
+    }
+
+    function ensureShop(){
+      const now = Date.now();
+      if(now >= state.shop.nextRefreshAt || !state.shop.items?.length){
+        state.shop.items = makeShopItems();
+        const span = state.fastMode ? 15_000 : 5*60_000; // 5 min or 15s (tools)
+        state.shop.nextRefreshAt = now + span;
+        save();
+      }
+      renderShop();
+    }
+
+    function msToClock(ms){
+      ms = Math.max(0, ms);
+      const s = Math.floor(ms/1000);
+      const m = Math.floor(s/60);
+      const sec = s%60;
+      return `${m}:${String(sec).padStart(2,'0')}`;
+    }
+
+    let refreshTimer;
+    function renderShop(){
+      const grid = $('#shopGrid');
+      grid.innerHTML='';
+      state.shop.items.forEach((it, i)=>{
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `
+          <div>
+            <h3>${it.name}</h3>
+            <div class="tag t-${it.rarity}">${RARITY[it.rarity].label}</div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div class="price">$${fmt(it.price)}</div>
+            <button class="buy">Purchase</button>
+          </div>
+        `;
+        const btn = card.querySelector('.buy');
+        function setBtn(){ btn.disabled = state.money < it.price; }
+        setBtn();
+        btn.addEventListener('click',()=>{
+          if(state.money < it.price) return;
+          state.money -= it.price;
+          const inv = { uid: uid(), name: it.name, rarity: it.rarity, price: it.price };
+          state.inventory.push(inv);
+          updateTop(); renderInventory(); save();
+          // feedback
+          btn.textContent = 'Purchased!'; btn.disabled = true; btn.style.background = 'linear-gradient(#2ecc71,#1da85b)';
+        });
+        grid.appendChild(card);
+      });
+
+      // countdown
+      if(refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(()=>{
+        const left = state.shop.nextRefreshAt - Date.now();
+        $('#refreshNote').textContent = `Shop refreshes every ${msToClock(left)}`;
+        if(left<=0){ ensureShop(); }
+      }, 200);
+    }
+
+    /*****************
+     * EVENTS
+     *****************/
+    $('#openShop').addEventListener('click',()=>{ $('#shopOverlay').classList.add('show'); ensureShop(); $('#shopOverlay').setAttribute('aria-hidden','false'); });
+    $('#closeShop').addEventListener('click',()=>{ $('#shopOverlay').classList.remove('show'); $('#shopOverlay').setAttribute('aria-hidden','true'); });
+
+    $('#toolsBtn').addEventListener('click',()=>{
+      state.fastMode = !state.fastMode; ensureShop();
+      const msg = state.fastMode? 'Fast refresh: 15s' : 'Normal refresh: 5 min';
+      $('#toolsBtn').title = 'Tools ('+msg+')';
+      save();
+    });
+
+    /*****************
+     * BOOT
+     *****************/
+    function boot(){
+      load();
+      if(!state.money) state.money = MONEY_START;
+      // render stands array length
+      if(!state.stands || state.stands.length!==STAND_COUNT){ state.stands = Array(STAND_COUNT).fill(null); }
+      updateTop(); renderInventory(); renderStands(); recalcEPS(); ensureShop();
+      requestAnimationFrame(tick);
+    }
+
+    boot();
+  </script>
+</body>
+</html>
