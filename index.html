@@ -14627,6 +14627,147 @@ body.money-baseball .cash{
 }
 </style>
 
+<style id="flexGlobalCountdownStyles">
+  #flexGlobalCountdown[hidden]{display:none!important}
+  #flexGlobalCountdown{position:fixed;z-index:8500;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 20px);pointer-events:none;color:#f8dc7b;font-family:"Bungee","Russo One",sans-serif;filter:drop-shadow(0 8px 18px rgba(0,0,0,.48))}
+  #flexGlobalCountdown.fgc-top-left{left:10px;right:auto;transform:none}
+  #flexGlobalCountdown.fgc-top-center{left:50%;right:auto;transform:translateX(-50%)}
+  #flexGlobalCountdown.fgc-top-right{left:auto;right:10px;transform:none}
+  #flexGlobalCountdown .fgc-shell{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:14px;padding:9px 16px 10px;border:2px solid #e6bd4f;border-radius:16px;background:linear-gradient(120deg,#040d20 0%,#0a2450 44%,#102f63 58%,#06142e 100%);box-shadow:0 0 0 1px rgba(255,229,139,.18),0 0 26px rgba(234,190,70,.3),inset 0 0 24px rgba(0,0,0,.4)}
+  #flexGlobalCountdown .fgc-shell:before{content:"";position:absolute;z-index:-1;inset:-160% -55%;background:linear-gradient(105deg,transparent 40%,rgba(255,243,190,.08) 46%,rgba(255,224,116,.43) 50%,rgba(255,243,190,.08) 54%,transparent 60%);animation:fgcSweep 3s linear infinite}
+  #flexGlobalCountdown .fgc-label{flex:0 0 auto;padding-right:13px;border-right:1px solid rgba(242,204,91,.42);font-size:.67rem;line-height:1.1;letter-spacing:.16em;color:#e8edf6;text-shadow:0 1px 5px #000}
+  #flexGlobalCountdown .fgc-time{display:flex;align-items:center;justify-content:center;gap:12px;min-height:36px}
+  #flexGlobalCountdown .fgc-segment{display:flex;flex-direction:column;align-items:center;min-width:47px;line-height:1}
+  #flexGlobalCountdown .fgc-number{font-size:1.42rem;font-variant-numeric:tabular-nums;background:linear-gradient(100deg,#b37a16 0%,#ffeaa0 35%,#fff8cf 50%,#e1ae35 70%,#fff0a8 100%);background-size:230% auto;color:#f7d56a;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:fgcTextShimmer 2.2s linear infinite;text-shadow:none}
+  #flexGlobalCountdown .fgc-unit{margin-top:4px;color:#cbd7e8;font-family:"Rajdhani",sans-serif;font-size:.61rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase}
+  #flexGlobalCountdown.fgc-complete .fgc-shell{box-shadow:0 0 0 1px rgba(255,229,139,.25),0 0 34px rgba(234,190,70,.52),inset 0 0 24px rgba(0,0,0,.4)}
+  #flexGlobalCountdown .fgc-finished{font-size:1.12rem;letter-spacing:.12em;background:linear-gradient(100deg,#c58a1e,#fff2ad,#d39c28);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:fgcTextShimmer 1.7s linear infinite}
+  @keyframes fgcSweep{from{transform:translateX(-48%)}to{transform:translateX(48%)}}
+  @keyframes fgcTextShimmer{to{background-position:230% center}}
+  @media(max-width:560px){
+    #flexGlobalCountdown{top:max(6px,env(safe-area-inset-top));max-width:calc(100vw - 12px)}
+    #flexGlobalCountdown.fgc-top-left{left:6px}
+    #flexGlobalCountdown.fgc-top-right{right:6px}
+    #flexGlobalCountdown .fgc-shell{gap:8px;padding:7px 10px;border-radius:13px}
+    #flexGlobalCountdown .fgc-label{font-size:.56rem;padding-right:8px;letter-spacing:.1em}
+    #flexGlobalCountdown .fgc-time{gap:7px}
+    #flexGlobalCountdown .fgc-segment{min-width:38px}
+    #flexGlobalCountdown .fgc-number{font-size:1.1rem}
+    #flexGlobalCountdown .fgc-unit{font-size:.52rem;letter-spacing:.06em}
+  }
+  @media(prefers-reduced-motion:reduce){#flexGlobalCountdown .fgc-shell:before,#flexGlobalCountdown .fgc-number,#flexGlobalCountdown .fgc-finished{animation:none}}
+</style>
+<div id="flexGlobalCountdown" role="timer" aria-label="Global countdown" hidden>
+  <div class="fgc-shell">
+    <div class="fgc-label">COUNT<br>DOWN</div>
+    <div id="flexGlobalCountdownTime" class="fgc-time"></div>
+  </div>
+</div>
+<script id="flexGlobalCountdownController">
+(function(){
+  if(window.__flexGlobalCountdownInstalled) return;
+  window.__flexGlobalCountdownInstalled = true;
+
+  const CONFIG_USER = '__flex_countdown__';
+  const countdownApiBase = (()=>{
+    const p = new URLSearchParams(location.search).get('api');
+    const s = localStorage.getItem('flex_api_base');
+    return p || s || 'https://flex-sdww.onrender.com/api/game';
+  })();
+  const root = document.getElementById('flexGlobalCountdown');
+  const timeEl = document.getElementById('flexGlobalCountdownTime');
+  let config = null;
+  let announcedComplete = false;
+
+  function normalize(raw){
+    if(raw && raw.data && typeof raw.enabled === 'undefined') raw = raw.data;
+    if(!raw || typeof raw !== 'object') return null;
+    const endAt = Number(raw.endAt);
+    if(!Number.isFinite(endAt)) return null;
+    return {
+      enabled:raw.enabled === true,
+      endAt,
+      position:['top-left','top-center','top-right'].includes(raw.position) ? raw.position : 'top-center',
+      show:Object.assign({days:true,hours:true,minutes:true,seconds:true},raw.show || {}),
+      updatedAt:Number(raw.updatedAt)||0
+    };
+  }
+
+  function getParts(ms,show){
+    let rest = Math.max(0,Math.floor(ms/1000));
+    const units = [
+      {key:'days',label:'Days',size:86400},
+      {key:'hours',label:'Hours',size:3600},
+      {key:'minutes',label:'Minutes',size:60},
+      {key:'seconds',label:'Seconds',size:1}
+    ].filter(unit=>show[unit.key]);
+    return units.map((unit,index)=>{
+      const value = Math.floor(rest/unit.size);
+      rest -= value*unit.size;
+      return {value:String(value).padStart(2,'0'),label:unit.label};
+    });
+  }
+
+  function render(){
+    if(!config || !config.enabled){
+      root.hidden = true;
+      root.classList.remove('fgc-complete');
+      announcedComplete = false;
+      return;
+    }
+    const remaining = config.endAt-Date.now();
+    root.hidden = false;
+    if(remaining <= 0){
+      root.classList.add('fgc-complete');
+      timeEl.innerHTML = '<div class="fgc-finished">TIME\'S UP</div>';
+      if(!announcedComplete){
+        announcedComplete = true;
+        root.setAttribute('aria-live','polite');
+        setTimeout(()=>root.setAttribute('aria-live','off'),1200);
+      }
+      return;
+    }
+    announcedComplete = false;
+    root.setAttribute('aria-live','off');
+    root.classList.remove('fgc-complete');
+    const parts = getParts(remaining,config.show);
+    if(!parts.length){ root.hidden = true; return; }
+    timeEl.innerHTML = parts.map(part=>'<div class="fgc-segment"><span class="fgc-number">'+part.value+'</span><span class="fgc-unit">'+part.label+'</span></div>').join('');
+  }
+
+  function applyConfig(next){
+    const normalized = normalize(next);
+    if(!normalized) return;
+    if(config && normalized.updatedAt && config.updatedAt && normalized.updatedAt < config.updatedAt) return;
+    config = normalized;
+    root.classList.remove('fgc-top-left','fgc-top-center','fgc-top-right');
+    root.classList.add('fgc-'+config.position);
+    render();
+  }
+
+  async function poll(){
+    try{
+      const response = await fetch(countdownApiBase+'/rawsave?user='+encodeURIComponent(CONFIG_USER)+'&t='+Date.now(),{cache:'no-store'});
+      if(response.ok) applyConfig(await response.json());
+    }catch(error){}
+  }
+
+  window.addEventListener('storage',event=>{
+    if(event.key !== 'flex:countdown:v1' || !event.newValue) return;
+    try{ applyConfig(JSON.parse(event.newValue).config); }catch(error){}
+  });
+  try{
+    if('BroadcastChannel' in window){
+      const channel = new BroadcastChannel('flex:countdown:v1');
+      channel.addEventListener('message',event=>applyConfig(event.data));
+    }
+  }catch(error){}
+
+  poll();
+  setInterval(render,1000);
+  setInterval(poll,5000);
+})();
+</script>
 </body>
 <!-- Inventory Redesign Override -->
 <style id="inventory-redesign-final">
